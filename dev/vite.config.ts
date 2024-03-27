@@ -1,5 +1,4 @@
 import { defineConfig } from 'vite'
-import mkcert from 'vite-plugin-mkcert'
 import solidPlugin from 'vite-plugin-solid'
 
 export default defineConfig({
@@ -9,7 +8,6 @@ export default defineConfig({
     },
   },
   plugins: [
-    mkcert(),
     solidPlugin(),
     {
       name: 'Reaplace env variables',

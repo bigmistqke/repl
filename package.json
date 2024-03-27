@@ -42,6 +42,7 @@
   "typesVersions": {},
   "scripts": {
     "dev": "vite serve dev",
+    "build:dev": "vite build dev",
     "build": "tsup",
     "test": "concurrently pnpm:test:*",
     "test:client": "vitest",
@@ -72,7 +73,6 @@
     "tsup-preset-solid": "^2.0.1",
     "typescript": "^5.1.6",
     "vite": "^4.4.6",
-    "vite-plugin-mkcert": "^1.17.5",
     "vite-plugin-solid": "^2.7.0",
     "vitest": "^0.33.0"
   },
