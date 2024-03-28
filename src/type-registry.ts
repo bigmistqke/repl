@@ -76,9 +76,9 @@ export class TypeRegistry {
               } else if (path.startsWith('https:')) {
                 const virtualPath = this.getVirtualPath(path)
                 code = code.replace(path, virtualPath)
-                this.importTypesFromUrl(monaco, path)
+                this.importTypesFromUrl(path)
               } else {
-                this.importTypesFromPackageName(monaco, path)
+                this.importTypesFromPackageName(path)
               }
             }),
           )
@@ -139,7 +139,7 @@ export class TypeRegistry {
           return
         }
 
-        return this.importTypesFromPackageName(monaco, path)
+        return this.importTypesFromPackageName(path)
       }),
     )
   }
