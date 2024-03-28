@@ -12,7 +12,13 @@ export class TypeRegistry {
   cachedUrls = new Set<string>()
   cachedPackageNames = new Set<string>()
 
-  constructor(public monaco: Monaco) {}
+  constructor(
+    public monaco: Monaco,
+    /**
+     * Url to cdn. Response needs to return `X-Typescript-Types`-header. Defaults to `https://esm.sh`
+     * */
+    public cdn = 'https://esm.sh',
+  ) {}
 
   private updateFile(path: string, value: string) {
     this.filesystem[path] = value
@@ -35,16 +41,18 @@ export class TypeRegistry {
 
     return newPath.join('/')
   }
+
   private getVirtualPath(url: string) {
     return (
       url
-        .replace('https://esm.sh/', '')
-        // replace 'v128
+        .replace(`${this.cdn}/`, '')
+        // replace version-number
         .split('/')
         .slice(1)
         .join('/')
     )
   }
+
   async importTypesFromUrl(url: string) {
     if (this.cachedUrls.has(url)) return
     this.cachedUrls.add(url)
@@ -94,7 +102,7 @@ export class TypeRegistry {
     await resolvePath(url)
 
     Object.entries(newFiles).forEach(([key, value]) => {
-      const filePath = `file:///esm/${key}`
+      const filePath = `file:///.types/${key}`
       if (value) {
         this.monaco.languages.typescript.typescriptDefaults.addExtraLib(value, filePath)
       }
@@ -105,7 +113,7 @@ export class TypeRegistry {
     if (this.cachedPackageNames.has(packageName)) return
     this.cachedPackageNames.add(packageName)
 
-    const typeUrl = await fetch(`https://esm.sh/${packageName}`).then(result =>
+    const typeUrl = await fetch(`${this.cdn}/${packageName}`).then(result =>
       result.headers.get('X-TypeScript-Types'),
     )
 
@@ -121,7 +129,7 @@ export class TypeRegistry {
     // add virtual path to monaco's tsconfig's `path`-property
     const tsCompilerOptions =
       this.monaco.languages.typescript.typescriptDefaults.getCompilerOptions()
-    tsCompilerOptions.paths[packageName] = [`file:///esm/${virtualPath}`]
+    tsCompilerOptions.paths[packageName] = [`file:///.types/${virtualPath}`]
     this.monaco.languages.typescript.typescriptDefaults.setCompilerOptions(tsCompilerOptions)
     this.monaco.languages.typescript.javascriptDefaults.setCompilerOptions(tsCompilerOptions)
   }
@@ -144,45 +152,41 @@ export class TypeRegistry {
     )
   }
 
-  private modifyImportPaths(code: string) {
-    return code.replace(/import ([^"']+) from ["']([^"']+)["']/g, (match, varName, path) => {
-      if (
-        path.startsWith('blob:') ||
-        path.startsWith('http:') ||
-        path.startsWith('https:') ||
-        path.startsWith('.')
-      ) {
-        return `import ${varName} from "${path}"`
-      } else {
-        return `import ${varName} from "https://esm.sh/${path}"`
-      }
-    })
-  }
-
   async transpileCodeFromModel(model: ReturnType<Monaco['editor']['createModel']>) {
     const typescriptWorker = await (
       await this.monaco.languages.typescript.getTypeScriptWorker()
     )(model.uri)
     // use monaco's typescript-server to transpile file from ts to js
-    return typescriptWorker
-      .getEmitOutput(`file://${model.uri.path}`)
-      .then(text => (console.log(text), text))
-      .then(async result => {
-        if (result.outputFiles.length > 0) {
-          // replace local imports with respective module-urls
-          const code = this.modifyImportPaths(result.outputFiles[0]!.text)
+    return typescriptWorker.getEmitOutput(`file://${model.uri.path}`).then(async result => {
+      if (result.outputFiles.length > 0) {
+        // replace local imports with respective module-urls
+        const code = result.outputFiles[0]!.text.replace(
+          /import ([^"']+) from ["']([^"']+)["']/g,
+          (match, varName, path) => {
+            if (
+              path.startsWith('blob:') ||
+              path.startsWith('http:') ||
+              path.startsWith('https:') ||
+              path.startsWith('.')
+            ) {
+              return `import ${varName} from "${path}"`
+            } else {
+              return `import ${varName} from "${this.cdn}/${path}"`
+            }
+          },
+        )
 
-          // get module-url of transpiled code
-          const url = URL.createObjectURL(
-            new Blob([code], {
-              type: 'application/javascript',
-            }),
-          )
+        // get module-url of transpiled code
+        const url = URL.createObjectURL(
+          new Blob([code], {
+            type: 'application/javascript',
+          }),
+        )
 
-          const module = await import(/* @vite-ignore */ url)
+        const module = await import(/* @vite-ignore */ url)
 
-          return { module, url }
-        }
-      })
+        return { module, url }
+      }
+    })
   }
 }
