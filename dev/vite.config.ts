@@ -9,7 +9,18 @@ export default defineConfig({
     },
   },
   plugins: [
-    solidPlugin(),
+    solidPlugin({
+      babel: {
+        plugins: [
+          [
+            '@babel/plugin-syntax-import-attributes',
+            {
+              deprecatedAssertSyntax: true,
+            },
+          ],
+        ],
+      },
+    }),
     {
       name: 'Reaplace env variables',
       transform(code, id) {

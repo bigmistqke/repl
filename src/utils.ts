@@ -4,6 +4,15 @@ import ts from 'typescript'
 
 /**********************************************************************************/
 /*                                                                                */
+/*                                  Type Utils                                    */
+/*                                                                                */
+/**********************************************************************************/
+
+export type Mandatory<TTarget, TKeys extends keyof TTarget> = Required<Pick<TTarget, TKeys>> &
+  Omit<TTarget, TKeys>
+
+/**********************************************************************************/
+/*                                                                                */
 /*                                 Conditionals                                   */
 /*                                                                                */
 /**********************************************************************************/
@@ -156,6 +165,11 @@ export function relativeToAbsolutePath(currentPath: string, relativePath: string
 
   return newPath.join('/')
 }
+
+export const pathIsUrl = (value: string) =>
+  value.startsWith('blob:') || value.startsWith('http:') || value.startsWith('https:')
+
+export const pathIsRelativePath = (value: string) => value.startsWith('.')
 
 /**********************************************************************************/
 /*                                                                                */

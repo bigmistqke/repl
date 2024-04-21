@@ -16,7 +16,7 @@ import { when } from './utils'
 import styles from './editor.module.css'
 
 export const Editor: Component<
-  ComponentProps<'div'> & {
+  Omit<ComponentProps<'div'>, 'ref'> & {
     initialValue?: string
     onCompilation?: (module: { module: Record<string, any>; url: string }) => void
     name: string
@@ -42,13 +42,28 @@ export const Editor: Component<
     when(
       fileSystem,
       file,
-    )(({ monaco }, { model }) => {
+    )(({ monaco, config }, { model }) => {
       const editor = monaco.editor.create(container, {
         value: untrack(() => props.initialValue) || '',
         language: 'typescript',
         automaticLayout: true,
         theme: untrack(() => props.mode) === 'dark' ? 'vs-dark' : 'vs-light',
         model,
+      })
+
+      createEffect(() => {
+        if (config.addSaveConfigAction) {
+          const cleanup = editor.addAction({
+            id: 'save-repl-config',
+            label: 'Save Repl Config',
+            keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyY], // Optional: set a keybinding
+            precondition: undefined,
+            keybindingContext: undefined,
+            contextMenuGroupId: 'repl',
+            run: () => fileSystem()?.download(),
+          })
+          onCleanup(() => cleanup.dispose())
+        }
       })
 
       // Switch light/dark mode

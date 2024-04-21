@@ -8,7 +8,7 @@ import {
   useContext,
 } from 'solid-js'
 import { JsxEmit, ModuleKind, ModuleResolutionKind, ScriptTarget } from 'typescript'
-import { FileSystem } from './file-system'
+import { FileSystem, FileSystemState } from './file-system'
 
 type FileSystemContext = Resource<FileSystem>
 const fileSystemContext = createContext<FileSystemContext>()
@@ -26,12 +26,17 @@ export type MonacoConfig = Partial<{
   cdn: string
   babel: BabelConfig
   typescript: TypescriptConfig
+  packages: string[]
+  onFileSystem: (fileSystem: FileSystem) => void
+  initialState: Partial<FileSystemState>
+  addSaveConfigAction: boolean
 }>
 
 export const MonacoProvider: ParentComponent<MonacoConfig> = props => {
-  const config = mergeProps(
-    {
-      typescript: {
+  const config = mergeProps({ cdn: 'https://esm.sh', addSaveConfigAction: true }, props)
+  const typescript = () =>
+    mergeProps(
+      {
         allowJs: true,
         allowNonTsExtensions: true,
         esModuleInterop: true,
@@ -43,27 +48,32 @@ export const MonacoProvider: ParentComponent<MonacoConfig> = props => {
         target: ScriptTarget.ESNext as 99,
         paths: {},
       },
-    },
-    props,
-  )
+      config.typescript,
+    )
 
-  const [resource] = createResource(async () => {
+  const [fileSystemResource] = createResource(async () => {
     try {
       const monaco = await (loader.init() as Promise<Monaco>)
-      monaco.languages.typescript.typescriptDefaults.setCompilerOptions(config.typescript)
+      monaco.languages.typescript.typescriptDefaults.setCompilerOptions(typescript())
       {
-        // initialize typescript with empty editor
+        // initialize typescript-services with empty editor
         const editor = monaco.editor.create(document.createElement('div'), {
           language: 'typescript',
         })
         editor.dispose()
       }
-      return FileSystem.create(monaco, props)
+      const fileSystem = await FileSystem.create(monaco, config)
+      config.onFileSystem?.(fileSystem)
+      return fileSystem
     } catch (error) {
       console.log('error', error)
       throw error
     }
   })
 
-  return <fileSystemContext.Provider value={resource}>{props.children}</fileSystemContext.Provider>
+  return (
+    <fileSystemContext.Provider value={fileSystemResource}>
+      {config.children}
+    </fileSystemContext.Provider>
+  )
 }

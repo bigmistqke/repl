@@ -1,37 +1,56 @@
 import * as Babel from '@babel/standalone'
 import { Monaco } from '@monaco-editor/loader'
-import { Accessor, Resource, createMemo, createResource, createSignal, mergeProps } from 'solid-js'
+import {
+  Accessor,
+  Resource,
+  Setter,
+  createEffect,
+  createMemo,
+  createResource,
+  createSignal,
+  mergeProps,
+} from 'solid-js'
 import { SetStoreFunction, createStore } from 'solid-js/store'
 import ts from 'typescript'
-import { TypeRegistry } from './type-registry'
-import { every, mapModuleDeclarations, relativeToAbsolutePath, when } from './utils'
+import { MonacoConfig } from './context'
+import { TypeRegistry, TypeRegistryState } from './type-registry'
+import {
+  Mandatory,
+  every,
+  mapModuleDeclarations,
+  pathIsRelativePath,
+  pathIsUrl,
+  relativeToAbsolutePath,
+  when,
+} from './utils'
 
 type TypescriptWorker = Awaited<
   ReturnType<Monaco['languages']['typescript']['getTypeScriptWorker']>
 >
-
 type Model = ReturnType<Monaco['editor']['createModel']>
-
-type Config = { cdn?: string; babel?: { presets?: string[]; plugins?: string[] } }
-type Mandatory<TTarget, TKeys> = Required<Pick<TTarget, TKeys>> & Omit<TTarget, TKeys>
-
+type FileSystemConfig = Omit<MonacoConfig, 'typescript'>
+export type FileSystemState = {
+  files: Record<string, string>
+  types: TypeRegistryState
+}
 export class FileSystem {
   typeRegistry: TypeRegistry
   private files: Record<string, File>
   private setFiles: SetStoreFunction<Record<string, File>>
   private presets: Resource<any[]>
-  config: Mandatory<Config, 'cdn'>
+  config: Mandatory<FileSystemConfig, 'cdn'>
   constructor(
     public monaco: Monaco,
     public typescriptWorker: TypescriptWorker,
-    config: Config,
+    config: FileSystemConfig,
   ) {
     this.config = mergeProps({ cdn: 'https://esm.sh' }, config)
+    this.typeRegistry = new TypeRegistry(monaco, { initialState: config.initialState?.types })
 
     const [files, setFiles] = createStore<Record<string, File>>()
-    this.typeRegistry = new TypeRegistry(monaco)
     this.files = files
     this.setFiles = setFiles
+
     const [presets] = createResource(
       () => this.config?.babel?.presets,
       presets =>
@@ -40,11 +59,47 @@ export class FileSystem {
         ),
     )
     this.presets = presets
+
+    createEffect(() => {
+      config.packages?.forEach(packageName => {
+        this.typeRegistry.importTypesFromPackageName(packageName)
+      })
+    })
   }
 
-  static async create(monaco: Monaco, config: Config) {
+  static async create(monaco: Monaco, config: FileSystemConfig) {
     const typescriptWorker = await monaco.languages.typescript.getTypeScriptWorker()
     return new FileSystem(monaco, typescriptWorker, config)
+  }
+
+  toJSON() {
+    const files = Object.fromEntries(
+      Object.entries(this.files).map(([key, value]) => [key, value.toJSON()]),
+    )
+    return {
+      types: this.typeRegistry.toJSON(),
+      files,
+    }
+  }
+
+  download(name = 'repl.config.json') {
+    const data = this.toJSON()
+
+    const blob = new Blob([JSON.stringify(data)], { type: 'text/json' })
+    const link = document.createElement('a')
+
+    link.download = 'repl.config.json'
+    link.href = window.URL.createObjectURL(blob)
+    link.dataset.downloadurl = ['text/json', link.download, link.href].join(':')
+
+    const evt = new MouseEvent('click', {
+      view: window,
+      bubbles: true,
+      cancelable: true,
+    })
+
+    link.dispatchEvent(evt)
+    link.remove()
   }
 
   create(path: string) {
@@ -63,6 +118,8 @@ export class FileSystem {
 }
 
 class File {
+  private content: Accessor<string | undefined>
+  private setContent: Setter<string | undefined>
   model: Model
   url: Accessor<string | undefined>
   module: Accessor<Record<string, any> | undefined>
@@ -73,26 +130,28 @@ class File {
       presets: Resource<any[]>
     },
   ) {
+    const extension = path.split('/').pop()?.split('.')[1]
+    const isTypescript = extension === 'ts' || extension === 'tsx'
     const uri = fileSystem.monaco.Uri.parse(`file:///${path.replace('./', '')}`)
     this.model = fileSystem.monaco.editor.createModel('', 'typescript', uri)
 
     const [content, setContent] = createSignal<string | undefined>()
+    this.content = content
+    this.setContent = setContent
+
     const [transpiled] = createResource(
       every(content, config.presets),
       async ([content, presets]) => {
         try {
           let value: string = content
-          if (path.split('.').pop() === 'ts') {
-            const result = await fileSystem
+          if (isTypescript) {
+            value = await fileSystem
               .typescriptWorker(this.model.uri)
               .then(result => result.getEmitOutput(`file://${this.model.uri.path}`))
-              .then(result => result.outputFiles[0]?.text)
-            if (!result) return undefined
-            value = result
+              .then(result => result.outputFiles[0]?.text || value)
           }
-          return Babel.transform(value, {
-            presets: presets,
-          }).code
+          if (presets.length === 0) return value
+          return Babel.transform(value, { presets }).code
         } catch (err) {
           return content
         }
@@ -103,14 +162,8 @@ class File {
         mapModuleDeclarations(path, value, node => {
           const specifier = node.moduleSpecifier as ts.StringLiteral
           const modulePath = specifier.text
-          if (
-            modulePath.startsWith('blob:') ||
-            modulePath.startsWith('http:') ||
-            modulePath.startsWith('https:')
-          ) {
-            return
-          }
-          if (modulePath.startsWith('.')) {
+          if (pathIsUrl(modulePath)) return
+          if (pathIsRelativePath(modulePath)) {
             const absolutePath = relativeToAbsolutePath(path, modulePath)
             const importUrl = fileSystem.get(absolutePath)?.url()
             if (importUrl) {
@@ -142,6 +195,10 @@ class File {
     this.model.onDidChangeContent(() => setContent(this.model.getValue()))
     this.url = url
     this.module = module
+  }
+
+  toJSON() {
+    return this.content()
   }
 
   set(value: string) {
