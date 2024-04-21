@@ -1,9 +1,12 @@
-.editor {
-  height: 100%;
-  width: 100%;
+.repl {
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
 }
 
 .editor-container {
+  flex: 1;
+  display: flex;
   overflow: hidden;
   height: 100%;
 
@@ -20,6 +23,12 @@
   }
 }
 
+.editor {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
 .resize-bar {
   height: 5px;
   background: var(--color-grey-light);
@@ -27,4 +36,9 @@
   &:hover {
     background: var(--color-grey);
   }
+}
+
+.frame {
+  all: unset;
+  flex: 1;
 }

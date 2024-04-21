@@ -9,10 +9,11 @@ import {
   createResource,
   createSignal,
   mergeProps,
+  onCleanup,
 } from 'solid-js'
 import { SetStoreFunction, createStore } from 'solid-js/store'
 import ts from 'typescript'
-import { MonacoConfig } from './context'
+import { ReplConfig } from './repl'
 import { TypeRegistry, TypeRegistryState } from './type-registry'
 import {
   Mandatory,
@@ -28,16 +29,22 @@ type TypescriptWorker = Awaited<
   ReturnType<Monaco['languages']['typescript']['getTypeScriptWorker']>
 >
 type Model = ReturnType<Monaco['editor']['createModel']>
-type FileSystemConfig = Omit<MonacoConfig, 'typescript'>
+type FileSystemConfig = Omit<ReplConfig, 'typescript'>
 export type FileSystemState = {
   files: Record<string, string>
   types: TypeRegistryState
 }
+
+export type CompilationEvent = { url: string; path: string; fileSystem: FileSystem }
+export type CompilationHandler = (event: CompilationEvent) => void
 export class FileSystem {
   typeRegistry: TypeRegistry
   private files: Record<string, File>
   private setFiles: SetStoreFunction<Record<string, File>>
   private presets: Resource<any[]>
+  private plugins: Resource<babel.PluginItem[]>
+  frame: Accessor<Window | undefined>
+  setFrame: Setter<Window | undefined>
   config: Mandatory<FileSystemConfig, 'cdn'>
   constructor(
     public monaco: Monaco,
@@ -51,14 +58,31 @@ export class FileSystem {
     this.files = files
     this.setFiles = setFiles
 
+    const [frame, setFrame] = createSignal<Window | undefined>()
+    this.frame = frame
+    this.setFrame = setFrame
+
     const [presets] = createResource(
-      () => this.config?.babel?.presets,
+      () => this.config?.babel?.presets || [],
       presets =>
         Promise.all(
           presets.map(async preset => (await import(`${this.config.cdn}/${preset}`)).default),
         ),
     )
     this.presets = presets
+    const [plugins] = createResource(
+      () => this.config?.babel?.plugins || [],
+      plugins =>
+        Promise.all(
+          plugins.map(async plugin => {
+            if (typeof plugin === 'string') {
+              return (await import(`${this.config.cdn}/${plugin}`)).default
+            }
+            return plugin
+          }),
+        ),
+    )
+    this.plugins = plugins
 
     createEffect(() => {
       config.packages?.forEach(packageName => {
@@ -91,7 +115,6 @@ export class FileSystem {
     link.download = 'repl.config.json'
     link.href = window.URL.createObjectURL(blob)
     link.dataset.downloadurl = ['text/json', link.download, link.href].join(':')
-
     const evt = new MouseEvent('click', {
       view: window,
       bubbles: true,
@@ -103,7 +126,8 @@ export class FileSystem {
   }
 
   create(path: string) {
-    const file = new File(this, path, { presets: this.presets })
+    const file = new File(this, path, { presets: this.presets, plugins: this.plugins })
+    file.onCompilation(this.callOnCompilationHandlers.bind(this))
     this.setFiles(path, file)
     return file
   }
@@ -115,6 +139,18 @@ export class FileSystem {
   get(path: string) {
     return this.files[path]
   }
+
+  private onCompilationHandlers: CompilationHandler[] = []
+  private callOnCompilationHandlers(event: CompilationEvent) {
+    this.onCompilationHandlers.forEach(handler => handler(event))
+  }
+  onCompilation(callback: CompilationHandler) {
+    this.onCompilationHandlers.push(callback)
+    onCleanup(() => {
+      const index = this.onCompilationHandlers.findIndex(handler => handler !== callback)
+      if (index !== -1) this.onCompilationHandlers.slice(index, 1)
+    })
+  }
 }
 
 class File {
@@ -122,12 +158,12 @@ class File {
   private setContent: Setter<string | undefined>
   model: Model
   url: Accessor<string | undefined>
-  module: Accessor<Record<string, any> | undefined>
   constructor(
     private fileSystem: FileSystem,
     path: string,
     config: {
       presets: Resource<any[]>
+      plugins: Resource<babel.PluginItem[]>
     },
   ) {
     const extension = path.split('/').pop()?.split('.')[1]
@@ -140,8 +176,8 @@ class File {
     this.setContent = setContent
 
     const [transpiled] = createResource(
-      every(content, config.presets),
-      async ([content, presets]) => {
+      every(content, config.presets, config.plugins),
+      async ([content, presets, plugins]) => {
         try {
           let value: string = content
           if (isTypescript) {
@@ -150,8 +186,8 @@ class File {
               .then(result => result.getEmitOutput(`file://${this.model.uri.path}`))
               .then(result => result.outputFiles[0]?.text || value)
           }
-          if (presets.length === 0) return value
-          return Babel.transform(value, { presets }).code
+          if (presets.length !== 0) value = Babel.transform(value, { presets, plugins }).code!
+          return value
         } catch (err) {
           return content
         }
@@ -187,14 +223,11 @@ class File {
         )
       }),
     )
-    const [module] = createResource(url, url => {
-      if (!url) return undefined
-      return import(url) as Record<string, any>
-    })
+
+    createEffect(() => when(url)(url => this.callOnCompilationHandlers({ url, fileSystem, path })))
 
     this.model.onDidChangeContent(() => setContent(this.model.getValue()))
     this.url = url
-    this.module = module
   }
 
   toJSON() {
@@ -203,5 +236,17 @@ class File {
 
   set(value: string) {
     this.model.setValue(value)
+  }
+
+  private onCompilationHandlers: CompilationHandler[] = []
+  private callOnCompilationHandlers(event: CompilationEvent) {
+    this.onCompilationHandlers.forEach(handler => handler(event))
+  }
+  onCompilation(callback: CompilationHandler) {
+    this.onCompilationHandlers.push(callback)
+    onCleanup(() => {
+      const index = this.onCompilationHandlers.findIndex(handler => handler !== callback)
+      if (index !== -1) this.onCompilationHandlers.slice(index, 1)
+    })
   }
 }

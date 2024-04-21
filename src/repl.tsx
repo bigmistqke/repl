@@ -1,16 +1,23 @@
 import loader, { Monaco } from '@monaco-editor/loader'
+import clsx from 'clsx'
 import {
-  ParentComponent,
-  Resource,
+  ParentProps,
+  Show,
   createContext,
+  createEffect,
   createResource,
   mergeProps,
   useContext,
 } from 'solid-js'
 import { JsxEmit, ModuleKind, ModuleResolutionKind, ScriptTarget } from 'typescript'
-import { FileSystem, FileSystemState } from './file-system'
+import { CompilationHandler, FileSystem, FileSystemState } from './file-system'
 
-type FileSystemContext = Resource<FileSystem>
+import { Editor } from './editor'
+import { Frame } from './frame'
+import styles from './repl.module.css'
+import { every, when } from './utils'
+
+type FileSystemContext = FileSystem
 const fileSystemContext = createContext<FileSystemContext>()
 export const useFileSystem = () => {
   const context = useContext(fileSystemContext)
@@ -21,19 +28,23 @@ export const useFileSystem = () => {
 export type TypescriptConfig = Parameters<
   Monaco['languages']['typescript']['typescriptDefaults']['setCompilerOptions']
 >[0]
-export type BabelConfig = Partial<{ presets: string[]; plugins: string[] }>
-export type MonacoConfig = Partial<{
+export type BabelConfig = Partial<{ presets: string[]; plugins: (string | babel.PluginItem)[] }>
+export type ReplConfig = Partial<{
+  class: string
   cdn: string
   babel: BabelConfig
   typescript: TypescriptConfig
   packages: string[]
   onFileSystem: (fileSystem: FileSystem) => void
+  onCompilation: CompilationHandler
   initialState: Partial<FileSystemState>
-  addSaveConfigAction: boolean
+  actions?: {
+    saveRepl?: boolean
+  }
 }>
 
-export const MonacoProvider: ParentComponent<MonacoConfig> = props => {
-  const config = mergeProps({ cdn: 'https://esm.sh', addSaveConfigAction: true }, props)
+export function Repl(props: ParentProps<ReplConfig>) {
+  const config = mergeProps({ cdn: 'https://esm.sh' }, props)
   const typescript = () =>
     mergeProps(
       {
@@ -55,6 +66,7 @@ export const MonacoProvider: ParentComponent<MonacoConfig> = props => {
     try {
       const monaco = await (loader.init() as Promise<Monaco>)
       monaco.languages.typescript.typescriptDefaults.setCompilerOptions(typescript())
+
       {
         // initialize typescript-services with empty editor
         const editor = monaco.editor.create(document.createElement('div'), {
@@ -62,6 +74,7 @@ export const MonacoProvider: ParentComponent<MonacoConfig> = props => {
         })
         editor.dispose()
       }
+
       const fileSystem = await FileSystem.create(monaco, config)
       config.onFileSystem?.(fileSystem)
       return fileSystem
@@ -71,9 +84,28 @@ export const MonacoProvider: ParentComponent<MonacoConfig> = props => {
     }
   })
 
+  createEffect(() => {
+    const fileSystem = fileSystemResource()
+    if (!fileSystem) return
+    if (!props.onCompilation) return
+  })
+
+  createEffect(() =>
+    when(every(fileSystemResource, () => props.onCompilation))(([file, handler]) =>
+      file.onCompilation(handler),
+    ),
+  )
+
   return (
-    <fileSystemContext.Provider value={fileSystemResource}>
-      {config.children}
-    </fileSystemContext.Provider>
+    <Show when={fileSystemResource()}>
+      {fileSystem => (
+        <fileSystemContext.Provider value={fileSystem()}>
+          <div class={clsx(styles.repl, props.class)}>{config.children}</div>
+        </fileSystemContext.Provider>
+      )}
+    </Show>
   )
 }
+
+Repl.Editor = Editor
+Repl.Frame = Frame

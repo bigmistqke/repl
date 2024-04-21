@@ -15,7 +15,11 @@
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
     "baseUrl": ".",
-    "strict": true
+    "strict": true,
+    "paths": {
+      "@bigmistqke/repl": ["./src"],
+      "@bigmistqke/repl/plugins/*": ["./src/plugins/*"]
+    }
   },
   "exclude": ["node_modules", "dev/public/distdist", "./dev"]
 }

@@ -1,43 +1,78 @@
-import { type Component } from 'solid-js'
+import { Repl } from '@bigmistqke/repl'
+import { solidReplPlugin } from '@bigmistqke/repl/plugins/solid-repl'
+
+import { createEffect, onCleanup, type Component } from 'solid-js'
 import { JsxEmit } from 'typescript'
-import { Editor, MonacoProvider } from '../src'
 import cached from './repl.config.json'
+
+import { when } from '@bigmistqke/when'
+import styles from './App.module.css'
 
 const App: Component = () => {
   return (
-    <>
-      <MonacoProvider
-        babel={{ presets: ['babel-preset-solid'] }}
-        typescript={{
-          resolveJsonModule: true,
-          esModuleInterop: true,
-          noEmit: true,
-          isolatedModules: true,
-          skipLibCheck: true,
-          allowSyntheticDefaultImports: true,
-          forceConsistentCasingInFileNames: true,
-          noUncheckedIndexedAccess: true,
-          paths: {},
-          jsx: JsxEmit.Preserve,
-          jsxImportSource: 'solid-js',
-          strict: true,
-        }}
-        initialState={{ types: cached.types }}
-      >
-        <Editor
-          name="src/default.tsx"
-          initialValue={`import {createSignal, createEffect, } from "solid-js"
+    <Repl
+      babel={{
+        presets: ['babel-preset-solid'],
+        plugins: [solidReplPlugin],
+      }}
+      typescript={{
+        resolveJsonModule: true,
+        esModuleInterop: true,
+        noEmit: true,
+        isolatedModules: true,
+        skipLibCheck: true,
+        allowSyntheticDefaultImports: true,
+        forceConsistentCasingInFileNames: true,
+        noUncheckedIndexedAccess: true,
+        paths: {},
+        jsx: JsxEmit.Preserve,
+        jsxImportSource: 'solid-js',
+        strict: true,
+      }}
+      initialState={{ types: cached.types }}
+      class={styles.repl}
+      onCompilation={({ url, fileSystem: { frame }, path }) => {
+        console.log('compilation!')
+        if (path !== 'src/default.tsx') return
+        // NOTE:  this should be customisable
+        createEffect(() =>
+          when(frame)(frame => {
+            const script = frame.document.createElement('script')
+            script.type = 'module'
+            script.src = url
+            frame.document.body.appendChild(script)
+            onCleanup(() => {
+              frame.document.body.removeChild(script)
+              frame.window.dispose?.()
+            })
+          }),
+        )
+      }}
+    >
+      <Repl.Editor
+        name="src/default.tsx"
+        initialValue={
+          /* tsx */ `
+import { render } from "solid-js/web";
+import { createSignal } from "solid-js";
 
-const [signal, setSignal] = createSignal(0);
-createEffect(() => console.log(signal()))
-setTimeout(() => {
-  setSignal(1)
-}, 1000);
-const div = <div style={{ top: '0px'}}>hallo</div>;
-`}
-        />
-      </MonacoProvider>
-    </>
+function Counter() {
+  const [count, setCount] = createSignal(1);
+  const increment = () => setCount(count => count + 1);
+
+  return (
+    <button type="button" onClick={increment}>
+      {count()}
+    </button>
+  );
+}
+
+render(() => <Counter />, document.body);
+`
+        }
+      />
+      <Repl.Frame />
+    </Repl>
   )
 }
 
