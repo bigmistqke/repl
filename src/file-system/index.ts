@@ -1,34 +1,23 @@
-import * as Babel from '@babel/standalone'
 import { Monaco } from '@monaco-editor/loader'
 import {
   Accessor,
   Resource,
   Setter,
   createEffect,
-  createMemo,
   createResource,
   createSignal,
   mergeProps,
   onCleanup,
 } from 'solid-js'
 import { SetStoreFunction, createStore } from 'solid-js/store'
-import ts from 'typescript'
-import { ReplConfig } from './repl'
+import { ReplConfig } from '../components/repl'
+import { Mandatory } from '../utils'
+import { File } from './file'
 import { TypeRegistry, TypeRegistryState } from './type-registry'
-import {
-  Mandatory,
-  every,
-  mapModuleDeclarations,
-  pathIsRelativePath,
-  pathIsUrl,
-  relativeToAbsolutePath,
-  when,
-} from './utils'
 
 type TypescriptWorker = Awaited<
   ReturnType<Monaco['languages']['typescript']['getTypeScriptWorker']>
 >
-type Model = ReturnType<Monaco['editor']['createModel']>
 type FileSystemConfig = Omit<ReplConfig, 'typescript'>
 export type FileSystemState = {
   files: Record<string, string>
@@ -138,104 +127,6 @@ export class FileSystem {
 
   get(path: string) {
     return this.files[path]
-  }
-
-  private onCompilationHandlers: CompilationHandler[] = []
-  private callOnCompilationHandlers(event: CompilationEvent) {
-    this.onCompilationHandlers.forEach(handler => handler(event))
-  }
-  onCompilation(callback: CompilationHandler) {
-    this.onCompilationHandlers.push(callback)
-    onCleanup(() => {
-      const index = this.onCompilationHandlers.findIndex(handler => handler !== callback)
-      if (index !== -1) this.onCompilationHandlers.slice(index, 1)
-    })
-  }
-}
-
-class File {
-  private content: Accessor<string | undefined>
-  private setContent: Setter<string | undefined>
-  model: Model
-  url: Accessor<string | undefined>
-  constructor(
-    private fileSystem: FileSystem,
-    path: string,
-    config: {
-      presets: Resource<any[]>
-      plugins: Resource<babel.PluginItem[]>
-    },
-  ) {
-    const extension = path.split('/').pop()?.split('.')[1]
-    const isTypescript = extension === 'ts' || extension === 'tsx'
-    const uri = fileSystem.monaco.Uri.parse(`file:///${path.replace('./', '')}`)
-    this.model = fileSystem.monaco.editor.createModel('', 'typescript', uri)
-
-    const [content, setContent] = createSignal<string | undefined>()
-    this.content = content
-    this.setContent = setContent
-
-    const [transpiled] = createResource(
-      every(content, config.presets, config.plugins),
-      async ([content, presets, plugins]) => {
-        try {
-          let value: string = content
-          if (isTypescript) {
-            value = await fileSystem
-              .typescriptWorker(this.model.uri)
-              .then(result => result.getEmitOutput(`file://${this.model.uri.path}`))
-              .then(result => result.outputFiles[0]?.text || value)
-          }
-          if (presets.length !== 0) value = Babel.transform(value, { presets, plugins }).code!
-          return value
-        } catch (err) {
-          return content
-        }
-      },
-    )
-    const modified = () =>
-      when(transpiled)(value =>
-        mapModuleDeclarations(path, value, node => {
-          const specifier = node.moduleSpecifier as ts.StringLiteral
-          const modulePath = specifier.text
-          if (pathIsUrl(modulePath)) return
-          if (pathIsRelativePath(modulePath)) {
-            const absolutePath = relativeToAbsolutePath(path, modulePath)
-            const importUrl = fileSystem.get(absolutePath)?.url()
-            if (importUrl) {
-              specifier.text = importUrl
-            } else {
-              console.error(`module ${modulePath} not defined`)
-            }
-          } else {
-            specifier.text = `${this.fileSystem.config.cdn}/${modulePath}`
-            this.fileSystem.typeRegistry.importTypesFromPackageName(modulePath)
-          }
-        }),
-      )
-
-    const url = createMemo(() =>
-      when(modified)(modified => {
-        return URL.createObjectURL(
-          new Blob([modified], {
-            type: 'application/javascript',
-          }),
-        )
-      }),
-    )
-
-    createEffect(() => when(url)(url => this.callOnCompilationHandlers({ url, fileSystem, path })))
-
-    this.model.onDidChangeContent(() => setContent(this.model.getValue()))
-    this.url = url
-  }
-
-  toJSON() {
-    return this.content()
-  }
-
-  set(value: string) {
-    this.model.setValue(value)
   }
 
   private onCompilationHandlers: CompilationHandler[] = []

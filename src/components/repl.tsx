@@ -10,12 +10,12 @@ import {
   useContext,
 } from 'solid-js'
 import { JsxEmit, ModuleKind, ModuleResolutionKind, ScriptTarget } from 'typescript'
-import { CompilationHandler, FileSystem, FileSystemState } from './file-system'
+import { CompilationHandler, FileSystem, FileSystemState } from '../file-system'
 
+import { every, when } from '../utils'
 import { Editor } from './editor'
 import { Frame } from './frame'
 import styles from './repl.module.css'
-import { every, when } from './utils'
 
 type FileSystemContext = FileSystem
 const fileSystemContext = createContext<FileSystemContext>()
@@ -42,8 +42,9 @@ export type ReplConfig = Partial<{
     saveRepl?: boolean
   }
 }>
+export type ReplProps = ParentProps<ReplConfig>
 
-export function Repl(props: ParentProps<ReplConfig>) {
+export function Repl(props: ReplProps) {
   const config = mergeProps({ cdn: 'https://esm.sh' }, props)
   const typescript = () =>
     mergeProps(

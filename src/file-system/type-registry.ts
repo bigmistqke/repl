@@ -2,14 +2,14 @@ import * as ts from 'typescript'
 
 import { Monaco } from '@monaco-editor/loader'
 import { Accessor, Setter, createSignal, mergeProps } from 'solid-js'
-import { PackageJsonParser } from './package-json'
 import {
   Mandatory,
   mapModuleDeclarations,
   pathIsRelativePath,
   pathIsUrl,
   relativeToAbsolutePath,
-} from './utils'
+} from '../utils'
+import { PackageJsonParser } from './package-json'
 
 export type TypeRegistryState = {
   paths: Record<string, string[]>

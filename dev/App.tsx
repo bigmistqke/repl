@@ -32,9 +32,7 @@ const App: Component = () => {
       initialState={{ types: cached.types }}
       class={styles.repl}
       onCompilation={({ url, fileSystem: { frame }, path }) => {
-        console.log('compilation!')
         if (path !== 'src/default.tsx') return
-        // NOTE:  this should be customisable
         createEffect(() =>
           when(frame)(frame => {
             const script = frame.document.createElement('script')

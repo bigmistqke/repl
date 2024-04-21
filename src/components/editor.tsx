@@ -1,11 +1,10 @@
 import clsx from 'clsx'
 import { ComponentProps, createEffect, createMemo, onCleanup, splitProps, untrack } from 'solid-js'
 
+import { FileSystem } from '../file-system'
+import { every, when } from '../utils'
 import { useFileSystem } from './repl'
-import { every, when } from './utils'
-
 // @ts-expect-error
-import { FileSystem } from './file-system'
 import styles from './repl.module.css'
 
 export type EditorProps = Omit<ComponentProps<'div'>, 'ref'> & {
