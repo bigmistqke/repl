@@ -58,10 +58,6 @@
     "solid-js": "^1.6.0"
   },
   "devDependencies": {
-    "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
-    "@types/babel__generator": "^7.6.8",
-    "@types/babel__standalone": "^7.1.7",
-    "@types/babel__traverse": "^7.20.5",
     "@typescript-eslint/eslint-plugin": "^6.1.0",
     "@typescript-eslint/parser": "^6.1.0",
     "concurrently": "^8.2.0",
@@ -89,14 +85,8 @@
     "pnpm": ">=8.6.0"
   },
   "dependencies": {
-    "@babel/generator": "^7.24.4",
-    "@babel/parser": "^7.24.4",
-    "@babel/preset-typescript": "^7.24.1",
-    "@babel/standalone": "^7.24.4",
-    "@babel/traverse": "^7.24.1",
     "@bigmistqke/when": "^0.0.1",
     "@monaco-editor/loader": "^1.4.0",
-    "babel-preset-solid": "^1.8.16",
     "clsx": "^2.1.0",
     "fflate": "^0.8.2",
     "zeptoid": "^1.0.1"

@@ -1,31 +1,69 @@
 import loader, { Monaco } from '@monaco-editor/loader'
-import { ParentComponent, Resource, createContext, createResource, useContext } from 'solid-js'
-import { TypeRegistry } from './type-registry'
+import {
+  ParentComponent,
+  Resource,
+  createContext,
+  createResource,
+  mergeProps,
+  useContext,
+} from 'solid-js'
+import { JsxEmit, ModuleKind, ModuleResolutionKind, ScriptTarget } from 'typescript'
+import { FileSystem } from './file-system'
 
-const MonacoContext = createContext<Resource<{ monaco: Monaco; typeRegistry: TypeRegistry }>>()
-export const useMonacoContext = () => useContext(MonacoContext)
+type FileSystemContext = Resource<FileSystem>
+const fileSystemContext = createContext<FileSystemContext>()
+export const useFileSystem = () => {
+  const context = useContext(fileSystemContext)
+  if (!context) throw 'useMonacoContext should be used inside <Monaco/>'
+  return context
+}
 
-export const MonacoProvider: ParentComponent = props => {
-  const [resource] = createResource(async () => {
-    try {
-      const monaco = await (loader.init() as Promise<Monaco>)
-      monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
+export type TypescriptConfig = Parameters<
+  Monaco['languages']['typescript']['typescriptDefaults']['setCompilerOptions']
+>[0]
+export type BabelConfig = Partial<{ presets: string[]; plugins: string[] }>
+export type MonacoConfig = Partial<{
+  cdn: string
+  babel: BabelConfig
+  typescript: TypescriptConfig
+}>
+
+export const MonacoProvider: ParentComponent<MonacoConfig> = props => {
+  const config = mergeProps(
+    {
+      typescript: {
         allowJs: true,
         allowNonTsExtensions: true,
         esModuleInterop: true,
-        jsx: monaco.languages.typescript.JsxEmit.React,
-        module: monaco.languages.typescript.ModuleKind.ESNext,
-        moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs,
-        target: monaco.languages.typescript.ScriptTarget.ESNext,
+        allowUmdGlobalAccess: true,
+        // enums inlined
+        jsx: JsxEmit.Preserve as 1,
+        module: ModuleKind.ESNext as 99,
+        moduleResolution: ModuleResolutionKind.Node10 as 2,
+        target: ScriptTarget.ESNext as 99,
         paths: {},
-      })
+      },
+    },
+    props,
+  )
 
-      return { monaco, typeRegistry: new TypeRegistry(monaco) }
+  const [resource] = createResource(async () => {
+    try {
+      const monaco = await (loader.init() as Promise<Monaco>)
+      monaco.languages.typescript.typescriptDefaults.setCompilerOptions(config.typescript)
+      {
+        // initialize typescript with empty editor
+        const editor = monaco.editor.create(document.createElement('div'), {
+          language: 'typescript',
+        })
+        editor.dispose()
+      }
+      return FileSystem.create(monaco, props)
     } catch (error) {
       console.log('error', error)
       throw error
     }
   })
 
-  return <MonacoContext.Provider value={resource}>{props.children}</MonacoContext.Provider>
+  return <fileSystemContext.Provider value={resource}>{props.children}</fileSystemContext.Provider>
 }

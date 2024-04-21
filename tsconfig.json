@@ -14,8 +14,8 @@
     "noUncheckedIndexedAccess": true,
     "jsx": "preserve",
     "jsxImportSource": "solid-js",
-    "types": [],
-    "baseUrl": "."
+    "baseUrl": ".",
+    "strict": true
   },
-  "exclude": ["node_modules", "dist", "./dev"]
+  "exclude": ["node_modules", "dev/public/distdist", "./dev"]
 }

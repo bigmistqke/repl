@@ -1,8 +1,10 @@
 import { compressSync, decompressSync, strFromU8, strToU8 } from 'fflate'
+import { Accessor } from 'solid-js'
+import ts from 'typescript'
 
 /**********************************************************************************/
 /*                                                                                */
-/*                                 CONDITIONALS                                   */
+/*                                 Conditionals                                   */
 /*                                                                                */
 /**********************************************************************************/
 
@@ -15,9 +17,9 @@ export function when<
       : Exclude<TAccessors[TKey], null | undefined | false>
   },
 >(...accessors: TAccessors) {
-  function callback(): TValues
-  function callback<const TResult>(callback: (...values: TValues) => TResult): TResult
-  function callback<const TResult>(callback?: (...values: TValues) => TResult) {
+  // function callback(): TValues
+  // function callback<const TResult>(callback: (...values: TValues) => TResult): TResult
+  function callback<const TResult>(callback: (...values: TValues) => TResult) {
     const values = new Array(accessors.length)
 
     for (let i = 0; i < accessors.length; i++) {
@@ -26,14 +28,14 @@ export function when<
       values[i] = _value
     }
 
-    if (!callback) return values
+    // if (!callback) return values
 
     return callback(...(values as any))
   }
   return callback
 }
 
-export function all<
+export function every<
   const T,
   TAccessors extends Array<Accessor<T> | T>,
   const TValues extends {
@@ -58,7 +60,7 @@ export function all<
 
 /**********************************************************************************/
 /*                                                                                */
-/*                                       CURSOR                                   */
+/*                                       Cursor                                   */
 /*                                                                                */
 /**********************************************************************************/
 
@@ -115,7 +117,7 @@ export const waitFor = (time = 1000) => new Promise(resolve => setTimeout(resolv
 
 /**********************************************************************************/
 /*                                                                                */
-/*                                     COMPRESS                                   */
+/*                                     Compres                                   */
 /*                                                                                */
 /**********************************************************************************/
 
@@ -133,4 +135,72 @@ export function compress(s: string) {
 }
 export function uncompress(s: string) {
   return JSON.parse(strFromU8(decompressSync(base64ToBytes(s))))
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                                       Path                                     */
+/*                                                                                */
+/**********************************************************************************/
+
+export function relativeToAbsolutePath(currentPath: string, relativePath: string) {
+  const ancestorCount = relativePath.match(/\.\.\//g)?.length || 0
+
+  const newPath =
+    ancestorCount > 0
+      ? [
+          ...currentPath.split('/').slice(0, -(ancestorCount + 1)),
+          ...relativePath.split('/').slice(ancestorCount),
+        ]
+      : [...currentPath.split('/').slice(0, -1), ...relativePath.split('/').slice(1)]
+
+  return newPath.join('/')
+}
+
+/**********************************************************************************/
+/*                                                                                */
+/*                             Map Module Declarations                            */
+/*                                                                                */
+/**********************************************************************************/
+
+export function mapModuleDeclarations(
+  path: string,
+  code: string,
+  callback: (node: ts.ImportDeclaration | ts.ExportDeclaration) => void,
+) {
+  const sourceFile = ts.createSourceFile(path, code, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
+  let shouldPrint = false
+  const result = ts.transform(sourceFile, [
+    context => {
+      const visit: ts.Visitor = node => {
+        if (
+          (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+          node.moduleSpecifier &&
+          ts.isStringLiteral(node.moduleSpecifier)
+        ) {
+          const isImport = ts.isImportDeclaration(node)
+
+          const previous = node.moduleSpecifier.text
+          callback(node) // Apply the callback to modify the moduleSpecifier
+
+          if (previous !== node.moduleSpecifier.text) {
+            shouldPrint = true
+            return ts.factory.updateImportDeclaration(
+              node,
+              node.modifiers,
+              isImport ? node.importClause : node.exportClause,
+              ts.factory.createStringLiteral(node.moduleSpecifier.text),
+              node.assertClause, // Preserve the assert clause if it exists
+            )
+          }
+        }
+        return ts.visitEachChild(node, visit, context)
+      }
+      return node => ts.visitNode(node, visit)
+    },
+  ])
+  if (!result.transformed[0]) return undefined
+  if (!shouldPrint) return code
+  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed })
+  return printer.printFile(result.transformed[0])
 }

@@ -1,9 +1,18 @@
 import clsx from 'clsx'
-import { Component, ComponentProps, createEffect, createMemo, splitProps, untrack } from 'solid-js'
+import {
+  Component,
+  ComponentProps,
+  createEffect,
+  createMemo,
+  onCleanup,
+  splitProps,
+  untrack,
+} from 'solid-js'
 
-import { useMonacoContext } from './context'
+import { useFileSystem } from './context'
 import { when } from './utils'
 
+// @ts-expect-error
 import styles from './editor.module.css'
 
 export const Editor: Component<
@@ -12,31 +21,28 @@ export const Editor: Component<
     onCompilation?: (module: { module: Record<string, any>; url: string }) => void
     name: string
     mode?: 'light' | 'dark'
+    import?: string
   }
 > = props => {
   const [, htmlProps] = splitProps(props, ['initialValue'])
-
-  const context = useMonacoContext()
-
+  const fileSystem = useFileSystem()
   let container: HTMLDivElement
 
-  // Create monaco-model
-  const monacoModel = createMemo(() =>
-    when(context)(({ monaco }) =>
-      monaco.editor.createModel(
-        untrack(() => props.initialValue) || '',
-        'typescript',
-        monaco.Uri.parse(`file:///${props.name}.ts`),
-      ),
-    ),
+  // Get or create file
+  const file = createMemo(() =>
+    when(fileSystem)(fileSystem => {
+      const file = untrack(() => fileSystem.get(props.name)) || fileSystem.create(props.name)
+      if (props.initialValue) file.set(props.initialValue)
+      return file
+    }),
   )
 
-  // Create monaco-instance
+  // Create Monaco-instance
   createEffect(() => {
     when(
-      context,
-      monacoModel,
-    )(async ({ monaco, typeRegistry }, model) => {
+      fileSystem,
+      file,
+    )(({ monaco }, { model }) => {
       const editor = monaco.editor.create(container, {
         value: untrack(() => props.initialValue) || '',
         language: 'typescript',
@@ -45,22 +51,13 @@ export const Editor: Component<
         model,
       })
 
-      // Import external import's types
-      let timeout: any
-      editor.onKeyUp(() => {
-        if (timeout) clearTimeout(timeout)
-        timeout = setTimeout(async () => {
-          const value = editor.getValue()
-          typeRegistry.importTypesFromCode(value)
-          const transpiledCode = await typeRegistry.transpileCodeFromModel(model)
-          props.onCompilation?.(transpiledCode)
-        }, 500)
-      })
-
       // Switch light/dark mode
       createEffect(() => {
         monaco.editor.setTheme(props.mode === 'light' ? 'vs-light' : 'vs-dark')
       })
+
+      // Dispose after cleanup
+      onCleanup(() => editor.dispose())
     })
   })
 

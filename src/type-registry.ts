@@ -1,16 +1,28 @@
+import * as ts from 'typescript'
+
 import { Monaco } from '@monaco-editor/loader'
+import { PackageJsonParser } from './package-json'
+import { mapModuleDeclarations } from './utils'
 
 const regex = {
   import:
-    /import\s+(?:type\s+)?(?:\{[^}]*\}|\* as [^\s]+|\w+\s*,\s*\{[^}]*\}|\w+)?\s+from\s*"(.+?)";?/gs,
+    // /import\s+(?:type\s+)?(?:\{[^}]*\}|\* as [^\s]+|\w+\s*,\s*\{[^}]*\}|\w+)?\s+from\s*"(.+?)";?/gs,
+    /import\s+(?:type\s+)?(?:\{[^}]*\}|\* as [^\s]+|\w+\s*,\s*\{[^}]*\}|\w+)?\s+from\s*['"](.+?)['"];?/gs,
   export:
-    /export\s+(?:\{[^}]*\}|\* as [^\s]+|\*|\w+(?:,\s*\{[^}]*\})?|type \{[^}]*\})?\s+from\s*"(.+?)";?/gs,
-  require: /require\s*\(["']([^"']+)["']\)/g,
+    // /export\s+(?:\{[^}]*\}|\* as [^\s]+|\*|\w+(?:,\s*\{[^}]*\})?|type \{[^}]*\})?\s+from\s*"(.+?)";?/gs,
+    /export\s+(?:\{[^}]*\}|\* as [^\s]+|\*|\w+(?:,\s*\{[^}]*\})?|type \{[^}]*\})?\s+from\s*['"](.+?)['"];?/gs,
+  require:
+    // /require\s*\(["']([^"']+)["']\)/g,
+    /require\s*\(["']([^"']+)["']\)/g,
 }
+
 export class TypeRegistry {
   filesystem: Record<string, string> = {}
   cachedUrls = new Set<string>()
   cachedPackageNames = new Set<string>()
+  packageJson = new PackageJsonParser()
+
+  alias = {}
 
   constructor(
     public monaco: Monaco,
@@ -46,6 +58,7 @@ export class TypeRegistry {
     return (
       url
         .replace(`${this.cdn}/`, '')
+        .replace('http://', '')
         // replace version-number
         .split('/')
         .slice(1)
@@ -61,50 +74,48 @@ export class TypeRegistry {
 
     const resolvePath = async (url: string) => {
       const virtualPath = this.getVirtualPath(url)
-
       if (this.checkIfPathExists(virtualPath)) return
-      // set path to undefined to prevent a package from being fetched multiple times
-      this.updateFile(virtualPath, null!)
 
-      await fetch(url)
-        .then(value => {
-          if (value.status !== 200) throw `error while loading ${url}`
-          return value
-        })
-        .then(value => value.text())
-        .then(async code => {
-          await Promise.all(
-            [
-              ...code.matchAll(regex.import),
-              ...code.matchAll(regex.export),
-              ...code.matchAll(regex.require),
-            ].map(([_, path]) => {
-              if (path.startsWith('.')) {
-                return resolvePath(this.relativeToAbsolutePath(url, path))
-              } else if (path.startsWith('https:')) {
-                const virtualPath = this.getVirtualPath(path)
-                code = code.replace(path, virtualPath)
-                this.importTypesFromUrl(path)
-              } else {
-                this.importTypesFromPackageName(path)
-              }
-            }),
-          )
-          return code
-        })
-        .then(code => {
-          this.updateFile(virtualPath, code)
-          newFiles[virtualPath] = code
-        })
-        .catch(console.error)
+      this.updateFile(virtualPath, null!) // Simulating 'null' to prevent refetching
+
+      const code = await fetch(url).then(response => {
+        if (response.status !== 200) {
+          throw new Error(`Error while loading ${url}`)
+        }
+        return response.text()
+      })
+
+      const promises: Promise<void>[] = []
+
+      const transformedCode = mapModuleDeclarations(virtualPath, code, node => {
+        const specifier = node.moduleSpecifier as ts.StringLiteral
+        if (specifier.text.startsWith('.')) {
+          promises.push(resolvePath(this.relativeToAbsolutePath(url, specifier.text)))
+        } else if (specifier.text.startsWith('https:')) {
+          promises.push(this.importTypesFromUrl(specifier.text))
+        } else {
+          promises.push(this.importTypesFromPackageName(specifier.text))
+        }
+      })
+
+      if (!transformedCode) {
+        throw new Error(`Transform returned undefined for ${virtualPath}`)
+      }
+
+      await Promise.all(promises)
+
+      this.updateFile(virtualPath, transformedCode)
+      newFiles[virtualPath] = transformedCode
     }
 
     await resolvePath(url)
 
     Object.entries(newFiles).forEach(([key, value]) => {
-      const filePath = `file:///.types/${key}`
       if (value) {
-        this.monaco.languages.typescript.typescriptDefaults.addExtraLib(value, filePath)
+        this.monaco.languages.typescript.typescriptDefaults.addExtraLib(
+          value,
+          `file:///.types/${key}`,
+        )
       }
     })
   }
@@ -124,69 +135,14 @@ export class TypeRegistry {
 
     const virtualPath = this.getVirtualPath(typeUrl)
 
+    // await this.importTypesFromUrl(typeUrl)
     await this.importTypesFromUrl(typeUrl)
 
     // add virtual path to monaco's tsconfig's `path`-property
     const tsCompilerOptions =
       this.monaco.languages.typescript.typescriptDefaults.getCompilerOptions()
-    tsCompilerOptions.paths[packageName] = [`file:///.types/${virtualPath}`]
+    tsCompilerOptions.paths![packageName] = [`file:///.types/${virtualPath}`]
     this.monaco.languages.typescript.typescriptDefaults.setCompilerOptions(tsCompilerOptions)
     this.monaco.languages.typescript.javascriptDefaults.setCompilerOptions(tsCompilerOptions)
-  }
-
-  async importTypesFromCode(code: string) {
-    await Promise.all(
-      [...code.matchAll(regex.import)].map(([match, path]) => {
-        if (!path) return
-        if (
-          path.startsWith('blob:') ||
-          path.startsWith('http:') ||
-          path.startsWith('https:') ||
-          path.startsWith('.')
-        ) {
-          return
-        }
-
-        return this.importTypesFromPackageName(path)
-      }),
-    )
-  }
-
-  async transpileCodeFromModel(model: ReturnType<Monaco['editor']['createModel']>) {
-    const typescriptWorker = await (
-      await this.monaco.languages.typescript.getTypeScriptWorker()
-    )(model.uri)
-    // use monaco's typescript-server to transpile file from ts to js
-    return typescriptWorker.getEmitOutput(`file://${model.uri.path}`).then(async result => {
-      if (result.outputFiles.length > 0) {
-        // replace local imports with respective module-urls
-        const code = result.outputFiles[0]!.text.replace(
-          /import ([^"']+) from ["']([^"']+)["']/g,
-          (match, varName, path) => {
-            if (
-              path.startsWith('blob:') ||
-              path.startsWith('http:') ||
-              path.startsWith('https:') ||
-              path.startsWith('.')
-            ) {
-              return `import ${varName} from "${path}"`
-            } else {
-              return `import ${varName} from "${this.cdn}/${path}"`
-            }
-          },
-        )
-
-        // get module-url of transpiled code
-        const url = URL.createObjectURL(
-          new Blob([code], {
-            type: 'application/javascript',
-          }),
-        )
-
-        const module = await import(/* @vite-ignore */ url)
-
-        return { module, url }
-      }
-    })
   }
 }
