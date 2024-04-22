@@ -9,7 +9,6 @@ import styles from './App.module.css'
 
 const App: Component = () => {
   const [currentFile, setCurrentFile] = createSignal('src/index.tsx')
-
   return (
     <Repl
       babel={{
@@ -60,8 +59,8 @@ render(() => <Counter />, document.body);
       onReady={({ fs, frames }) => {
         createEffect(() => {
           const frame = frames.get('default')
-
           const moduleUrl = fs.get('src/index.tsx')?.moduleUrl()
+
           if (!frame || !moduleUrl) return
 
           onCleanup(() => {
@@ -82,7 +81,7 @@ render(() => <Counter />, document.body);
         </Repl.TabBar>
         <Repl.Editor path={currentFile()} />
       </Repl.Panel>
-      <Repl.Frame />
+      <Repl.Frame bodyStyle={{ padding: '0px', margin: '0px' }} />
     </Repl>
   )
 }

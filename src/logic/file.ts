@@ -1,5 +1,4 @@
 import * as Babel from '@babel/standalone'
-import { when } from '@bigmistqke/when'
 import { Monaco } from '@monaco-editor/loader'
 import { Accessor, Resource, createMemo, createResource, createSignal } from 'solid-js'
 import {
@@ -9,6 +8,7 @@ import {
   pathIsRelativePath,
   pathIsUrl,
   relativeToAbsolutePath,
+  when,
 } from 'src/utils'
 import ts from 'typescript'
 import { FileSystem } from './file-system'
@@ -16,12 +16,13 @@ import { FileSystem } from './file-system'
 const log = createLog('file', false)
 
 type Model = ReturnType<Monaco['editor']['createModel']>
+
 export class File {
   private source: Accessor<string | undefined>
   model: Model
   moduleUrl: Accessor<string | undefined>
   constructor(
-    private fileSystem: FileSystem,
+    private fs: FileSystem,
     path: string,
     config: {
       presets: Resource<any[]>
@@ -30,8 +31,9 @@ export class File {
   ) {
     const extension = path.split('/').pop()?.split('.')[1]
     const isTypescript = extension === 'ts' || extension === 'tsx'
-    const uri = fileSystem.monaco.Uri.parse(`file:///${path.replace('./', '')}`)
-    this.model = fileSystem.monaco.editor.createModel('', 'typescript', uri)
+    const uri = fs.monaco.Uri.parse(`file:///${path.replace('./', '')}`)
+    this.model =
+      fs.monaco.editor.getModel(uri) || fs.monaco.editor.createModel('', 'typescript', uri)
 
     const [source, setSource] = createSignal<string | undefined>()
     this.source = source
@@ -39,19 +41,18 @@ export class File {
     // Transpile source to javascript
     const [intermediary] = createResource(
       every(source, config.presets, config.plugins),
-      async ([content, presets, plugins]) => {
+      async ([source, presets, plugins]) => {
         try {
-          let value: string = content
+          let value: string = source
           if (isTypescript) {
-            value = await fileSystem
-              .typescriptWorker(this.model.uri)
-              .then(result => result.getEmitOutput(`file://${this.model.uri.path}`))
-              .then(result => result.outputFiles[0]?.text || value)
+            const options = fs.monaco.languages.typescript.typescriptDefaults.getCompilerOptions()
+            const result = ts.transpile(value, options)
+            if (result) value = result
           }
           if (presets.length !== 0) value = Babel.transform(value, { presets, plugins }).code!
           return value
         } catch (err) {
-          return content
+          return source
         }
       },
     )
@@ -59,6 +60,7 @@ export class File {
     // Transpile intermediary to module:
     // - Transform local dependencies to dependencies' File.url()
     // - Transform package-names to cdn-url
+    // NOTE:  possible optimisation would be to memo the holes and swap them out with .slice
     const module = createMemo<string | undefined>(previous =>
       when(intermediary)(value => {
         log('intermediary: ', value)
@@ -72,7 +74,7 @@ export class File {
               const absolutePath = relativeToAbsolutePath(path, modulePath)
               // We get the module-url from the module's File
               // Which automatically subscribes
-              const file = fileSystem.get(absolutePath, true)
+              const file = fs.resolve(absolutePath)
               const moduleUrl = file?.moduleUrl()
               if (moduleUrl) {
                 // If moduleUrl is defined
@@ -88,8 +90,8 @@ export class File {
             // If the module is not a local dependency
             else {
               // We transform the package-name to a cdn-url.
-              specifier.text = `${this.fileSystem.config.cdn}/${modulePath}`
-              this.fileSystem.typeRegistry.importTypesFromPackageName(modulePath)
+              specifier.text = `${this.fs.config.cdn}/${modulePath}`
+              this.fs.typeRegistry.importTypesFromPackageName(modulePath)
             }
           })
         } catch (error) {

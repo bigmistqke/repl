@@ -11,6 +11,9 @@ export class Frames {
   get(name: string) {
     return this.frames[name]
   }
+  has(name: string) {
+    return name in this.frames
+  }
   delete(name: string) {
     this.set(name, undefined!)
   }

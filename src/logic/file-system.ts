@@ -6,10 +6,6 @@ import { Mandatory } from '../utils'
 import { File } from './file'
 import { TypeRegistry, TypeRegistryState } from './type-registry'
 
-type TypescriptWorker = Awaited<
-  ReturnType<Monaco['languages']['typescript']['getTypeScriptWorker']>
->
-type FileSystemConfig = Omit<ReplConfig, 'typescript'>
 export type FileSystemState = {
   files: Record<string, string>
   types: TypeRegistryState
@@ -24,11 +20,10 @@ export class FileSystem {
   private presets: Resource<any[]>
   private plugins: Resource<babel.PluginItem[]>
 
-  config: Mandatory<FileSystemConfig, 'cdn'>
+  config: Mandatory<ReplConfig, 'cdn'>
   constructor(
     public monaco: Monaco,
-    public typescriptWorker: TypescriptWorker,
-    config: FileSystemConfig,
+    config: ReplConfig,
   ) {
     this.config = mergeProps({ cdn: 'https://esm.sh' }, config)
     this.typeRegistry = new TypeRegistry(monaco, { initialState: config.initialState?.types })
@@ -111,16 +106,25 @@ export class FileSystem {
     return path in this.files
   }
 
-  get(path: string, extensionExcluded?: boolean) {
-    if (extensionExcluded) {
-      return (
-        this.files[`${path}.ts`] ||
-        this.files[`${path}.tsx`] ||
-        this.files[`${path}.js`] ||
-        this.files[`${path}.jsx`]
-      )
-    }
+  get(path: string) {
     return this.files[path]
+  }
+
+  // resolve path according to typescript-rules
+  // NOTE:  should this update according to tsConfig.moduleResolution ?
+  resolve(path: string) {
+    return (
+      this.files[`${path}/index.ts`] ||
+      this.files[`${path}/index.tsx`] ||
+      this.files[`${path}/index.d.ts`] ||
+      this.files[`${path}/index.js`] ||
+      this.files[`${path}/index.jsx`] ||
+      this.files[`${path}.ts`] ||
+      this.files[`${path}.tsx`] ||
+      this.files[`${path}.d.ts`] ||
+      this.files[`${path}.js`] ||
+      this.files[`${path}.jsx`]
+    )
   }
 
   all() {

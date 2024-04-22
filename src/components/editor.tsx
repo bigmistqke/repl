@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { ComponentProps, createEffect, createMemo, onCleanup, splitProps, untrack } from 'solid-js'
+import { ComponentProps, createEffect, createMemo, onCleanup, splitProps } from 'solid-js'
 
 import { when } from '../utils'
 import { useRepl } from './use-repl'
@@ -9,7 +9,6 @@ import styles from './repl.module.css'
 export type EditorProps = Omit<ComponentProps<'div'>, 'ref'> & {
   initialValue?: string
   path: string
-  mode?: 'light' | 'dark'
   import?: string
 }
 
@@ -28,7 +27,6 @@ export function Editor(props: EditorProps) {
     value: '',
     language: 'typescript',
     automaticLayout: true,
-    theme: untrack(() => props.mode) === 'dark' ? 'vs-dark' : 'vs-light',
   })
 
   // Update monaco-editor's model to current file's model
@@ -47,11 +45,6 @@ export function Editor(props: EditorProps) {
       run: () => repl.fs.download(),
     })
     onCleanup(() => cleanup.dispose())
-  })
-
-  // Switch light/dark mode of monaco-editor
-  createEffect(() => {
-    repl.fs.monaco.editor.setTheme(props.mode === 'light' ? 'vs-light' : 'vs-dark')
   })
 
   // Dispose monaco-editor after cleanup
