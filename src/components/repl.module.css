@@ -42,3 +42,12 @@
   all: unset;
   flex: 1;
 }
+
+.panel {
+  display: flex;
+  flex: 1;
+
+  &.column {
+    flex-direction: column;
+  }
+}

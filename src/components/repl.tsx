@@ -1,29 +1,17 @@
 import loader, { Monaco } from '@monaco-editor/loader'
 import clsx from 'clsx'
-import {
-  ParentProps,
-  Show,
-  createContext,
-  createEffect,
-  createResource,
-  mergeProps,
-  useContext,
-} from 'solid-js'
+import { ParentProps, Show, createResource, mergeProps } from 'solid-js'
 import { JsxEmit, ModuleKind, ModuleResolutionKind, ScriptTarget } from 'typescript'
-import { CompilationHandler, FileSystem, FileSystemState } from '../file-system'
 
-import { every, when } from '../utils'
+import { FileSystem, FileSystemState } from '../logic/file-system'
+import { Frames } from '../logic/frames'
 import { Editor } from './editor'
 import { Frame } from './frame'
-import styles from './repl.module.css'
+import { Panel } from './panel'
+import { TabBar } from './tab-bar'
+import { replContext } from './use-repl'
 
-type FileSystemContext = FileSystem
-const fileSystemContext = createContext<FileSystemContext>()
-export const useFileSystem = () => {
-  const context = useContext(fileSystemContext)
-  if (!context) throw 'useMonacoContext should be used inside <Monaco/>'
-  return context
-}
+import styles from './repl.module.css'
 
 export type TypescriptConfig = Parameters<
   Monaco['languages']['typescript']['typescriptDefaults']['setCompilerOptions']
@@ -35,8 +23,7 @@ export type ReplConfig = Partial<{
   babel: BabelConfig
   typescript: TypescriptConfig
   packages: string[]
-  onFileSystem: (fileSystem: FileSystem) => void
-  onCompilation: CompilationHandler
+  onReady: (event: { fs: FileSystem; frames: Frames }) => void
   initialState: Partial<FileSystemState>
   actions?: {
     saveRepl?: boolean
@@ -46,6 +33,8 @@ export type ReplProps = ParentProps<ReplConfig>
 
 export function Repl(props: ReplProps) {
   const config = mergeProps({ cdn: 'https://esm.sh' }, props)
+  const frames = new Frames()
+
   const typescript = () =>
     mergeProps(
       {
@@ -63,46 +52,42 @@ export function Repl(props: ReplProps) {
       config.typescript,
     )
 
-  const [fileSystemResource] = createResource(async () => {
-    try {
-      const monaco = await (loader.init() as Promise<Monaco>)
-      monaco.languages.typescript.typescriptDefaults.setCompilerOptions(typescript())
+  const [monacoResource] = createResource(async () => {
+    const monaco = await (loader.init() as Promise<Monaco>)
+    monaco.languages.typescript.typescriptDefaults.setCompilerOptions(typescript())
 
-      {
-        // initialize typescript-services with empty editor
-        const editor = monaco.editor.create(document.createElement('div'), {
-          language: 'typescript',
-        })
-        editor.dispose()
-      }
-
-      const fileSystem = await FileSystem.create(monaco, config)
-      config.onFileSystem?.(fileSystem)
-      return fileSystem
-    } catch (error) {
-      console.log('error', error)
-      throw error
+    {
+      // initialize typescript-services with empty editor
+      const editor = monaco.editor.create(document.createElement('div'), {
+        language: 'typescript',
+      })
+      editor.dispose()
     }
+    const typescriptWorker = await monaco.languages.typescript.getTypeScriptWorker()
+
+    return { monaco, typescriptWorker }
   })
 
-  createEffect(() => {
-    const fileSystem = fileSystemResource()
-    if (!fileSystem) return
-    if (!props.onCompilation) return
-  })
-
-  createEffect(() =>
-    when(every(fileSystemResource, () => props.onCompilation))(([file, handler]) =>
-      file.onCompilation(handler),
-    ),
+  const [fileSystemResource] = createResource(
+    monacoResource,
+    async ({ monaco, typescriptWorker }) => {
+      try {
+        const fs = new FileSystem(monaco, typescriptWorker, config)
+        config.onReady?.({ fs, frames })
+        return fs
+      } catch (error) {
+        console.log('error', error)
+        throw error
+      }
+    },
   )
 
   return (
     <Show when={fileSystemResource()}>
-      {fileSystem => (
-        <fileSystemContext.Provider value={fileSystem()}>
+      {fs => (
+        <replContext.Provider value={{ fs: fs(), frames }}>
           <div class={clsx(styles.repl, props.class)}>{config.children}</div>
-        </fileSystemContext.Provider>
+        </replContext.Provider>
       )}
     </Show>
   )
@@ -110,3 +95,5 @@ export function Repl(props: ReplProps) {
 
 Repl.Editor = Editor
 Repl.Frame = Frame
+Repl.TabBar = TabBar
+Repl.Panel = Panel

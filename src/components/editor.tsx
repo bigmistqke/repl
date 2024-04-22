@@ -1,75 +1,61 @@
 import clsx from 'clsx'
 import { ComponentProps, createEffect, createMemo, onCleanup, splitProps, untrack } from 'solid-js'
 
-import { FileSystem } from '../file-system'
-import { every, when } from '../utils'
-import { useFileSystem } from './repl'
+import { when } from '../utils'
+import { useRepl } from './use-repl'
 // @ts-expect-error
 import styles from './repl.module.css'
 
 export type EditorProps = Omit<ComponentProps<'div'>, 'ref'> & {
   initialValue?: string
-  onCompilation?: (event: { url: string; fileSystem: FileSystem }) => void
-  name: string
+  path: string
   mode?: 'light' | 'dark'
   import?: string
 }
 
 export function Editor(props: EditorProps) {
   const [, htmlProps] = splitProps(props, ['initialValue'])
-  const fileSystem = useFileSystem()
-  let container: HTMLDivElement
+  const repl = useRepl()
+
+  // Initialize html-element of monaco-editor
+  const container = (<div {...htmlProps} class={styles['editor']} />) as HTMLDivElement
 
   // Get or create file
-  const file = createMemo(() => {
-    const file = untrack(() => fileSystem.get(props.name)) || fileSystem.create(props.name)
-    if (props.initialValue) file.set(props.initialValue)
-    return file
+  const file = createMemo(() => repl.fs.get(props.path) || repl.fs.create(props.path))
+
+  // Create monaco-editor
+  const editor = repl.fs.monaco.editor.create(container, {
+    value: '',
+    language: 'typescript',
+    automaticLayout: true,
+    theme: untrack(() => props.mode) === 'dark' ? 'vs-dark' : 'vs-light',
   })
 
-  // Create Monaco-instance
+  // Update monaco-editor's model to current file's model
+  createEffect(() => when(file)(file => editor.setModel(file.model)))
+
+  // Add action to context-menu of monaco-editor
   createEffect(() => {
-    when(file)(({ model }) => {
-      const editor = fileSystem.monaco.editor.create(container, {
-        value: untrack(() => props.initialValue) || '',
-        language: 'typescript',
-        automaticLayout: true,
-        theme: untrack(() => props.mode) === 'dark' ? 'vs-dark' : 'vs-light',
-        model,
-      })
-
-      createEffect(() => {
-        if (fileSystem.config.actions?.saveRepl !== false) {
-          const cleanup = editor.addAction({
-            id: 'save-repl',
-            label: 'Save Repl',
-            keybindings: [fileSystem.monaco.KeyMod.CtrlCmd | fileSystem.monaco.KeyCode.KeyY], // Optional: set a keybinding
-            precondition: undefined,
-            keybindingContext: undefined,
-            contextMenuGroupId: 'repl',
-            run: () => fileSystem.download(),
-          })
-          onCleanup(() => cleanup.dispose())
-        }
-      })
-
-      // Switch light/dark mode
-      createEffect(() => {
-        fileSystem.monaco.editor.setTheme(props.mode === 'light' ? 'vs-light' : 'vs-dark')
-      })
-
-      // Dispose after cleanup
-      onCleanup(() => editor.dispose())
+    if (repl.fs.config.actions?.saveRepl === false) return
+    const cleanup = editor.addAction({
+      id: 'save-repl',
+      label: 'Save Repl',
+      keybindings: [repl.fs.monaco.KeyMod.CtrlCmd | repl.fs.monaco.KeyCode.KeyY], // Optional: set a keybinding
+      precondition: undefined,
+      keybindingContext: undefined,
+      contextMenuGroupId: 'repl',
+      run: () => repl.fs.download(),
     })
+    onCleanup(() => cleanup.dispose())
   })
 
-  createEffect(() =>
-    when(every(file, () => props.onCompilation))(([file, handler]) => file.onCompilation(handler)),
-  )
+  // Switch light/dark mode of monaco-editor
+  createEffect(() => {
+    repl.fs.monaco.editor.setTheme(props.mode === 'light' ? 'vs-light' : 'vs-dark')
+  })
 
-  return (
-    <div class={clsx(styles['editor-container'])}>
-      <div ref={container!} {...htmlProps} class={styles['editor']} />
-    </div>
-  )
+  // Dispose monaco-editor after cleanup
+  onCleanup(() => editor.dispose())
+
+  return <div class={clsx(styles['editor-container'])}>{container}</div>
 }

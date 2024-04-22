@@ -1,14 +1,5 @@
 import { Monaco } from '@monaco-editor/loader'
-import {
-  Accessor,
-  Resource,
-  Setter,
-  createEffect,
-  createResource,
-  createSignal,
-  mergeProps,
-  onCleanup,
-} from 'solid-js'
+import { Resource, createEffect, createResource, mergeProps } from 'solid-js'
 import { SetStoreFunction, createStore } from 'solid-js/store'
 import { ReplConfig } from '../components/repl'
 import { Mandatory } from '../utils'
@@ -32,8 +23,7 @@ export class FileSystem {
   private setFiles: SetStoreFunction<Record<string, File>>
   private presets: Resource<any[]>
   private plugins: Resource<babel.PluginItem[]>
-  frame: Accessor<Window | undefined>
-  setFrame: Setter<Window | undefined>
+
   config: Mandatory<FileSystemConfig, 'cdn'>
   constructor(
     public monaco: Monaco,
@@ -46,10 +36,6 @@ export class FileSystem {
     const [files, setFiles] = createStore<Record<string, File>>()
     this.files = files
     this.setFiles = setFiles
-
-    const [frame, setFrame] = createSignal<Window | undefined>()
-    this.frame = frame
-    this.setFrame = setFrame
 
     const [presets] = createResource(
       () => this.config?.babel?.presets || [],
@@ -78,11 +64,12 @@ export class FileSystem {
         this.typeRegistry.importTypesFromPackageName(packageName)
       })
     })
-  }
 
-  static async create(monaco: Monaco, config: FileSystemConfig) {
-    const typescriptWorker = await monaco.languages.typescript.getTypeScriptWorker()
-    return new FileSystem(monaco, typescriptWorker, config)
+    if (config.initialState?.files) {
+      Object.entries(config.initialState?.files).map(([path, source]) =>
+        this.create(path).set(source),
+      )
+    }
   }
 
   toJSON() {
@@ -116,7 +103,6 @@ export class FileSystem {
 
   create(path: string) {
     const file = new File(this, path, { presets: this.presets, plugins: this.plugins })
-    file.onCompilation(this.callOnCompilationHandlers.bind(this))
     this.setFiles(path, file)
     return file
   }
@@ -125,19 +111,19 @@ export class FileSystem {
     return path in this.files
   }
 
-  get(path: string) {
+  get(path: string, extensionExcluded?: boolean) {
+    if (extensionExcluded) {
+      return (
+        this.files[`${path}.ts`] ||
+        this.files[`${path}.tsx`] ||
+        this.files[`${path}.js`] ||
+        this.files[`${path}.jsx`]
+      )
+    }
     return this.files[path]
   }
 
-  private onCompilationHandlers: CompilationHandler[] = []
-  private callOnCompilationHandlers(event: CompilationEvent) {
-    this.onCompilationHandlers.forEach(handler => handler(event))
-  }
-  onCompilation(callback: CompilationHandler) {
-    this.onCompilationHandlers.push(callback)
-    onCleanup(() => {
-      const index = this.onCompilationHandlers.findIndex(handler => handler !== callback)
-      if (index !== -1) this.onCompilationHandlers.slice(index, 1)
-    })
+  all() {
+    return this.files
   }
 }
