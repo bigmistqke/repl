@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import { ComponentProps, For, JSXElement, createContext, splitProps, useContext } from 'solid-js'
+import { For, JSXElement, splitProps } from 'solid-js'
 import { File } from 'src/logic/file'
 import { useRepl } from './use-repl'
 
@@ -7,7 +7,7 @@ import styles from './repl.module.css'
 
 export function TabBar(props: {
   class?: string
-  children: (arg: TabContext) => JSXElement
+  children: (arg: { path: string; file: File | undefined }) => JSXElement
   files?: string[]
 }) {
   const [, rest] = splitProps(props, ['class'])
@@ -22,28 +22,7 @@ export function TabBar(props: {
   }
   return (
     <div class={clsx(styles.tabBar, props.class)} {...rest}>
-      <For each={entries()}>
-        {([path, file]) => (
-          <tabContext.Provider value={{ path, file }}>
-            {props.children?.({ path, file })}
-          </tabContext.Provider>
-        )}
-      </For>
+      <For each={entries()}>{([path, file]) => props.children?.({ path, file })}</For>
     </div>
   )
 }
-
-type TabContext = { path: string; file: File | undefined }
-const tabContext = createContext<TabContext>()
-const useTab = () => {
-  const context = useContext(tabContext)
-  if (!context) throw 'TabBar.Tab should be used within TabBar'
-  return context
-}
-export function Tab(props: ComponentProps<'button'>) {
-  const [, rest] = splitProps(props, ['children'])
-  const tab = useTab()
-  return <button {...rest}>{props.children || tab.path}</button>
-}
-
-TabBar.Tab = Tab
