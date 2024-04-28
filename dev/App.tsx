@@ -1,5 +1,6 @@
 import { Repl } from '@bigmistqke/repl'
 import { solidReplPlugin } from '@bigmistqke/repl/plugins/solid-repl'
+import { Resizable } from 'corvu/resizable'
 
 import { createEffect, createSignal, onCleanup, type Component } from 'solid-js'
 import { JsxEmit } from 'typescript'
@@ -75,13 +76,18 @@ render(() => <Counter />, document.body);
         })
       }}
     >
-      <Repl.Panel column>
-        <Repl.TabBar>
-          {({ path }) => <Repl.TabBar.Tab onClick={() => setCurrentFile(path)} />}
-        </Repl.TabBar>
-        <Repl.Editor path={currentFile()} />
-      </Repl.Panel>
-      <Repl.Frame bodyStyle={{ padding: '0px', margin: '0px' }} />
+      <Resizable style={{ width: '100vw', height: '100vh' }}>
+        <Resizable.Panel style={{ overflow: 'hidden' }}>
+          <Repl.TabBar>
+            {({ path }) => <button onClick={() => setCurrentFile(path)}>{path}</button>}
+          </Repl.TabBar>
+          <Repl.Editor path={currentFile()} />
+        </Resizable.Panel>
+        <Resizable.Handle />
+        <Resizable.Panel>
+          <Repl.Frame bodyStyle={{ padding: '0px', margin: '0px' }} />
+        </Resizable.Panel>
+      </Resizable>
     </Repl>
   )
 }
