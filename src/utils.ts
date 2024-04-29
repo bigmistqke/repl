@@ -237,7 +237,13 @@ export function mapModuleDeclarations(
           const isImport = ts.isImportDeclaration(node)
 
           const previous = node.moduleSpecifier.text
-          callback(node) // Apply the callback to modify the moduleSpecifier
+
+          try {
+            callback(node) // Apply the callback to modify the moduleSpecifier
+          } catch {
+            shouldPrint = true
+            return
+          }
 
           if (previous !== node.moduleSpecifier.text) {
             shouldPrint = true

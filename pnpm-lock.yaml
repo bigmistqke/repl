@@ -11,12 +11,12 @@ dependencies:
   '@bigmistqke/minni':
     specifier: ^0.0.7
     version: 0.0.7
-  '@bigmistqke/solid-layout':
-    specifier: file:../solid-layout
-    version: file:../solid-layout(solid-js@1.8.17)
   '@monaco-editor/loader':
     specifier: ^1.4.0
     version: 1.4.0(monaco-editor@0.45.0)
+  '@solid-primitives/scheduled':
+    specifier: ^1.4.3
+    version: 1.4.3(solid-js@1.8.17)
   clsx:
     specifier: ^2.1.0
     version: 2.1.0
@@ -943,7 +943,6 @@ packages:
       solid-js: ^1.6.12
     dependencies:
       solid-js: 1.8.17
-    dev: true
 
   /@solid-primitives/utils@6.2.3(solid-js@1.8.17):
     resolution: {integrity: sha512-CqAwKb2T5Vi72+rhebSsqNZ9o67buYRdEJrIFzRXz3U59QqezuuxPsyzTSVCacwS5Pf109VRsgCJQoxKRoECZQ==}
@@ -3368,16 +3367,3 @@ packages:
     resolution: {integrity: sha512-9bnSc/HEW2uRy67wc+T8UwauLuPJVn28jb+GtJY16iiKWyvmYJRXVT4UamsAEGQfPohgr2q4Tq0sQbQlxTfi1g==}
     engines: {node: '>=12.20'}
     dev: true
-
-  file:../solid-layout(solid-js@1.8.17):
-    resolution: {directory: ../solid-layout, type: directory}
-    id: file:../solid-layout
-    name: '@bigmistqke/solid-layout'
-    engines: {node: '>=18', pnpm: '>=8.6.0'}
-    peerDependencies:
-      solid-js: ^1.6.0
-    dependencies:
-      '@bigmistqke/minni': 0.0.7
-      clsx: 2.1.0
-      solid-js: 1.8.17
-    dev: false

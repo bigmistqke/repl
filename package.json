@@ -108,11 +108,12 @@
     "@babel/standalone": "^7.24.4",
     "@bigmistqke/minni": "^0.0.7",
     "@monaco-editor/loader": "^1.4.0",
-    "solid-js": "^1.8.0",
+    "@solid-primitives/scheduled": "^1.4.3",
     "clsx": "^2.1.0",
     "fflate": "^0.8.2",
     "monaco-editor-textmate": "^4.0.0",
     "monaco-textmate": "^3.0.1",
-    "onigasm": "^2.2.5"
+    "onigasm": "^2.2.5",
+    "solid-js": "^1.8.0"
   }
 }

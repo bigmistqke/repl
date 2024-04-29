@@ -10,7 +10,9 @@ import {
   pathIsUrl,
   relativeToAbsolutePath,
 } from '../utils'
+import { CssFile } from './css-file'
 import { File } from './file'
+import { JsFile } from './js-file'
 import { PackageJsonParser } from './package-json'
 import { TypeRegistry, TypeRegistryState } from './type-registry'
 
@@ -106,7 +108,9 @@ export class FileSystem {
   }
 
   create(path: string) {
-    const file = new File(this, path, { presets: this.presets, plugins: this.plugins })
+    const file = path.endsWith('.css')
+      ? new CssFile(this, path)
+      : new JsFile(this, path, { presets: this.presets, plugins: this.plugins })
     this.setFiles(path, file)
     return file
   }

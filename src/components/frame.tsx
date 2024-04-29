@@ -29,7 +29,7 @@ export function ReplFrame(props: FrameProps) {
       console.warn(`A frame with the same name already exist: ${config.name}`)
       return
     }
-    repl.frames.set(config.name, ref.contentWindow!)
+    repl.frames.add(config.name, ref.contentWindow!)
     onCleanup(() => repl.frames.delete(config.name))
   })
 

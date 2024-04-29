@@ -2,13 +2,13 @@ import { Repl } from '@bigmistqke/repl'
 import { solidReplPlugin } from '@bigmistqke/repl/plugins/solid-repl'
 import { Resizable } from 'corvu/resizable'
 
-import { createEffect, createSignal, onCleanup, type Component } from 'solid-js'
+import { createEffect, createSignal, mapArray, onCleanup, type Component } from 'solid-js'
 import { JsxEmit } from 'typescript'
 
+import { JsFile } from 'src/logic/js-file'
 import styles from './App.module.css'
 
 const App: Component = () => {
-  const [dragging, setDragging] = createSignal(false)
   const [currentFile, setCurrentFile] = createSignal('src/index.tsx')
 
   return (
@@ -34,6 +34,10 @@ const App: Component = () => {
       initialState={{
         /* types: cached.types, */
         files: {
+          'src/index.css': `
+canvas {
+  border-radius: 50px;
+}`,
           'src/index.tsx': `
 import { render } from "solid-js/web";
 import { createSignal } from "solid-js";
@@ -41,9 +45,9 @@ import * as THREE from "three";
 import { Vector3 } from "three";
 import {Canvas, T, extend, useFrame, useThree } from "solid-three"
 import "solid-js/jsx-runtime"
+import "./index.css"
 
 extend(THREE);
-
 
 function Box() {
   let mesh: THREE.Mesh | undefined;
@@ -76,32 +80,30 @@ export const App = () => {
   );
 };
 
-render(() => <App />, document.body);
-          
-          
-`,
+render(() => <App />, document.body);`,
         },
       }}
       class={styles.repl}
       onReady={async ({ fs, frames }) => {
         createEffect(() => {
           const frame = frames.get('default')
-          const moduleUrl = fs.get('src/index.tsx')?.moduleUrl()
+          if (!frame) return
 
-          if (!frame || !moduleUrl) return
+          const entry = fs.get('src/index.tsx')
 
-          onCleanup(() => {
-            frame.document.body.removeChild(script)
+          if (entry instanceof JsFile) {
+            // inject entry's module-url into frame's window
+            frame.injectFile(entry)
+
             // NOTE:  solid-repl-plugin transforms
             //        render(() => ...) to
             //        window.dispose = render(() => ...)
-            frame.window.dispose?.()
-          })
+            onCleanup(() => frame.window.dispose?.())
 
-          const script = frame.document.createElement('script')
-          script.type = 'module'
-          script.src = moduleUrl
-          frame.document.body.appendChild(script)
+            createEffect(
+              mapArray(entry.cssImports, css => createEffect(() => frame.injectFile(css))),
+            )
+          }
         })
         await fs.addPackage('./solid-three')
       }}
