@@ -64,7 +64,7 @@ export class TypeRegistry {
       if (value) {
         this.monaco.languages.typescript.typescriptDefaults.addExtraLib(
           value,
-          `file:///.types/${key}`,
+          `file:///node_modules/${key}`,
         )
       }
     })
@@ -84,7 +84,7 @@ export class TypeRegistry {
     // add virtual path to monaco's tsconfig's `path`-property
     const tsCompilerOptions =
       this.monaco.languages.typescript.typescriptDefaults.getCompilerOptions()
-    tsCompilerOptions.paths![packageName] = [`file:///.types/${virtualPath}`]
+    tsCompilerOptions.paths![packageName] = [`file:///node_modules/${virtualPath}`]
     this.monaco.languages.typescript.typescriptDefaults.setCompilerOptions(tsCompilerOptions)
     this.monaco.languages.typescript.javascriptDefaults.setCompilerOptions(tsCompilerOptions)
     this.setPaths(tsCompilerOptions.paths!)
@@ -206,7 +206,7 @@ export class TypeRegistry {
       if (value) {
         this.monaco.languages.typescript.typescriptDefaults.addExtraLib(
           value,
-          `file:///.types/${key}`,
+          `file:///node_modules/${key}`,
         )
       }
     })
