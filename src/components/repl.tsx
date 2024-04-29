@@ -10,7 +10,7 @@ import { JsxEmit, ModuleKind, ModuleResolutionKind, ScriptTarget } from 'typescr
 
 import { deepMerge } from 'src/utils'
 import { FileSystem, FileSystemState } from '../logic/file-system'
-import { Frames } from '../logic/frames'
+import { FrameRegistry } from '../logic/frame-registry'
 import { ReplEditor } from './editor'
 import { ReplFrame } from './frame'
 import { ReplTabBar } from './tab-bar'
@@ -39,7 +39,7 @@ export type ReplConfig = Partial<{
   class: string
   initialState: Partial<FileSystemState>
   mode: 'light' | 'dark'
-  onReady: (event: { fs: FileSystem; frames: Frames }) => Promise<void> | void
+  onReady: (event: { fs: FileSystem; frames: FrameRegistry }) => Promise<void> | void
   packages: string[]
   typescript: TypescriptConfig
   actions?: {
@@ -68,7 +68,7 @@ export function Repl(props: ReplProps) {
     },
     rest,
   )
-  const frames = new Frames()
+  const frames = new FrameRegistry()
 
   const [monaco] = createResource(async () => {
     const monaco = await (loader.init() as Promise<Monaco>)

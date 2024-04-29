@@ -3,7 +3,7 @@ import { SetStoreFunction, createStore } from 'solid-js/store'
 import { when } from '..'
 import { CssFile, JsFile } from './file'
 
-export class Frames {
+export class FrameRegistry {
   private frames: Record<string, Frame>
   private set: SetStoreFunction<Record<string, Frame>>
   constructor() {
@@ -27,7 +27,6 @@ class Frame {
   constructor(public window: Window) {}
   injectFile(file: CssFile | JsFile) {
     return when(file.moduleUrl)(moduleUrl => {
-      console.log('moduleUrl!', moduleUrl)
       const script = this.window.document.createElement('script')
       script.type = 'module'
       script.src = moduleUrl

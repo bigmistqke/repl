@@ -1,8 +1,8 @@
 import { createContext, useContext } from 'solid-js'
 import { FileSystem } from 'src/logic/file-system'
-import { Frames } from 'src/logic/frames'
+import { FrameRegistry } from 'src/logic/frame-registry'
 
-type ReplContext = { fs: FileSystem; frames: Frames }
+type ReplContext = { fs: FileSystem; frames: FrameRegistry }
 export const replContext = createContext<ReplContext>()
 export const useRepl = () => {
   const context = useContext(replContext)
