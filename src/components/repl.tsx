@@ -34,20 +34,37 @@ export type TypescriptConfig = Parameters<
 >[0]
 export type BabelConfig = Partial<{ presets: string[]; plugins: (string | babel.PluginItem)[] }>
 export type ReplConfig = Partial<{
+  /** Configuration options for Babel, used for code transformation. */
   babel: BabelConfig
+  /** The CDN URL used to load TypeScript and other external libraries. */
   cdn: string
+  /** CSS class for styling the root REPL component. */
   class: string
+  /** Initial state of the virtual file system to preload files. */
   initialState: Partial<FileSystemState>
+  /** Theme setting for the Monaco editor. */
   mode: 'light' | 'dark'
+  /** Callback function that runs after initializing the editor and file system. */
   onSetup: (event: { fs: FileSystem; frames: FrameRegistry }) => Promise<void> | void
-  packages: string[]
+  /** TypeScript compiler options for the Monaco editor. */
   typescript: TypescriptConfig
+  /** Optional actions like saving the current state of the REPL. */
   actions?: {
     saveRepl?: boolean
   }
 }>
+
 export type ReplProps = ComponentProps<'div'> & ReplConfig
 
+/**
+ * The `Repl` component serves as the root of your application's REPL environment. It initializes `monaco-editor`,
+ * sets up the virtual `FileSystem`, and provides a context that is accessible to all descendant components with `useRepl`.
+ * This component merges user-specified configuration with defaults to setup the editor environment, handle theming, and manage file
+ * operations interactively.
+ *
+ * @param {ReplProps} props - The properties passed to configure the REPL environment.
+ * @returns {JSX.Element} A JSX element that renders the REPL environment including the editor and any children components.
+ */
 export function Repl(props: ReplProps) {
   const [, rest] = splitProps(props, ['children'])
   const config = deepMerge(
@@ -142,6 +159,52 @@ export function Repl(props: ReplProps) {
   )
 }
 
+/**
+ * `Repl.Editor` is a SolidJS component that embeds a Monaco Editor instance for editing files within a virtual file system.
+ * It dynamically creates an editor instance, manages its lifecycle, and binds it to a specific file based on the provided path.
+ * The component also integrates custom actions such as saving the file, updating the editor's model, and cleaning up on unmount.
+ *
+ * @param {EditorProps} props - The properties passed to the editor component.
+ * @returns {HTMLDivElement} The container div element that hosts the Monaco editor.
+ *
+ * @typedef {Object} EditorProps
+ * @property {string} path - The path to the file that the editor should open and display.
+ * @property {Function} [onMount] - Optional callback that is called when the editor is mounted. It receives the created MonacoEditor instance.
+ */
 Repl.Editor = ReplEditor
+/**
+ * `Repl.Frame` is a component that encapsulates an iframe element to provide an isolated execution
+ * environment within the application. It is used to execute or render content separately from the main
+ * document flow. The component automatically handles the lifecycle of the iframe, ensuring that it
+ * integrates seamlessly with the application's state management.
+ *
+ * @param {FrameProps} props - The props for configuring the iframe.
+ * @returns {JSX.Element} The iframe element configured according to the specified props.
+ *
+ * @typedef {Object} FrameProps
+ * @property {string} [name='default'] - The unique identifier for the iframe, which is used to manage its
+ * presence in the global frame registry. If not specified, 'default' is used as a fallback.
+ * @property {JSX.CSSProperties | string | undefined} bodyStyle - Optional CSS properties or a string
+ * that defines the style of the iframe's body. This allows for dynamic styling of the content within
+ * the iframe.
+ *
+ * @example
+ * // To create an iframe with specific styles and a unique name:
+ * <ReplFrame name="myCustomFrame" bodyStyle={{ backgroundColor: 'red' }} />
+ */
 Repl.Frame = ReplFrame
+/**
+ * `Repl.TabBar` is a SolidJS component designed to render a navigation bar with tabs that represent open files
+ * within a virtual file system. It dynamically creates tabs based on the files present in the system or a subset
+ * specified by the `files` prop. Each tab can be customized using the `children` render prop.
+ *
+ * @param {ReplTabBarProps} props - The properties passed to the tab bar component.
+ * @returns {JSXElement} The container div element that hosts the tabs for each file.
+ *
+ * @typedef {Object} ReplTabBarProps
+ * @property {string[]} [files] - Optional array of file paths to specifically include in the tab bar. If not provided,
+ *                                all files from the file system are used.
+ * @property {Function} children - A render prop function that receives an object with the current path and file object.
+ *                                 It should return a JSX element to render for each tab.
+ */
 Repl.TabBar = ReplTabBar

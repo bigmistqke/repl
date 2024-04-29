@@ -16,17 +16,36 @@ export type TypeRegistryState = {
   sources: Record<string, string>
 }
 
+/**
+ * Manages the registry of TypeScript types across the application, facilitating type definition management
+ * and providing utilities for importing and resolving TypeScript definitions from various sources.
+ * This class is crucial for maintaining type accuracy and enabling IntelliSense in the editor.
+ *
+ * @class TypeRegistry
+ */
 export class TypeRegistry {
+  private cachedUrls = new Set<string>()
+  private cachedPackageNames = new Set<string>()
   private sources: Accessor<Record<string, string>>
   private setSources: Setter<Record<string, string>>
   private alias: Accessor<Record<string, string[]>>
   private setAlias: Setter<Record<string, string[]>>
 
+  /**
+   * Initializes a new instance of the TypeRegistry class.
+   *
+   * @param {FileSystem} fs The file system instance that interacts with this type registry.
+   */
   constructor(public fs: FileSystem) {
     ;[this.sources, this.setSources] = createSignal({}, { equals: false })
     ;[this.alias, this.setAlias] = createSignal({})
   }
 
+  /**
+   * Converts the current state of the type registry into a JSON object.
+   *
+   * @returns {TypeRegistryState} The current state of the type registry.
+   */
   toJSON(): TypeRegistryState {
     return {
       alias: this.alias(),
@@ -34,6 +53,11 @@ export class TypeRegistry {
     }
   }
 
+  /**
+   * Initializes the registry with a predefined state, setting up known types and aliases.
+   *
+   * @param {TypeRegistryState} initialState The initial state to load into the registry.
+   */
   initialize(initialState: TypeRegistryState) {
     batch(() => {
       this.setSources(initialState.sources)
@@ -61,40 +85,15 @@ export class TypeRegistry {
     })
   }
 
-  private aliasPath(packageName: string, virtualPath: string) {
-    // add virtual path to monaco's tsconfig's `path`-property
-    const tsCompilerOptions =
-      this.fs.monaco.languages.typescript.typescriptDefaults.getCompilerOptions()
-    tsCompilerOptions.paths![packageName] = [`file:///node_modules/${virtualPath}`]
-    this.fs.monaco.languages.typescript.typescriptDefaults.setCompilerOptions(tsCompilerOptions)
-    this.fs.monaco.languages.typescript.javascriptDefaults.setCompilerOptions(tsCompilerOptions)
-    this.setAlias(tsCompilerOptions.paths!)
-  }
+  /**
+   * Imports type definitions from a URL, checking if the types are already cached before importing.
+   *
+   * @param {string} url The URL of the type definition to import.
+   * @param {string} [packageName] The package name associated with the type definitions.
+   * @returns {Promise<void>}
+   * @async
+   */
 
-  private set(path: string, value: string) {
-    this.setSources(files => {
-      files[path] = value
-      return files
-    })
-  }
-
-  private has(path: string) {
-    return path in this.sources()
-  }
-
-  private getVirtualPath(url: string) {
-    return (
-      url
-        .replace(`${this.fs.config.cdn}/`, '')
-        .replace('http://', '')
-        // replace version-number
-        .split('/')
-        .slice(1)
-        .join('/')
-    )
-  }
-
-  private cachedUrls = new Set<string>()
   async importTypesFromUrl(url: string, packageName?: string) {
     const virtualPath = this.getVirtualPath(url)
 
@@ -198,7 +197,13 @@ export class TypeRegistry {
     }
   }
 
-  private cachedPackageNames = new Set<string>()
+  /**
+   * Imports type definitions based on a package name by resolving it to a CDN path.
+   *
+   * @param {string} packageName The package name whose types to import.
+   * @returns {Promise<void>}
+   * @async
+   */
   async importTypesFromPackageName(packageName: string) {
     if (this.cachedPackageNames.has(packageName)) return
     this.cachedPackageNames.add(packageName)
@@ -220,5 +225,66 @@ export class TypeRegistry {
     await this.importTypesFromUrl(typeUrl)
 
     this.aliasPath(packageName, virtualPath)
+  }
+
+  /**
+   * Adds or updates a path in the TypeScript configuration to map to an aliased package.
+   *
+   * @param {string} packageName The package name to alias.
+   * @param {string} virtualPath The virtual path that the alias points to.
+   * @private
+   */
+  private aliasPath(packageName: string, virtualPath: string) {
+    // add virtual path to monaco's tsconfig's `path`-property
+    const tsCompilerOptions =
+      this.fs.monaco.languages.typescript.typescriptDefaults.getCompilerOptions()
+    tsCompilerOptions.paths![packageName] = [`file:///node_modules/${virtualPath}`]
+    this.fs.monaco.languages.typescript.typescriptDefaults.setCompilerOptions(tsCompilerOptions)
+    this.fs.monaco.languages.typescript.javascriptDefaults.setCompilerOptions(tsCompilerOptions)
+    this.setAlias(tsCompilerOptions.paths!)
+  }
+
+  /**
+   * Adds or updates a type definition source to the registry.
+   *
+   * @param {string} path The path of the type definition file.
+   * @param {string} value The content of the type definition file.
+   * @private
+   */
+  private set(path: string, value: string) {
+    this.setSources(files => {
+      files[path] = value
+      return files
+    })
+  }
+
+  /**
+   * Checks if a specific path is already registered in the type sources.
+   *
+   * @param {string} path The path to check.
+   * @returns {boolean} True if the path is registered, false otherwise.
+   * @private
+   */
+  private has(path: string) {
+    return path in this.sources()
+  }
+
+  /**
+   * Converts a URL into a virtual path by stripping the CDN URL and protocol.
+   *
+   * @param {string} url The URL to convert.
+   * @returns {string} The virtual path derived from the URL.
+   * @private
+   */
+  private getVirtualPath(url: string) {
+    return (
+      url
+        .replace(`${this.fs.config.cdn}/`, '')
+        .replace('http://', '')
+        // replace version-number
+        .split('/')
+        .slice(1)
+        .join('/')
+    )
   }
 }

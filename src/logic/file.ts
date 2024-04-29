@@ -31,15 +31,32 @@ export abstract class File {
   abstract get(): void
 }
 
+/**
+ * Represents a JavaScript file within the virtual file system, extending the generic File class.
+ * This class handles the transpilation of JavaScript or TypeScript into ES modules,
+ * manages CSS imports, and maintains the source code state.
+ */
+
 export class JsFile extends File {
+  /** Source code of the file as a reactive state. */
   private source: Accessor<string | undefined>
+  /** Setter for the source state. */
   private setSource: Setter<string | undefined>
+  /** Model associated with the Monaco editor for this file. */
   model: Model
-  /** url to esm-module of file */
+  /** URL to the ES module generated from the file's source code. */
   moduleUrl: Accessor<string | undefined>
+  /** Reactive state of CSS files imported into this JavaScript file. */
   cssImports: Accessor<CssFile[]>
+  /** Setter for the cssImports state. */
   private setCssImports: Setter<CssFile[]>
 
+  /**
+   * Constructs an instance of a JavaScript file.
+   * @param {FileSystem} fs - Reference to the file system managing this file.
+   * @param {string} path - Path to the file within the file system.
+   * @param {Object} config - Configuration for transpilation, including Babel presets and plugins.
+   */
   constructor(
     private fs: FileSystem,
     path: string,
@@ -175,26 +192,49 @@ export class JsFile extends File {
     })
   }
 
+  /**
+   * Serializes the file's current state to a JSON-compatible string.
+   * @returns {string | undefined} The current source code of the file.
+   */
   toJSON() {
     return this.source()
   }
 
+  /**
+   * Sets the source code of the file.
+   * @param {string} value - New source code to set.
+   */
   set(value: string) {
     this.model.setValue(value)
   }
 
+  /**
+   * Retrieves the current source code of the file.
+   * @returns {string} The current source code.
+   */
   get() {
     this.source()
     return this.model.getValue()
   }
 }
 
+/**
+ * Represents a CSS file within the virtual file system, extending the generic File class.
+ * Manages the editing and application of CSS within the IDE environment.
+ */
 export class CssFile extends File {
+  /** Source code of the CSS file as a reactive state. */
   private source: Accessor<string | undefined>
+  /** Model associated with the Monaco editor for this CSS file. */
   model: Model
+  /** URL to the dynamically generated CSS module. */
   moduleUrl: Accessor<string | undefined>
-  id: number | undefined
 
+  /**
+   * Constructs an instance of a CSS file.
+   * @param {FileSystem} fs - Reference to the file system managing this file.
+   * @param {string} path - Path to the CSS file within the file system.
+   */
   constructor(fs: FileSystem, path: string) {
     super()
     const uri = fs.monaco.Uri.parse(`file:///${path.replace('./', '')}`)
@@ -228,14 +268,26 @@ export class CssFile extends File {
     })
   }
 
+  /**
+   * Serializes the CSS file's current state to a JSON-compatible string.
+   * @returns {string | undefined} The current source code of the CSS file.
+   */
   toJSON() {
     return this.source()
   }
 
+  /**
+   * Sets the source code of the CSS file.
+   * @param {string} value - New source code to set.
+   */
   set(value: string) {
     this.model.setValue(value)
   }
 
+  /**
+   * Retrieves the current source code of the CSS file.
+   * @returns {string} The current source code.
+   */
   get() {
     this.source()
     return this.model.getValue()

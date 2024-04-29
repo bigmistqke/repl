@@ -22,18 +22,68 @@ export type FileSystemState = {
 
 export type CompilationEvent = { url: string; path: string; fileSystem: FileSystem }
 export type CompilationHandler = (event: CompilationEvent) => void
+
+/**
+ * Manages the virtual file system within a Monaco Editor-based TypeScript IDE.
+ * This class handles file operations, module imports, and integration of TypeScript types,
+ * providing a robust environment for coding directly in the browser.
+ *
+ * @class FileSystem
+ */
 export class FileSystem {
-  typeRegistry: TypeRegistry
-  packageJsonParser = new PackageJsonParser()
+  /**
+   * Stores aliases for modules.
+   */
   alias: Record<string, string>
+  /**
+   * Configuration for the file system, requiring 'cdn' as a mandatory setting.
+   */
+  config: Mandatory<ReplConfig, 'cdn'>
+  /**
+   * Manages TypeScript declaration-files.
+   */
+  typeRegistry: TypeRegistry
+  /**
+   * Utility to parse package.json files for module management.
+   */
+  packageJsonParser = new PackageJsonParser()
+  /**
+   * Store setter for aliases.
+   * @private
+   */
   private setAlias: SetStoreFunction<Record<string, string>>
+  /**
+   * Stores file instances by path.
+   * @private
+   */
   private files: Record<string, File>
+  /**
+   * Store setter for files.
+   * @private
+   */
   private setFiles: SetStoreFunction<Record<string, File>>
+  /**
+   * Babel presets used for transpiling files.
+   * @private
+   */
   private presets: Resource<any[]>
+  /**
+   * Babel plugins used for transpiling files.
+   * @private
+   */
   private plugins: Resource<babel.PluginItem[]>
+  /**
+   * List of cleanup functions to be called on instance disposal.
+   * @private
+   */
   private cleanups: (() => void)[] = []
 
-  config: Mandatory<ReplConfig, 'cdn'>
+  /**
+   * Constructs an instance of the FileSystem, setting up initial properties and configuration.
+   *
+   * @param {Monaco} monaco - The Monaco Editor instance.
+   * @param {ReplConfig} config - Configuration options for the file system and REPL.
+   */
   constructor(
     public monaco: Monaco,
     config: ReplConfig,
@@ -65,6 +115,9 @@ export class FileSystem {
     onCleanup(() => this.cleanups.forEach(cleanup => cleanup()))
   }
 
+  /**
+   * Initializes the file system based on provided initial configuration, setting up files and types.
+   */
   initialize() {
     // TODO:  It feels a bit dirty having to wrap it all in a root
     //        Maybe there is a more resource-y way of doing this.
@@ -93,6 +146,11 @@ export class FileSystem {
     })
   }
 
+  /**
+   * Serializes the current state of the file system into JSON format.
+   *
+   * @returns {Object} JSON representation of the file system state.
+   */
   toJSON() {
     const files = Object.fromEntries(
       Object.entries(this.files).map(([key, value]) => [key, value.toJSON()]),
@@ -105,6 +163,11 @@ export class FileSystem {
     }
   }
 
+  /**
+   * Triggers a download of the current file system configuration as a JSON file.
+   *
+   * @param {string} [name='repl.config.json'] - Name of the file to download.
+   */
   download(name = 'repl.config.json') {
     const data = this.toJSON()
 
@@ -124,6 +187,12 @@ export class FileSystem {
     link.remove()
   }
 
+  /**
+   * Creates a new file in the file system at the specified path.
+   *
+   * @param {string} path - The path to create the file at.
+   * @returns {File} The newly created file instance.
+   */
   create(path: string) {
     const file = path.endsWith('.css')
       ? new CssFile(this, path)
@@ -132,21 +201,46 @@ export class FileSystem {
     return file
   }
 
+  /**
+   * Checks if a file exists at the specified path.
+   *
+   * @param {string} path - The path to check for a file.
+   * @returns {boolean} True if the file exists, false otherwise.
+   */
   has(path: string) {
     return path in this.files
   }
 
+  /**
+   * Retrieves a file from the file system by its path.
+   *
+   * @param {string} path - The path to retrieve the file from.
+   * @returns {File | undefined} The file instance if found, undefined otherwise.
+   */
   get(path: string) {
     return this.files[path]
   }
 
+  /**
+   * Adds a project by importing multiple files into the file system.
+   *
+   * @param {Record<string, string>} files - A record of file paths and their content to add to the file system.
+   */
   addProject(files: Record<string, string>) {
     Object.entries(files).forEach(([path, value]) => {
       this.create(path).set(value)
     })
   }
 
-  async addPackage(url: string) {
+  /**
+   * Imports a package from a specified URL by parsing its package.json and loading its main script and types.
+   * This method handles resolving paths, fetching content, and transforming module declarations to maintain compatibility.
+   *
+   * @param {string} url - The URL to the package.json of the package to import.
+   * @async
+   * @returns {Promise<void>} A promise that resolves when the package has been fully imported.
+   */
+  async importFromPackageJson(url: string) {
     const getVirtualPath = (url: string) => (isUrl(url) ? new URL(url).pathname : url)
 
     const { typesUrl, scriptUrl, packageName } = await this.packageJsonParser.parse(url)
@@ -198,8 +292,13 @@ export class FileSystem {
     this.setAlias(packageName, `node_modules${getVirtualPath(scriptUrl)}`)
   }
 
-  // resolve path according to typescript-rules
-  // NOTE:  should this update according to tsConfig.moduleResolution ?
+  /**
+   * Resolves a file path according to TypeScript resolution rules, including handling of various module formats.
+   * This method searches for file instances across supported extensions and directories based on TypeScript's module resolution logic.
+   *
+   * @param {string} path - The path to resolve, which might not include a file extension.
+   * @returns {File | undefined} The resolved file if found, otherwise undefined.
+   */
   resolve(path: string) {
     return (
       this.files[path] ||
@@ -216,6 +315,12 @@ export class FileSystem {
     )
   }
 
+  /**
+   * Retrieves all files from the file system, excluding those within 'node_modules' directory,
+   * effectively filtering out externally added packages from the result.
+   *
+   * @returns {Record<string, File>} An object mapping paths to file instances for all user-created or modified files.
+   */
   all() {
     return Object.fromEntries(
       Object.entries(this.files).filter(([path]) => path.split('/')[0] !== 'node_modules'),

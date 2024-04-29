@@ -14,7 +14,14 @@ import clsx from 'clsx'
 import styles from './repl.module.css'
 
 export type FrameProps = ComponentProps<'iframe'> & {
+  /**
+   * The unique identifier for the iframe, which is used to manage its presence in the global frame registry.
+   * If not specified, 'default' is used as a fallback.
+   */
   name?: string
+  /**
+   * Optional CSS properties or a string that defines the style of the iframe's body.
+   */
   bodyStyle?: JSX.CSSProperties | string | undefined
 }
 

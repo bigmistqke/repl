@@ -7,8 +7,16 @@ import { useRepl } from './use-repl'
 import styles from './repl.module.css'
 
 type ReplTabBarProps = Omit<ComponentProps<'div'>, 'children'> & {
+  /**
+   * A render prop function that receives an object with the current path and file object.
+   * It should return a `JSX.Element` to render for each tab.
+   */
   children: (arg: { path: string; paths: File | undefined }) => JSXElement
-  files?: string[]
+  /**
+   * Optional array of file paths to specifically include in the tab bar.
+   * If not provided, all files from the file system are used.
+   */
+  paths?: string[]
 }
 
 export function ReplTabBar(props: ReplTabBarProps) {
@@ -17,8 +25,8 @@ export function ReplTabBar(props: ReplTabBarProps) {
 
   const entries = () => {
     const files = repl.fs.all()
-    if (props.files) {
-      return props.files.map(path => [path, files[path]] as const)
+    if (props.paths) {
+      return props.paths.map(path => [path, files[path]] as const)
     }
     return Object.entries(files)
   }
