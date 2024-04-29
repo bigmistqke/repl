@@ -36,6 +36,7 @@ ___Click [here](#example-overview) for a line-by-line explanation of the above e
   - [`FrameRegistry`](#frameregistry)
   - [`TypeRegistry`](#typeregistry)
 - [Example Overview](#example-overview)
+- [Acknowledgements](#acknowledgements)
 
 ## Installation
 
@@ -498,3 +499,7 @@ const App: Component = () => {
 
 export default App
 ```
+
+# Acknowledgements
+
+The main inspiration of this project is my personal favorite IDE: (solid-playground)[https://github.com/solidjs/solid-playground). Some LOC are copied directly, p.ex the css and js-injection into the iframe.
