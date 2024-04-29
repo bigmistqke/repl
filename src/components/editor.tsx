@@ -1,12 +1,24 @@
-import { ComponentProps, createEffect, createMemo, onCleanup, splitProps } from 'solid-js'
+import {
+  ComponentProps,
+  createEffect,
+  createMemo,
+  on,
+  onCleanup,
+  onMount,
+  splitProps,
+} from 'solid-js'
 
+import { Monaco } from '@monaco-editor/loader'
 import { when } from '../utils'
 import { useRepl } from './use-repl'
+
+type MonacoEditor = ReturnType<Monaco['editor']['create']>
 
 export type EditorProps = Omit<ComponentProps<'div'>, 'ref'> & {
   initialValue?: string
   path: string
   import?: string
+  onMount?: (editor: MonacoEditor) => void
 }
 
 export function ReplEditor(props: EditorProps) {
@@ -26,8 +38,17 @@ export function ReplEditor(props: EditorProps) {
     automaticLayout: true,
   })
 
+  onMount(() => props.onMount?.(editor))
+
   // Update monaco-editor's model to current file's model
   createEffect(() => when(file)(file => editor.setModel(file.model)))
+
+  createEffect(
+    on(
+      () => props.path,
+      () => props.onPathChanged?.(editor),
+    ),
+  )
 
   // Add action to context-menu of monaco-editor
   createEffect(() => {

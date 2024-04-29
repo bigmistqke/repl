@@ -1,16 +1,17 @@
 import clsx from 'clsx'
-import { For, JSXElement, splitProps } from 'solid-js'
+import { ComponentProps, For, JSXElement, splitProps } from 'solid-js'
 import { File } from 'src/logic/file'
 import { useRepl } from './use-repl'
 
 // @ts-expect-error
 import styles from './repl.module.css'
 
-export function ReplTabBar(props: {
-  class?: string
+type ReplTabBarProps = Omit<ComponentProps<'div'>, 'children'> & {
   children: (arg: { path: string; file: File | undefined }) => JSXElement
   files?: string[]
-}) {
+}
+
+export function ReplTabBar(props: ReplTabBarProps) {
   const [, rest] = splitProps(props, ['class'])
   const repl = useRepl()
 
