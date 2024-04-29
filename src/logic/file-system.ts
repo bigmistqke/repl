@@ -39,7 +39,7 @@ export class FileSystem {
     config: ReplConfig,
   ) {
     this.config = mergeProps({ cdn: 'https://esm.sh' }, config)
-    this.typeRegistry = new TypeRegistry(monaco, { initialState: config.initialState?.types })
+    this.typeRegistry = new TypeRegistry(this)
     ;[this.alias, this.setAlias] = createStore<Record<string, string>>({})
     ;[this.files, this.setFiles] = createStore<Record<string, File>>()
     ;[this.presets] = createResource(
@@ -76,6 +76,9 @@ export class FileSystem {
       })
 
       if (this.config.initialState) {
+        if (this.config.initialState.types) {
+          this.typeRegistry.initialize(this.config.initialState.types)
+        }
         if (this.config.initialState.files) {
           Object.entries(this.config.initialState.files).map(([path, source]) =>
             this.create(path).set(source),

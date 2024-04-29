@@ -1,9 +1,7 @@
 import * as ts from 'typescript'
 
-import { Monaco } from '@monaco-editor/loader'
-import { Accessor, Setter, createSignal, mergeProps } from 'solid-js'
+import { Accessor, Setter, batch, createSignal } from 'solid-js'
 import {
-  Mandatory,
   isRelativePath,
   isUrl,
   mapModuleDeclarations,
@@ -11,100 +9,85 @@ import {
   relativeToAbsolutePath,
   when,
 } from '../utils'
+import { FileSystem } from './file-system'
 import { PackageJsonParser } from './package-json'
 
 export type TypeRegistryState = {
-  paths: Record<string, string[]>
-  files: Record<string, string>
+  alias: Record<string, string[]>
+  sources: Record<string, string>
 }
-export type TypeRegistryConfig = Partial<{ cdn: string; initialState: TypeRegistryState }>
 
 export class TypeRegistry {
-  private files: Accessor<Record<string, string>>
-  private setFiles: Setter<Record<string, string>>
-  private paths: Accessor<Record<string, string[]>>
-  private setPaths: Setter<Record<string, string[]>>
+  private sources: Accessor<Record<string, string>>
+  private setSources: Setter<Record<string, string>>
+  private alias: Accessor<Record<string, string[]>>
+  private setAlias: Setter<Record<string, string[]>>
   packageJson = new PackageJsonParser()
-  config: Mandatory<TypeRegistryConfig, 'cdn'>
 
-  constructor(
-    public monaco: Monaco,
-    /**
-     * Url to cdn. Response needs to return `X-Typescript-Types`-header. Defaults to `https://esm.sh`
-     * */
-    props: TypeRegistryConfig,
-  ) {
-    this.config = mergeProps({ cdn: 'https://esm.sh' }, props)
-    const [files, setFiles] = createSignal({}, { equals: false })
-    this.files = files
-    this.setFiles = setFiles
-
-    const [paths, setPaths] = createSignal({})
-    this.paths = paths
-    this.setPaths = setPaths
-
-    if (props.initialState) {
-      this.initialize(props.initialState)
-    }
+  constructor(public fs: FileSystem) {
+    ;[this.sources, this.setSources] = createSignal({}, { equals: false })
+    ;[this.alias, this.setAlias] = createSignal({})
   }
 
   toJSON(): TypeRegistryState {
     return {
-      paths: this.paths(),
-      files: this.files(),
+      alias: this.alias(),
+      sources: this.sources(),
     }
   }
 
   initialize(initialState: TypeRegistryState) {
-    this.setFiles(initialState.files)
-    this.setPaths(initialState.paths)
+    batch(() => {
+      this.setSources(initialState.sources)
+      this.setAlias(initialState.alias)
 
-    Object.entries(initialState.files).forEach(([key, value]) => {
-      this.cachedUrls.add(key)
-      if (value) {
-        this.monaco.languages.typescript.typescriptDefaults.addExtraLib(
-          value,
-          `file:///node_modules/${key}`,
-        )
-      }
-    })
+      Object.entries(initialState.sources).forEach(([key, value]) => {
+        this.cachedUrls.add(key)
+        if (value) {
+          this.fs.monaco.languages.typescript.typescriptDefaults.addExtraLib(
+            value,
+            `file:///node_modules/${key}`,
+          )
+        }
+      })
 
-    Object.entries(initialState.paths).forEach(([key, value]) => {
-      this.cachedPackageNames.add(key)
-      // add virtual path to monaco's tsconfig's `path`-property
-      const tsCompilerOptions =
-        this.monaco.languages.typescript.typescriptDefaults.getCompilerOptions()
-      tsCompilerOptions.paths![key] = value
-      this.monaco.languages.typescript.typescriptDefaults.setCompilerOptions(tsCompilerOptions)
-      this.monaco.languages.typescript.javascriptDefaults.setCompilerOptions(tsCompilerOptions)
+      Object.entries(initialState.alias).forEach(([key, value]) => {
+        this.cachedPackageNames.add(key)
+        // add virtual path to monaco's tsconfig's `path`-property
+        const tsCompilerOptions =
+          this.fs.monaco.languages.typescript.typescriptDefaults.getCompilerOptions()
+        tsCompilerOptions.paths![key] = value
+        this.fs.monaco.languages.typescript.typescriptDefaults.setCompilerOptions(tsCompilerOptions)
+        this.fs.monaco.languages.typescript.javascriptDefaults.setCompilerOptions(tsCompilerOptions)
+      })
     })
   }
 
-  alias(packageName: string, virtualPath: string) {
+  aliasPath(packageName: string, virtualPath: string) {
     // add virtual path to monaco's tsconfig's `path`-property
     const tsCompilerOptions =
-      this.monaco.languages.typescript.typescriptDefaults.getCompilerOptions()
+      this.fs.monaco.languages.typescript.typescriptDefaults.getCompilerOptions()
     tsCompilerOptions.paths![packageName] = [`file:///node_modules/${virtualPath}`]
-    this.monaco.languages.typescript.typescriptDefaults.setCompilerOptions(tsCompilerOptions)
-    this.monaco.languages.typescript.javascriptDefaults.setCompilerOptions(tsCompilerOptions)
-    this.setPaths(tsCompilerOptions.paths!)
+    this.fs.monaco.languages.typescript.typescriptDefaults.setCompilerOptions(tsCompilerOptions)
+    this.fs.monaco.languages.typescript.javascriptDefaults.setCompilerOptions(tsCompilerOptions)
+    this.setAlias(tsCompilerOptions.paths!)
   }
 
   private set(path: string, value: string) {
-    this.setFiles(files => {
+    this.setSources(files => {
       files[path] = value
       return files
     })
   }
 
   private has(path: string) {
-    return path in this.files()
+    return path in this.sources()
   }
 
   private getVirtualPath(url: string) {
     return (
       url
-        .replace(`${this.config.cdn}/`, '')
+        .replace(`${this.fs.config.cdn}/`, '')
         .replace('http://', '')
         // replace version-number
         .split('/')
@@ -158,7 +141,7 @@ export class TypeRegistry {
         } else if (isUrl(modulePath)) {
           let virtualPath = this.getVirtualPath(modulePath)
           when(pathToPackageNameAndVersion(virtualPath))(([packageName, version]) => {
-            for (const key of Object.keys(this.files())) {
+            for (const key of Object.keys(this.sources())) {
               const foundSamePackageName = when(pathToPackageNameAndVersion(key))(([
                 otherPackagename,
                 otherVersion,
@@ -183,7 +166,7 @@ export class TypeRegistry {
 
           specifier.text = virtualPath
           promises.push(this.importTypesFromUrl(modulePath))
-          this.alias(virtualPath, virtualPath)
+          this.aliasPath(virtualPath, virtualPath)
         } else {
           promises.push(this.importTypesFromPackageName(modulePath))
         }
@@ -204,7 +187,7 @@ export class TypeRegistry {
 
     Object.entries(newFiles).forEach(([key, value]) => {
       if (value) {
-        this.monaco.languages.typescript.typescriptDefaults.addExtraLib(
+        this.fs.monaco.languages.typescript.typescriptDefaults.addExtraLib(
           value,
           `file:///node_modules/${key}`,
         )
@@ -213,7 +196,7 @@ export class TypeRegistry {
 
     if (packageName) {
       this.cachedPackageNames.add(packageName)
-      this.alias(packageName, virtualPath)
+      this.aliasPath(packageName, virtualPath)
     }
   }
 
@@ -222,7 +205,7 @@ export class TypeRegistry {
     if (this.cachedPackageNames.has(packageName)) return
     this.cachedPackageNames.add(packageName)
 
-    const typeUrl = await fetch(`${this.config.cdn}/${packageName}`)
+    const typeUrl = await fetch(`${this.fs.config.cdn}/${packageName}`)
       .then(result => result.headers.get('X-TypeScript-Types'))
       .catch(error => {
         console.info(error)
@@ -238,6 +221,6 @@ export class TypeRegistry {
 
     await this.importTypesFromUrl(typeUrl)
 
-    this.alias(packageName, virtualPath)
+    this.aliasPath(packageName, virtualPath)
   }
 }
