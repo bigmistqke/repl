@@ -130,14 +130,14 @@ export class TypeRegistry {
 
     const newFiles: Record<string, string> = {}
 
-    const resolvePath = async (url: string) => {
-      const virtualPath = this.getVirtualPath(url)
+    const resolvePath = async (path: string) => {
+      const virtualPath = this.getVirtualPath(path)
       if (this.has(virtualPath)) return
 
       // Set file to 'null' to prevent re-fetching.
       this.set(virtualPath, null!)
 
-      const code = await fetch(url).then(response => {
+      const code = await fetch(path).then(response => {
         if (response.status !== 200) {
           // throw new Error(`Error while loading ${url}`)
         }
@@ -148,15 +148,15 @@ export class TypeRegistry {
 
       const transformedCode = mapModuleDeclarations(virtualPath, code, node => {
         const specifier = node.moduleSpecifier as ts.StringLiteral
-        let path = specifier.text
-        if (isRelativePath(path)) {
-          if (path.endsWith('.js')) {
-            path = path.replace('.js', '.d.ts')
-            specifier.text = path
+        let modulePath = specifier.text
+        if (isRelativePath(modulePath)) {
+          if (modulePath.endsWith('.js')) {
+            modulePath = modulePath.replace('.js', '.d.ts')
+            specifier.text = modulePath
           }
-          promises.push(resolvePath(relativeToAbsolutePath(url, path)))
-        } else if (isUrl(path)) {
-          let virtualPath = this.getVirtualPath(path)
+          promises.push(resolvePath(relativeToAbsolutePath(path, modulePath)))
+        } else if (isUrl(modulePath)) {
+          let virtualPath = this.getVirtualPath(modulePath)
           when(pathToPackageNameAndVersion(virtualPath))(([packageName, version]) => {
             for (const key of Object.keys(this.files())) {
               const foundSamePackageName = when(pathToPackageNameAndVersion(key))(([
@@ -165,10 +165,10 @@ export class TypeRegistry {
               ]) => {
                 if (otherPackagename === packageName) {
                   if (version !== otherVersion) {
-                    console.error(
-                      `Conflicting version numbers: Overwriting version number of ${packageName} from ${version} to ${otherVersion}. Accessed in path ${path}.`,
+                    console.warn(
+                      `Conflicting version numbers: Overwriting version number of ${packageName} from ${version} to ${otherVersion}.\nAccessed ${modulePath} from ${path}.`,
                     )
-                    path = path.replace(version, otherVersion)
+                    modulePath = modulePath.replace(version, otherVersion)
                     virtualPath = virtualPath.replace(version, otherVersion)
                   }
                   return true
@@ -182,10 +182,10 @@ export class TypeRegistry {
           })
 
           specifier.text = virtualPath
-          promises.push(this.importTypesFromUrl(path))
+          promises.push(this.importTypesFromUrl(modulePath))
           this.alias(virtualPath, virtualPath)
         } else {
-          promises.push(this.importTypesFromPackageName(path))
+          promises.push(this.importTypesFromPackageName(modulePath))
         }
       })
 

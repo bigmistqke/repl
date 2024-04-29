@@ -1,5 +1,5 @@
 import { Monaco } from '@monaco-editor/loader'
-import { Resource, createEffect, createResource, mergeProps } from 'solid-js'
+import { Resource, createEffect, createResource, createRoot, mergeProps, onCleanup } from 'solid-js'
 import { SetStoreFunction, createStore } from 'solid-js/store'
 import ts from 'typescript'
 import { ReplConfig } from '../components/repl'
@@ -30,6 +30,7 @@ export class FileSystem {
   private setFiles: SetStoreFunction<Record<string, File>>
   private presets: Resource<any[]>
   private plugins: Resource<babel.PluginItem[]>
+  private cleanups: (() => void)[] = []
 
   config: Mandatory<ReplConfig, 'cdn'>
   constructor(
@@ -59,20 +60,27 @@ export class FileSystem {
           }),
         ),
     )
+
+    onCleanup(() => this.cleanups.forEach(cleanup => cleanup()))
   }
 
   initialize() {
-    createEffect(() => {
-      this.config.packages?.forEach(packageName => {
-        this.typeRegistry.importTypesFromPackageName(packageName)
+    // TODO:  It feels a bit dirty having to wrap it all in a root
+    //        Maybe there is a more resource-y way of doing this.
+    createRoot(dispose => {
+      createEffect(() => {
+        this.config.packages?.forEach(packageName => {
+          this.typeRegistry.importTypesFromPackageName(packageName)
+        })
       })
-    })
 
-    if (this.config.initialState?.files) {
-      Object.entries(this.config.initialState?.files).map(([path, source]) =>
-        this.create(path).set(source),
-      )
-    }
+      if (this.config.initialState?.files) {
+        Object.entries(this.config.initialState?.files).map(([path, source]) =>
+          this.create(path).set(source),
+        )
+      }
+      this.cleanups.push(dispose)
+    })
   }
 
   toJSON() {
@@ -162,8 +170,13 @@ export class FileSystem {
     }
     await resolvePath(scriptUrl)
 
-    Object.entries(project).forEach(([path, value]) => {
-      this.create(`node_modules${path}`).set(value)
+    // TODO:  It feels a bit dirty having to wrap it all in a root
+    //        Maybe there is a more resource-y way of doing this.
+    createRoot(dispose => {
+      Object.entries(project).forEach(([path, value]) => {
+        this.create(`node_modules${path}`).set(value)
+      })
+      this.cleanups.push(dispose)
     })
 
     if (typesUrl) {

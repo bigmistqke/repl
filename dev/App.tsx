@@ -84,7 +84,7 @@ render(() => <App />, document.body);`,
         },
       }}
       class={styles.repl}
-      onReady={async ({ fs, frames }) => {
+      onSetup={async ({ fs, frames }) => {
         createEffect(() => {
           const frame = frames.get('default')
           if (!frame) return

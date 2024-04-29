@@ -8,7 +8,7 @@ import onigasm from 'onigasm/lib/onigasm.wasm?url'
 import { ParentProps, Show, createEffect, createResource, splitProps } from 'solid-js'
 import { JsxEmit, ModuleKind, ModuleResolutionKind, ScriptTarget } from 'typescript'
 
-import { deepMerge } from 'src/utils'
+import { deepMerge, when } from 'src/utils'
 import { FileSystem, FileSystemState } from '../logic/file-system'
 import { FrameRegistry } from '../logic/frame-registry'
 import { ReplEditor } from './editor'
@@ -39,7 +39,7 @@ export type ReplConfig = Partial<{
   class: string
   initialState: Partial<FileSystemState>
   mode: 'light' | 'dark'
-  onReady: (event: { fs: FileSystem; frames: FrameRegistry }) => Promise<void> | void
+  onSetup: (event: { fs: FileSystem; frames: FrameRegistry }) => Promise<void> | void
   packages: string[]
   typescript: TypescriptConfig
   actions?: {
@@ -74,26 +74,20 @@ export function Repl(props: ReplProps) {
     const monaco = await (loader.init() as Promise<Monaco>)
     monaco.languages.typescript.typescriptDefaults.setCompilerOptions(config.typescript)
 
+    // Initialize typescript-services with empty editor
     {
-      // Initialize typescript-services with empty editor
       const editor = monaco.editor.create(document.createElement('div'), {
         language: 'typescript',
       })
       editor.dispose()
     }
 
+    // Syntax highlighting
     {
-      // Syntax highlighting
-
       // Monaco's built-in themes aren't powereful enough to handle TM tokens
       // https://github.com/Nishkalkashyap/monaco-vscode-textmate-theme-converter#monaco-vscode-textmate-theme-converter
       monaco.editor.defineTheme('vs-dark-plus', vsDark as any)
       monaco.editor.defineTheme('vs-light-plus', vsLight as any)
-
-      // Switch light/dark mode of monaco-editor
-      createEffect(() => {
-        monaco.editor.setTheme(props.mode === 'light' ? 'vs-light-plus' : 'vs-dark-plus')
-      })
 
       // Initialize textmate-registry
       const registry = new Registry({
@@ -123,9 +117,16 @@ export function Repl(props: ReplProps) {
     return monaco
   })
 
+  createEffect(() =>
+    when(monaco)(monaco => {
+      // Switch light/dark mode of monaco-editor
+      monaco.editor.setTheme(props.mode === 'light' ? 'vs-light-plus' : 'vs-dark-plus')
+    }),
+  )
+
   const [fs] = createResource(monaco, async monaco => {
     const fs = new FileSystem(monaco, config)
-    await config.onReady?.({ fs, frames })
+    await config.onSetup?.({ fs, frames })
     fs.initialize()
     return fs
   })
