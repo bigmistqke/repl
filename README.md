@@ -64,15 +64,17 @@ The `Repl` component integrates the Monaco Editor into a SolidJS application, fa
   }}
   initialState={{
     files: {
-      'src/sum.ts': `export const sum = (a: number, b: number) => a + b`,,
+      'src/sum.ts': `export const sum = (a: number, b: number) => a + b`,
       'src/index.ts': `import { sum } from "./sum";
         export const sub = (a: number, b: number) => sum(a, b * -1)`,
     },
   }}
   class={styles.repl}
-  onSetup={async ({ fs, frames }) => {
-    createEffect(() => {
-      const sub = fs.get('src/index.ts').getModuleUrl()
+  onSetup={({ fs, frames }) => {
+    createEffect(async () => {
+      const moduleUrl = fs.get('src/index.ts')?.moduleUrl()
+      if (!moduleUrl) return
+      const { sub } = await import(moduleUrl)
       console.log(sub(2, 1)) // 1
     })
   }}
