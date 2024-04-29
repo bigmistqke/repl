@@ -1,6 +1,6 @@
 {
   "name": "@bigmistqke/repl",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "repl with typescript support",
   "license": "MIT",
   "author": "bigmistqke",
