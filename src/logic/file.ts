@@ -1,6 +1,6 @@
 import * as Babel from '@babel/standalone'
 import { Monaco } from '@monaco-editor/loader'
-import { createScheduled, debounce, throttle } from '@solid-primitives/scheduled'
+import { createScheduled, throttle } from '@solid-primitives/scheduled'
 import {
   Accessor,
   Resource,
@@ -58,11 +58,19 @@ export class JsFile extends File {
     ;[this.source, this.setSource] = createSignal<string | undefined>()
     ;[this.cssImports, this.setCssImports] = createSignal<CssFile[]>([])
 
-    const scheduled = createScheduled(fn => debounce(fn, 500))
+    let initialized = false
+    const scheduled = createScheduled(fn => throttle(fn, 500))
     // Transpile source to javascript
     const [intermediary] = createResource(
-      every(this.source, config.presets, config.plugins, scheduled),
+      every(
+        this.source,
+        config.presets,
+        config.plugins,
+        // If no intermediary has been created before we do not throttle.
+        () => !initialized || scheduled(),
+      ),
       async ([source, presets, plugins]) => {
+        initialized = true
         try {
           let value: string = source
           if (isTypescript) {
@@ -79,7 +87,8 @@ export class JsFile extends File {
     )
 
     // Transpile intermediary to esm-module:
-    // - Transform local dependencies to dependencies' File.url()
+    // - Transform aliased paths to module-urls
+    // - Transform local dependencies to module-urls
     // - Transform package-names to cdn-url
     // NOTE:  possible optimisation would be to memo the holes and swap them out with .slice
     const esm = createMemo<string | undefined>(previous =>
@@ -143,7 +152,7 @@ export class JsFile extends File {
             }),
           )
         } catch (error) {
-          console.error('error', error)
+          console.warn('error', error)
           return previous
         }
       }),
