@@ -4,7 +4,7 @@
 
 # @bigmistqke/repl
 
-This SolidJS component library enables the creation of modular, headless TypeScript playgrounds utilizing the Monaco Editor. It supports a flexible file system for transpiling TypeScript into ECMAScript Modules (ESM) and manages automatic type imports, making it ideal for developers to create customizable, browser-based IDEs.
+This SolidJS component library enables the creation of modular TypeScript playgrounds utilizing the Monaco Editor. It supports a flexible file system for transpiling TypeScript into ECMAScript Modules (ESM), allows importing external dependencies and manages automatic type imports, making it ideal for developers to create customizable, browser-based IDEs.
 
 ## Features
 
@@ -15,6 +15,21 @@ This SolidJS component library enables the creation of modular, headless TypeScr
 - **Theme Flexibility**: Supports both dark and light themes, easily switchable to suit preferences.
 - **Advanced File System Management**: Robust management of file states and operations within the editor.
 - **Configurable Build and Runtime Options**: Easily configurable TypeScript compiler settings and other operational parameters.
+
+# Table of Contents
+
+- [Installation](#installation)
+- [Components Documentation](#components-documentation)
+  - [`Repl` Component](#repl-component)
+  - [`Repl.Editor` Component](#repleditor-component)
+  - [`Repl.Frame` Component](#replrame-component)
+  - [`Repl.TabBar` Component](#repltabbar-component)
+- [Internal APIs Documentation](#internal-apis-documentation)
+  - [`FileSystem`](#filesystem)
+  - [`JsFile` and `CssFile`](#jsfile-and-cssfile)
+  - [`FrameRegistry`](#frame-registry)
+  - [`TypeRegistry`](#type-registry)
+- [Advanced Example](#advanced-example)
 
 ## Installation
 
