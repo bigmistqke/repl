@@ -4,14 +4,14 @@
 
 # @bigmistqke/repl
 
-This SolidJS component library enables the creation of modular TypeScript playgrounds utilizing the Monaco Editor. It supports a flexible file system for transpiling TypeScript into ECMAScript Modules (ESM), allows importing external dependencies and manages automatic type imports, making it ideal for developers to create customizable, browser-based IDEs.
+This SolidJS component library enables the creation of modular TypeScript playgrounds utilizing the Monaco Editor. It supports a flexible file system for transpiling TypeScript into ECMAScript Modules (ESM), imports of external dependencies (including types), making it ideal for developers to create customizable, browser-based IDEs.
 
 ## Features
 
-- **Monaco Editor Integration**: Utilize the powerful Monaco Editor for sophisticated web-based code editing.
-- **Comprehensive TypeScript Support**: Includes full integration with TypeScript, providing syntax highlighting and error checking.
+- **Monaco Editor Integration**
+- **Comprehensive TypeScript Support**
 - **Real-time Transpilation**: Direct transpilation of TypeScript code into ESM, allowing for immediate feedback.
-- **Automatic Type Imports**: Streamline coding with automatic type discovery and import.
+- **Automatic Type Imports**: Streamline coding with automatic type discovery and imports of external dependencies.
 - **Theme Flexibility**: Supports both dark and light themes, easily switchable to suit preferences.
 - **Advanced File System Management**: Robust management of file states and operations within the editor.
 - **Configurable Build and Runtime Options**: Easily configurable TypeScript compiler settings and other operational parameters.
@@ -20,10 +20,10 @@ This SolidJS component library enables the creation of modular TypeScript playgr
 
 - [Installation](#installation)
 - [Components Documentation](#components-documentation)
-  - [`Repl` Component](#repl-component)
-  - [`Repl.Editor` Component](#repleditor-component)
-  - [`Repl.Frame` Component](#replrame-component)
-  - [`Repl.TabBar` Component](#repltabbar-component)
+  - [`<Repl/>` Component](#repl-component)
+  - [`<Repl.Editor/>` Component](#repleditor-component)
+  - [`<Repl.Frame/>` Component](#replrame-component)
+  - [`<Repl.TabBar/>` Component](#repltabbar-component)
 - [Internal APIs Documentation](#internal-apis-documentation)
   - [`FileSystem`](#filesystem)
   - [`JsFile` and `CssFile`](#jsfile-and-cssfile)
@@ -33,9 +33,11 @@ This SolidJS component library enables the creation of modular TypeScript playgr
 
 ## Installation
 
-Begin by cloning the repository and installing the necessary dependencies:
+Import package from package manager.
 
 ```bash
+npm install `@bigmistqke/repl`
+yarn add `@bigmistqke/repl`
 pnpm install `@bigmistqke/repl`
 ```
 
@@ -221,15 +223,15 @@ The `FileSystem` API manages a virtual file system, allowing for the creation, r
 
 ```ts
 class FileSystem {
-  alias: Record<string, string>
-  config: ReplConfig
-  packageJsonParser: PackageJsonParser
-  typeRegistry: TypeRegistry
-
   constructor(
     public monaco: Monaco,
     config: ReplConfig,
   )
+
+  alias: Record<string, string>
+  config: ReplConfig
+  packageJsonParser: PackageJsonParser
+  typeRegistry: TypeRegistry
 
   initialize(): void
   toJSON(): {
@@ -295,12 +297,10 @@ Manages individual iframe containers used for isolated execution environments. T
 
 ```ts
 class FrameRegistry {
-  private frames: Record<string, Frame>;
-  add(name: string, window: Window): void;
-  get(name: string): Frame;
-  has(name: string): boolean;
-  delete(name: string): void;
-  ...
+  add(name: string, window: Window): void
+  get(name: string): Frame
+  has(name: string): boolean
+  delete(name: string): void
 }
 ```
 
@@ -319,8 +319,9 @@ Handles the management and storage of TypeScript types across the application. T
 
 ```ts
 export class TypeRegistry {
-  packageJson = new PackageJsonParser()
   constructor(public fs: FileSystem)
+
+  packageJson = new PackageJsonParser()
 
   toJSON(): {
     files: Record<string, string>,
