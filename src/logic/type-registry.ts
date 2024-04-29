@@ -10,7 +10,6 @@ import {
   when,
 } from '../utils'
 import { FileSystem } from './file-system'
-import { PackageJsonParser } from './package-json'
 
 export type TypeRegistryState = {
   alias: Record<string, string[]>
@@ -22,7 +21,6 @@ export class TypeRegistry {
   private setSources: Setter<Record<string, string>>
   private alias: Accessor<Record<string, string[]>>
   private setAlias: Setter<Record<string, string[]>>
-  packageJson = new PackageJsonParser()
 
   constructor(public fs: FileSystem) {
     ;[this.sources, this.setSources] = createSignal({}, { equals: false })
@@ -63,7 +61,7 @@ export class TypeRegistry {
     })
   }
 
-  aliasPath(packageName: string, virtualPath: string) {
+  private aliasPath(packageName: string, virtualPath: string) {
     // add virtual path to monaco's tsconfig's `path`-property
     const tsCompilerOptions =
       this.fs.monaco.languages.typescript.typescriptDefaults.getCompilerOptions()

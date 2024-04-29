@@ -20,10 +20,12 @@ This SolidJS component library enables the creation of modular TypeScript playgr
 
 - [Installation](#installation)
 - [Components Documentation](#components-documentation)
-  - [`<Repl/>` Component](#repl-component)
-  - [`<Repl.Editor/>` Component](#repleditor-component)
-  - [`<Repl.Frame/>` Component](#replrame-component)
-  - [`<Repl.TabBar/>` Component](#repltabbar-component)
+  - [`Repl` Component](#repl-component)
+  - [`Repl.Editor` Component](#repleditor-component)
+  - [`Repl.Frame` Component](#replrame-component)
+  - [`Repl.TabBar` Component](#repltabbar-component)
+- [Hooks](#hooks)
+  - [`useRepl`](#userepl)
 - [Internal APIs Documentation](#internal-apis-documentation)
   - [`FileSystem`](#filesystem)
   - [`JsFile` and `CssFile`](#jsfile-and-cssfile)
@@ -193,7 +195,7 @@ A minimal wrapper around `<For/>` to assist with navigating between different fi
 **Props**
 
 - **children**: A callback with the `path` and the corresponding `File` as arguments. Expects a `JSX.Element` to be returned.
-- **paths**: Filter and sort existing paths.
+- **paths**: An array of strings to filter and sort existing paths.
 
 **Type**
 
@@ -204,11 +206,37 @@ type TabBarProps = ComponentProps<'div'> & {
 }
 ```
 
+# Hooks
+
+## `useRepl`
+
+Hook to interact with Repl's `FileSystem` and `FrameRegistry`.
+
+**Usage**
+
+```tsx
+const { fs, frames } = useRepl()
+
+const frame = frames.get('default')
+const entry = fs.get('src/index.ts')
+
+frame.injectFile(entry)
+```
+
+**Type**
+
+```ts
+type useRepl = (): {
+  fs: FileSystem,
+  frames: FrameRegistry
+}
+```
+
 # Internal APIs Documentation
 
 ## `FileSystem`
 
-The `FileSystem` API manages a virtual file system, allowing for the creation, retrieval, and manipulation of files as well as handling imports and exports of modules within the editor environment.
+The `FileSystem` API manages a virtual file system, allowing for the creation, retrieval, and manipulation of files as well as handling imports and exports of modules within the monaco-editor environment.
 
 **Key Methods and Properties**
 
@@ -265,7 +293,7 @@ These classes represent JavaScript and CSS files within the virtual file system,
 - **moduleUrl**: A URL to an esm-module of the transpiled content of the file.
 - **toJSON()**: Serializes the file's content.
 
-**types**
+**Types**
 
 ```ts
 class JsFile extends File {
@@ -274,6 +302,7 @@ class JsFile extends File {
   get(): string
   moduleUrl(): string | undefined
   cssImports: Accessor<CssFile[]>
+  toJSON(): string
 }
 
 class CssFile extends File {
@@ -281,12 +310,13 @@ class CssFile extends File {
   set(value: string): void
   get(): string
   moduleUrl(): string | undefined
+  toJSON(): string
 }
 ```
 
 ## `FrameRegistry`
 
-Manages individual iframe containers used for isolated execution environments. This registry is used to manage and reference multiple frames, allowing files to be injected into specific frames.
+Manages `Frames`.
 
 ### Key Methods and Properties
 
@@ -304,33 +334,43 @@ class FrameRegistry {
 }
 ```
 
+## `Frame`
+
+Manages individual iframe containers used for isolated execution environments. This registry is used to manage and reference multiple frames, allowing files to be injected into specific frames.
+
+### Key Methods and Properties
+
+- **injectFile(file: JsFile | CssFile)**: Injects the moduleUrl of a given `JsFile | CssFile` into the frame
+
+```ts
+class Frame {
+  constructor(public window: Window)
+  injectFile(file: CssFile | JsFile): HTMLScriptElement | undefined
+}
+```
+
 ## `TypeRegistry`
 
-Handles the management and storage of TypeScript types across the application. This registry is crucial for maintaining consistency in type definitions and ensuring accurate type checking and autocomplete functionalities within the editor.
+Handles the management and storage of TypeScript types across the application. Provides API to recursively collect fetch typescript-files from a given entry, either in the form of a url or a package-name.
 
 **Key Methods and Properties**
 
 - **importTypesFromUrl(url: string, packageName?: string)**: Imports types from a specified URL, optionally associating them with a package name.
 - **importTypesFromPackageName(packageName: string)**: Imports types based on a package name, resolving to CDN paths and managing version conflicts.
-- **initialize(initialState: TypeRegistryState)**: Initializes the registry with a predefined state, setting up known types and aliases.
 - **toJSON()**: Serializes the current state of the registry for persistence or debugging.
 
-**types**
+**Types**
 
 ```ts
 export class TypeRegistry {
   constructor(public fs: FileSystem)
 
-  packageJson = new PackageJsonParser()
-
+  importTypesFromUrl(url: string, packageName?: string): Promise<Void>
+  importTypesFromPackageName(packageName: string): Promise<void>
   toJSON(): {
     files: Record<string, string>,
     types: Record<string, [string]>,
   }
-  initialize(initialState: TypeRegistryState): void
-  aliasPath(packageName: string, virtualPath: string): void
-  importTypesFromUrl(url: string, packageName?: string): Promise<Void>
-  importTypesFromPackageName(packageName: string): Promise<void>
 }
 
 ```
@@ -347,7 +387,6 @@ This application demonstrates complex interactions between various components an
 
 - **`Repl`**: Main component setting up the editor.
 - **`useRepl`**: Hook to interact with REPL state and functionalities.
-- **`Resizable`**: Component that allows dynamic resizing of the editor and output panels.
 - **`JsFile` and `CssFile`**: File abstractions within the virtual file system.
 
 ### Detailed Code Explanation
