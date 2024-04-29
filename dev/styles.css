@@ -13,3 +13,7 @@ code {
 #root {
   height: 100vh;
 }
+
+[data-corvu-resizable-handle][data-dragging] + [data-corvu-resizable-panel] iframe {
+  pointer-events: none;
+}

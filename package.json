@@ -19,27 +19,43 @@
   "private": false,
   "sideEffects": false,
   "type": "module",
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/index/index.js",
+  "module": "./dist/index/index.js",
+  "types": "./dist/index/index.d.ts",
   "browser": {},
   "exports": {
-    "solid": {
-      "development": "./dist/dev.jsx",
-      "import": "./dist/index.jsx"
-    },
-    "development": {
+    ".": {
+      "development": {
+        "import": {
+          "types": "./dist/index/index.d.ts",
+          "default": "./dist/index/dev.js"
+        }
+      },
       "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/dev.js"
+        "types": "./dist/index/index.d.ts",
+        "default": "./dist/index/index.js"
       }
     },
-    "import": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+    "./plugins": {
+      "development": {
+        "import": {
+          "types": "./dist/plugins/index.d.ts",
+          "default": "./dist/plugins/dev.js"
+        }
+      },
+      "import": {
+        "types": "./dist/plugins/index.d.ts",
+        "default": "./dist/plugins/index.js"
+      }
     }
   },
-  "typesVersions": {},
+  "typesVersions": {
+    "*": {
+      "plugins": [
+        "./dist/plugins/index.d.ts"
+      ]
+    }
+  },
   "scripts": {
     "dev": "vite serve dev",
     "build:dev": "vite build dev",
@@ -91,7 +107,6 @@
   "dependencies": {
     "@babel/standalone": "^7.24.4",
     "@bigmistqke/minni": "^0.0.7",
-    "@bigmistqke/solid-layout": "file:../solid-layout",
     "@monaco-editor/loader": "^1.4.0",
     "solid-js": "^1.8.0",
     "clsx": "^2.1.0",

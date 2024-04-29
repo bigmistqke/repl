@@ -4,12 +4,13 @@ import { Resizable } from 'corvu/resizable'
 
 import { createEffect, createSignal, onCleanup, type Component } from 'solid-js'
 import { JsxEmit } from 'typescript'
-import cached from './repl.config.json'
 
 import styles from './App.module.css'
 
 const App: Component = () => {
+  const [dragging, setDragging] = createSignal(false)
   const [currentFile, setCurrentFile] = createSignal('src/index.tsx')
+
   return (
     <Repl
       babel={{
@@ -31,33 +32,58 @@ const App: Component = () => {
         strict: true,
       }}
       initialState={{
-        types: cached.types,
+        /* types: cached.types, */
         files: {
-          'src/sum.tsx': 'export const sum = (a,b) => a + b',
           'src/index.tsx': `
 import { render } from "solid-js/web";
 import { createSignal } from "solid-js";
-import { sum } from "./sum";
+import * as THREE from "three";
+import { Vector3 } from "three";
+import {Canvas, T, extend, useFrame, useThree } from "solid-three"
+import "solid-js/jsx-runtime"
 
-console.log(sum)
+extend(THREE);
 
-function Counter() {
-  const [count, setCount] = createSignal(1);
-  const increment = () => setCount(count => count + 1);
+
+function Box() {
+  let mesh: THREE.Mesh | undefined;
+  const [hovered, setHovered] = createSignal(false);
+
+  useFrame(() => (mesh!.rotation.y += 0.01));
 
   return (
-    <button type="button" onClick={increment}>
-      {sum(count(), count())}
-    </button>
+    <>
+      <T.Mesh
+        ref={mesh}
+        onPointerEnter={e => setHovered(true)}
+        onPointerLeave={e => setHovered(false)}
+      >
+        <T.BoxGeometry />
+        <T.MeshStandardMaterial color={hovered() ? "green" : "red"} />
+      </T.Mesh>
+    </>
   );
 }
 
-render(() => <Counter />, document.body);
+
+export const App = () => {
+  return (
+    <Canvas camera={{ position: new Vector3(0, 0, 5) }}>
+      <T.AmbientLight intensity={0.4} color={[0.5, 0.5, 0.5]} />
+      <T.PointLight decay={0} position={[2, 2, 5]} rotation={[0, Math.PI / 3, 0]} />
+      <Box />
+    </Canvas>
+  );
+};
+
+render(() => <App />, document.body);
+          
+          
 `,
         },
       }}
       class={styles.repl}
-      onReady={({ fs, frames }) => {
+      onReady={async ({ fs, frames }) => {
         createEffect(() => {
           const frame = frames.get('default')
           const moduleUrl = fs.get('src/index.tsx')?.moduleUrl()
@@ -66,6 +92,9 @@ render(() => <Counter />, document.body);
 
           onCleanup(() => {
             frame.document.body.removeChild(script)
+            // NOTE:  solid-repl-plugin transforms
+            //        render(() => ...) to
+            //        window.dispose = render(() => ...)
             frame.window.dispose?.()
           })
 
@@ -74,18 +103,27 @@ render(() => <Counter />, document.body);
           script.src = moduleUrl
           frame.document.body.appendChild(script)
         })
+        await fs.addPackage('./solid-three')
       }}
     >
-      <Resizable style={{ width: '100vw', height: '100vh' }}>
-        <Resizable.Panel style={{ overflow: 'hidden' }}>
+      <Resizable style={{ width: '100vw', height: '100vh', display: 'flex' }}>
+        <Resizable.Panel
+          style={{ overflow: 'hidden', display: 'flex', 'flex-direction': 'column' }}
+        >
           <Repl.TabBar>
             {({ path }) => <button onClick={() => setCurrentFile(path)}>{path}</button>}
           </Repl.TabBar>
-          <Repl.Editor path={currentFile()} />
+          <Repl.Editor style={{ flex: 1 }} path={currentFile()} />
         </Resizable.Panel>
         <Resizable.Handle />
-        <Resizable.Panel>
-          <Repl.Frame bodyStyle={{ padding: '0px', margin: '0px' }} />
+        <Resizable.Panel style={{ display: 'flex' }}>
+          <Repl.Frame
+            style={{ flex: 1 }}
+            bodyStyle={{
+              padding: '0px',
+              margin: '0px',
+            }}
+          />
         </Resizable.Panel>
       </Resizable>
     </Repl>

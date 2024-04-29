@@ -18,7 +18,7 @@ export type FrameProps = ComponentProps<'iframe'> & {
   bodyStyle?: JSX.CSSProperties | string | undefined
 }
 
-export function Frame(props: FrameProps) {
+export function ReplFrame(props: FrameProps) {
   const [, rest] = splitProps(props, ['class'])
   const config = mergeProps({ name: 'default' }, props)
   const repl = useRepl()

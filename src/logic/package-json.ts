@@ -32,7 +32,7 @@ export class PackageJsonParser {
       baseUrl = new URL(baseUrl, window.location.href.toString()).href
     }
 
-    const packageJson = (await fetch(`${baseUrl}package.json`).then(res =>
+    const packageJson = (await fetch(`${baseUrl}/package.json`).then(res =>
       res.json(),
     )) as PackageJson
 
@@ -55,8 +55,8 @@ export class PackageJsonParser {
       packageJson.typings
 
     return {
-      typesUrl: new URL(types, baseUrl).href,
-      scriptUrl: new URL(script, baseUrl).href,
+      typesUrl: types && new URL(types, `${baseUrl}/`).href,
+      scriptUrl: new URL(script, `${baseUrl}/`).href,
       name: packageJson.name,
     }
   }

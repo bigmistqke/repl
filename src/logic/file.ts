@@ -67,21 +67,39 @@ export class File {
         try {
           return mapModuleDeclarations(path, value, node => {
             const specifier = node.moduleSpecifier as ts.StringLiteral
-            const modulePath = specifier.text
+            let modulePath = specifier.text
+
             if (pathIsUrl(modulePath)) return
-            // If the module is a local dependency
-            if (pathIsRelativePath(modulePath)) {
-              const absolutePath = relativeToAbsolutePath(path, modulePath)
-              // We get the module-url from the module's File
-              // Which automatically subscribes
-              const file = fs.resolve(absolutePath)
+
+            const alias = this.fs.localPackages[modulePath]
+
+            if (alias) {
+              const file = fs.resolve(alias)
               const moduleUrl = file?.moduleUrl()
+
               if (moduleUrl) {
                 // If moduleUrl is defined
                 // We transform the relative depedency with the module-url
                 specifier.text = moduleUrl
               } else {
-                console.error('file', file, absolutePath)
+                // If moduleUrl is not undefined
+                // We throw and return previous code
+                throw `module ${modulePath} not defined`
+              }
+            }
+            // If the module is a local dependency
+            else if (pathIsRelativePath(modulePath)) {
+              const absolutePath = relativeToAbsolutePath(path, modulePath)
+              // We get the module-url from the module's File
+              // Which automatically subscribes
+              const file = fs.resolve(absolutePath)
+              const moduleUrl = file?.moduleUrl()
+
+              if (moduleUrl) {
+                // If moduleUrl is defined
+                // We transform the relative depedency with the module-url
+                specifier.text = moduleUrl
+              } else {
                 // If moduleUrl is not undefined
                 // We throw and return previous code
                 throw `module ${modulePath} not defined`

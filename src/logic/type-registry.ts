@@ -7,7 +7,9 @@ import {
   mapModuleDeclarations,
   pathIsRelativePath,
   pathIsUrl,
+  pathToPackageNameAndVersion,
   relativeToAbsolutePath,
+  when,
 } from '../utils'
 import { PackageJsonParser } from './package-json'
 
@@ -112,12 +114,19 @@ export class TypeRegistry {
   }
 
   private cachedUrls = new Set<string>()
-  async importTypesFromUrl(url: string) {
+  async importTypesFromUrl(url: string, packageName?: string) {
     const virtualPath = this.getVirtualPath(url)
-    if (this.cachedUrls.has(virtualPath)) return
-    this.cachedUrls.add(virtualPath)
 
-    console.info('import types from url:', url)
+    if (
+      (packageName && this.cachedPackageNames.has(packageName)) ||
+      this.cachedUrls.has(virtualPath)
+    ) {
+      return
+    }
+    this.cachedUrls.add(virtualPath)
+    if (packageName) {
+      this.cachedPackageNames.add(packageName)
+    }
 
     const newFiles: Record<string, string> = {}
 
@@ -130,7 +139,7 @@ export class TypeRegistry {
 
       const code = await fetch(url).then(response => {
         if (response.status !== 200) {
-          throw new Error(`Error while loading ${url}`)
+          // throw new Error(`Error while loading ${url}`)
         }
         return response.text()
       })
@@ -139,11 +148,39 @@ export class TypeRegistry {
 
       const transformedCode = mapModuleDeclarations(virtualPath, code, node => {
         const specifier = node.moduleSpecifier as ts.StringLiteral
-        const path = specifier.text
+        let path = specifier.text
         if (pathIsRelativePath(path)) {
+          if (path.endsWith('.js')) {
+            path = path.replace('.js', '.d.ts')
+            specifier.text = path
+          }
           promises.push(resolvePath(relativeToAbsolutePath(url, path)))
-        } else if (pathIsUrl('https:')) {
-          const virtualPath = this.getVirtualPath(path)
+        } else if (pathIsUrl(path)) {
+          let virtualPath = this.getVirtualPath(path)
+          when(pathToPackageNameAndVersion(virtualPath))(([packageName, version]) => {
+            for (const key of Object.keys(this.files())) {
+              const foundSamePackageName = when(pathToPackageNameAndVersion(key))(([
+                otherPackagename,
+                otherVersion,
+              ]) => {
+                if (otherPackagename === packageName) {
+                  if (version !== otherVersion) {
+                    console.error(
+                      `Conflicting version numbers: Overwriting version number of ${packageName} from ${version} to ${otherVersion}. Accessed in path ${path}.`,
+                    )
+                    path = path.replace(version, otherVersion)
+                    virtualPath = virtualPath.replace(version, otherVersion)
+                  }
+                  return true
+                }
+                return false
+              })
+              if (foundSamePackageName) {
+                break
+              }
+            }
+          })
+
           specifier.text = virtualPath
           promises.push(this.importTypesFromUrl(path))
           this.alias(virtualPath, virtualPath)
@@ -173,14 +210,17 @@ export class TypeRegistry {
         )
       }
     })
+
+    if (packageName) {
+      this.cachedPackageNames.add(packageName)
+      this.alias(packageName, virtualPath)
+    }
   }
 
   private cachedPackageNames = new Set<string>()
   async importTypesFromPackageName(packageName: string) {
     if (this.cachedPackageNames.has(packageName)) return
     this.cachedPackageNames.add(packageName)
-
-    console.info('import types from package name:', packageName)
 
     const typeUrl = await fetch(`${this.config.cdn}/${packageName}`)
       .then(result => result.headers.get('X-TypeScript-Types'))

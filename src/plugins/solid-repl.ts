@@ -13,11 +13,13 @@ export const solidReplPlugin = function ({ types }: { types: any }): babel.Plugi
               specifier.imported.name === 'render',
           )
           if (renderSpecifier) {
+            // @ts-expect-error
             path.scope.getBinding(renderSpecifier.local.name)!.path.node.isSolidJSWebRender = true
           }
         }
       },
       CallExpression(path) {
+        // @ts-expect-error
         if (path.node.hasBeenTransformed) {
           return
         }
@@ -27,6 +29,7 @@ export const solidReplPlugin = function ({ types }: { types: any }): babel.Plugi
         if (
           types.isIdentifier(callee) &&
           'name' in callee &&
+          // @ts-expect-error
           path.scope.getBinding(callee.name)?.path?.node?.isSolidJSWebRender
         ) {
           const renderCall = types.callExpression(callee, path.node.arguments)

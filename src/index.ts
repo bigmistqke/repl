@@ -1,3 +1,6 @@
 export { type EditorProps } from './components/editor'
 export { type FrameProps as FrameProps } from './components/frame'
 export { Repl, type ReplProps } from './components/repl'
+export { useRepl } from './components/use-repl'
+export { PackageJsonParser } from './logic/package-json'
+export * from './utils'

@@ -1,6 +1,5 @@
-import { compressSync, decompressSync, strFromU8, strToU8 } from 'fflate'
 import { Accessor } from 'solid-js'
-import ts from 'typescript'
+import ts, { SourceFile } from 'typescript'
 
 /**********************************************************************************/
 /*                                                                                */
@@ -22,8 +21,8 @@ export const createLog =
 export function deepMerge<TTarget extends Record<string, any>, TSource extends Record<string, any>>(
   target: TTarget,
   source: TSource,
-): TTarget & TSource {
-  const output = Array.isArray(source) ? [] : {}
+) {
+  const output: Record<string, any> = Array.isArray(source) ? [] : {}
 
   for (const key in target) {
     if (target.hasOwnProperty(key)) {
@@ -36,8 +35,8 @@ export function deepMerge<TTarget extends Record<string, any>, TSource extends R
       if (
         typeof source[key] === 'object' &&
         source[key] !== null &&
-        !(source[key] instanceof Date) &&
-        !(source[key] instanceof Function)
+        !((source[key] as Record<string, any>) instanceof Date) &&
+        !((source[key] as Record<string, any>) instanceof Function)
       ) {
         output[key] = target[key] ? deepMerge(target[key], source[key]) : source[key]
       } else {
@@ -51,7 +50,7 @@ export function deepMerge<TTarget extends Record<string, any>, TSource extends R
       }
     }
   }
-  return output
+  return output as TTarget & TSource
 }
 
 /**********************************************************************************/
@@ -178,28 +177,6 @@ export const waitFor = (time = 1000) => new Promise(resolve => setTimeout(resolv
 
 /**********************************************************************************/
 /*                                                                                */
-/*                                     Compres                                   */
-/*                                                                                */
-/**********************************************************************************/
-
-// thanks tito
-function base64ToBytes(base64: string) {
-  return Uint8Array.from(atob(base64), m => m.codePointAt(0)!)
-}
-
-function bytesToBase64(bytes) {
-  return btoa(String.fromCodePoint(...bytes))
-}
-
-export function compress(s: string) {
-  return bytesToBase64(compressSync(strToU8(JSON.stringify(s))))
-}
-export function uncompress(s: string) {
-  return JSON.parse(strFromU8(decompressSync(base64ToBytes(s))))
-}
-
-/**********************************************************************************/
-/*                                                                                */
 /*                                       Path                                     */
 /*                                                                                */
 /**********************************************************************************/
@@ -222,6 +199,19 @@ export const pathIsUrl = (value: string) =>
   value.startsWith('blob:') || value.startsWith('http:') || value.startsWith('https:')
 
 export const pathIsRelativePath = (value: string) => value.startsWith('.')
+
+// Regex to capture package names including those with or without '@' in the beginning and versions
+const regex = /(?:@?[^@\/]*\/)?([^@\/]+)@([^\s\/]+)/
+export const pathToPackageNameAndVersion = (path: string) => {
+  const match = path.match(regex)
+  if (match) {
+    const packageName = match[1] // captures the package name, adjusting for optional '@' in the beginning
+    const version = match[2] // captures the version
+    return [packageName, version] as [string, string]
+  } else {
+    return undefined
+  }
+}
 
 /**********************************************************************************/
 /*                                                                                */
@@ -251,18 +241,29 @@ export function mapModuleDeclarations(
 
           if (previous !== node.moduleSpecifier.text) {
             shouldPrint = true
-            return ts.factory.updateImportDeclaration(
-              node,
-              node.modifiers,
-              isImport ? node.importClause : node.exportClause,
-              ts.factory.createStringLiteral(node.moduleSpecifier.text),
-              node.assertClause, // Preserve the assert clause if it exists
-            )
+            if (isImport) {
+              return ts.factory.updateImportDeclaration(
+                node,
+                node.modifiers,
+                node.importClause,
+                ts.factory.createStringLiteral(node.moduleSpecifier.text),
+                node.assertClause, // Preserve the assert clause if it exists
+              )
+            } else {
+              return ts.factory.updateExportDeclaration(
+                node,
+                node.modifiers,
+                false,
+                node.exportClause,
+                ts.factory.createStringLiteral(node.moduleSpecifier.text),
+                node.assertClause, // Preserve the assert clause if it exists
+              )
+            }
           }
         }
         return ts.visitEachChild(node, visit, context)
       }
-      return node => ts.visitNode(node, visit)
+      return node => ts.visitNode(node, visit) as SourceFile
     },
   ])
   if (!result.transformed[0]) return undefined

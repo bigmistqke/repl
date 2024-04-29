@@ -1,9 +1,17 @@
 import { Monaco } from '@monaco-editor/loader'
 import { Resource, createEffect, createResource, mergeProps } from 'solid-js'
 import { SetStoreFunction, createStore } from 'solid-js/store'
+import ts from 'typescript'
 import { ReplConfig } from '../components/repl'
-import { Mandatory } from '../utils'
+import {
+  Mandatory,
+  mapModuleDeclarations,
+  pathIsRelativePath,
+  pathIsUrl,
+  relativeToAbsolutePath,
+} from '../utils'
 import { File } from './file'
+import { PackageJsonParser } from './package-json'
 import { TypeRegistry, TypeRegistryState } from './type-registry'
 
 export type FileSystemState = {
@@ -15,6 +23,9 @@ export type CompilationEvent = { url: string; path: string; fileSystem: FileSyst
 export type CompilationHandler = (event: CompilationEvent) => void
 export class FileSystem {
   typeRegistry: TypeRegistry
+  packageJsonParser = new PackageJsonParser()
+  localPackages: Record<string, string>
+  setLocalPackages: SetStoreFunction<Record<string, string>>
   private files: Record<string, File>
   private setFiles: SetStoreFunction<Record<string, File>>
   private presets: Resource<any[]>
@@ -27,10 +38,8 @@ export class FileSystem {
   ) {
     this.config = mergeProps({ cdn: 'https://esm.sh' }, config)
     this.typeRegistry = new TypeRegistry(monaco, { initialState: config.initialState?.types })
-
-    const [files, setFiles] = createStore<Record<string, File>>()
-    this.files = files
-    this.setFiles = setFiles
+    ;[this.localPackages, this.setLocalPackages] = createStore<Record<string, string>>({})
+    ;[this.files, this.setFiles] = createStore<Record<string, File>>()
 
     const [presets] = createResource(
       () => this.config?.babel?.presets || [],
@@ -110,10 +119,65 @@ export class FileSystem {
     return this.files[path]
   }
 
+  addProject(files: Record<string, string>) {
+    Object.entries(files).forEach(([path, value]) => {
+      this.create(path).set(value)
+    })
+  }
+
+  async addPackage(url: string) {
+    const getVirtualPath = (url: string) => (pathIsUrl(url) ? new URL(url).pathname : url)
+
+    const { typesUrl, scriptUrl, name } = await this.packageJsonParser.parse(url)
+
+    this.setLocalPackages(name, '')
+
+    const project: Record<string, string> = {}
+    const resolvePath = async (url: string) => {
+      const virtualPath = getVirtualPath(url)
+
+      const code = await fetch(url).then(response => {
+        if (response.status !== 200) {
+          throw new Error(`Error while loading ${url}: ${response.statusText}`)
+        }
+        return response.text()
+      })
+
+      const promises: Promise<void>[] = []
+
+      const transformedCode = mapModuleDeclarations(virtualPath, code, node => {
+        const specifier = node.moduleSpecifier as ts.StringLiteral
+        const path = specifier.text
+        if (pathIsRelativePath(path)) {
+          promises.push(resolvePath(relativeToAbsolutePath(url, path)))
+        }
+      })
+
+      if (!transformedCode) {
+        throw new Error(`Transform returned undefined for ${virtualPath}`)
+      }
+
+      await Promise.all(promises)
+
+      project[virtualPath] = transformedCode
+    }
+    await resolvePath(scriptUrl)
+
+    Object.entries(project).forEach(([path, value]) => {
+      this.create(`node_modules/${path}`).set(value)
+    })
+
+    if (typesUrl) {
+      await this.typeRegistry.importTypesFromUrl(typesUrl, name)
+    }
+    this.setLocalPackages(name, `node_modules/${getVirtualPath(scriptUrl)}`)
+  }
+
   // resolve path according to typescript-rules
   // NOTE:  should this update according to tsConfig.moduleResolution ?
   resolve(path: string) {
     return (
+      this.files[path] ||
       this.files[`${path}/index.ts`] ||
       this.files[`${path}/index.tsx`] ||
       this.files[`${path}/index.d.ts`] ||
@@ -128,6 +192,8 @@ export class FileSystem {
   }
 
   all() {
-    return this.files
+    return Object.fromEntries(
+      Object.entries(this.files).filter(([path]) => path.split('/')[0] !== 'node_modules'),
+    )
   }
 }

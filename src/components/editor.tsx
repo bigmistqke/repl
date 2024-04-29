@@ -1,10 +1,7 @@
-import clsx from 'clsx'
 import { ComponentProps, createEffect, createMemo, onCleanup, splitProps } from 'solid-js'
 
 import { when } from '../utils'
 import { useRepl } from './use-repl'
-// @ts-expect-error
-import styles from './repl.module.css'
 
 export type EditorProps = Omit<ComponentProps<'div'>, 'ref'> & {
   initialValue?: string
@@ -12,12 +9,12 @@ export type EditorProps = Omit<ComponentProps<'div'>, 'ref'> & {
   import?: string
 }
 
-export function Editor(props: EditorProps) {
-  const [, htmlProps] = splitProps(props, ['initialValue'])
+export function ReplEditor(props: EditorProps) {
+  const [, rest] = splitProps(props, ['initialValue', 'class'])
   const repl = useRepl()
 
   // Initialize html-element of monaco-editor
-  const container = (<div {...htmlProps} class={styles['editor']} />) as HTMLDivElement
+  const container = (<div class={props.class} {...rest} />) as HTMLDivElement
 
   // Get or create file
   const file = createMemo(() => repl.fs.get(props.path) || repl.fs.create(props.path))
@@ -50,5 +47,5 @@ export function Editor(props: EditorProps) {
   // Dispose monaco-editor after cleanup
   onCleanup(() => editor.dispose())
 
-  return <div class={clsx(styles['editor-container'])}>{container}</div>
+  return container
 }

@@ -17,37 +17,11 @@
   &:not(.resizing):hover {
     overflow: visible;
   }
-
   &.resizing .editor {
     overflow: hidden;
   }
 }
 
-.editor {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
-
-.resize-bar {
-  height: 5px;
-  background: var(--color-grey-light);
-  cursor: ns-resize;
-  &:hover {
-    background: var(--color-grey);
-  }
-}
-
 .frame {
   all: unset;
-  flex: 1;
-}
-
-.panel {
-  display: flex;
-  flex: 1;
-
-  &.column {
-    flex-direction: column;
-  }
 }

@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import { wireTmGrammars } from 'monaco-editor-textmate'
 import { Registry } from 'monaco-textmate'
 import { loadWASM } from 'onigasm'
+// @ts-expect-error
 import onigasm from 'onigasm/lib/onigasm.wasm?url'
 import { ParentProps, Show, createEffect, createResource, splitProps } from 'solid-js'
 import { JsxEmit, ModuleKind, ModuleResolutionKind, ScriptTarget } from 'typescript'
@@ -10,16 +11,16 @@ import { JsxEmit, ModuleKind, ModuleResolutionKind, ScriptTarget } from 'typescr
 import { deepMerge } from 'src/utils'
 import { FileSystem, FileSystemState } from '../logic/file-system'
 import { Frames } from '../logic/frames'
-import { Editor } from './editor'
-import { Frame } from './frame'
-import { Panel } from './panel'
-import { TabBar } from './tab-bar'
+import { ReplEditor } from './editor'
+import { ReplFrame } from './frame'
+import { ReplTabBar } from './tab-bar'
 import typescriptReactTM from './text-mate/TypeScriptReact.tmLanguage.json'
 import cssTM from './text-mate/css.tmLanguage.json'
 import vsDark from './themes/vs_dark_good.json'
 import vsLight from './themes/vs_light_good.json'
 import { replContext } from './use-repl'
 
+// @ts-expect-error
 import styles from './repl.module.css'
 
 const GRAMMARS = new Map([
@@ -38,7 +39,7 @@ export type ReplConfig = Partial<{
   class: string
   initialState: Partial<FileSystemState>
   mode: 'light' | 'dark'
-  onReady: (event: { fs: FileSystem; frames: Frames }) => void
+  onReady: (event: { fs: FileSystem; frames: Frames }) => Promise<void> | void
   packages: string[]
   typescript: TypescriptConfig
   actions?: {
@@ -124,7 +125,7 @@ export function Repl(props: ReplProps) {
 
   const [fs] = createResource(monaco, async monaco => {
     const fs = new FileSystem(monaco, config)
-    config.onReady?.({ fs, frames })
+    await config.onReady?.({ fs, frames })
     return fs
   })
 
@@ -139,7 +140,6 @@ export function Repl(props: ReplProps) {
   )
 }
 
-Repl.Editor = Editor
-Repl.Frame = Frame
-Repl.TabBar = TabBar
-Repl.Panel = Panel
+Repl.Editor = ReplEditor
+Repl.Frame = ReplFrame
+Repl.TabBar = ReplTabBar
