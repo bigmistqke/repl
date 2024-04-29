@@ -1,5 +1,5 @@
 import { Monaco } from '@monaco-editor/loader'
-import { Resource, createEffect, createResource, createRoot, mergeProps, onCleanup } from 'solid-js'
+import { Resource, createResource, createRoot, mergeProps, onCleanup } from 'solid-js'
 import { SetStoreFunction, createStore } from 'solid-js/store'
 import ts from 'typescript'
 import { ReplConfig } from '../components/repl'
@@ -122,12 +122,6 @@ export class FileSystem {
     // TODO:  It feels a bit dirty having to wrap it all in a root
     //        Maybe there is a more resource-y way of doing this.
     createRoot(dispose => {
-      createEffect(() => {
-        this.config.packages?.forEach(packageName => {
-          this.typeRegistry.importTypesFromPackageName(packageName)
-        })
-      })
-
       if (this.config.initialState) {
         if (this.config.initialState.types) {
           this.typeRegistry.initialize(this.config.initialState.types)
