@@ -1,8 +1,7 @@
 import { onCleanup } from 'solid-js'
 import { SetStoreFunction, createStore } from 'solid-js/store'
 import { when } from '..'
-import { CssFile } from './css-file'
-import { JsFile } from './js-file'
+import { CssFile, JsFile } from './file'
 
 export class Frames {
   private frames: Record<string, Frame>

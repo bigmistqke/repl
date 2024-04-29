@@ -10,9 +10,7 @@ import {
   pathIsUrl,
   relativeToAbsolutePath,
 } from '../utils'
-import { CssFile } from './css-file'
-import { File } from './file'
-import { JsFile } from './js-file'
+import { CssFile, File, JsFile } from './file'
 import { PackageJsonParser } from './package-json'
 import { TypeRegistry, TypeRegistryState } from './type-registry'
 

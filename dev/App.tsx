@@ -5,7 +5,7 @@ import { Resizable } from 'corvu/resizable'
 import { createEffect, createSignal, mapArray, onCleanup, type Component } from 'solid-js'
 import { JsxEmit } from 'typescript'
 
-import { JsFile } from 'src/logic/js-file'
+import { JsFile } from 'src/logic/file'
 import styles from './App.module.css'
 
 const App: Component = () => {
