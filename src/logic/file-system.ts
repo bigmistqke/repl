@@ -16,6 +16,7 @@ import { TypeRegistry, TypeRegistryState } from './type-registry'
 
 export type FileSystemState = {
   files: Record<string, string>
+  alias: Record<string, string>
   types: TypeRegistryState
 }
 
@@ -74,11 +75,17 @@ export class FileSystem {
         })
       })
 
-      if (this.config.initialState?.files) {
-        Object.entries(this.config.initialState?.files).map(([path, source]) =>
-          this.create(path).set(source),
-        )
+      if (this.config.initialState) {
+        if (this.config.initialState.files) {
+          Object.entries(this.config.initialState.files).map(([path, source]) =>
+            this.create(path).set(source),
+          )
+        }
+        if (this.config.initialState.alias) {
+          this.setAlias(this.config.initialState.alias)
+        }
       }
+
       this.cleanups.push(dispose)
     })
   }
@@ -87,9 +94,11 @@ export class FileSystem {
     const files = Object.fromEntries(
       Object.entries(this.files).map(([key, value]) => [key, value.toJSON()]),
     )
+
     return {
       types: this.typeRegistry.toJSON(),
       files,
+      alias: this.alias,
     }
   }
 
