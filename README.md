@@ -4,7 +4,11 @@
 
 # @bigmistqke/repl
 
-This SolidJS component library enables the creation of modular TypeScript playgrounds utilizing the Monaco Editor. It supports a flexible file system for transpiling TypeScript into ECMAScript Modules (ESM), imports of external dependencies (including types), making it ideal for developers to create customizable, browser-based IDEs.
+`@bigmistqke/repl` provides unstyled building blocks to create TypeScript playgrounds utilizing the Monaco Editor. It supports a flexible file system for transpiling TypeScript into ECMAScript Modules (ESM), imports of external dependencies (including types), making it ideal for developers to create customizable, browser-based IDEs.
+
+https://github.com/bigmistqke/repl/assets/10504064/50195cb6-f3aa-4dea-a40a-d04f2d32479d
+
+___Click [here](#example-overview) for a line-by-line explanation of the above example___
 
 ## Features
 
@@ -22,16 +26,16 @@ This SolidJS component library enables the creation of modular TypeScript playgr
 - [Components Documentation](#components-documentation)
   - [`Repl` Component](#repl-component)
   - [`Repl.Editor` Component](#repleditor-component)
-  - [`Repl.Frame` Component](#replrame-component)
+  - [`Repl.Frame` Component](#replframe-component)
   - [`Repl.TabBar` Component](#repltabbar-component)
 - [Hooks](#hooks)
   - [`useRepl`](#userepl)
 - [Internal APIs Documentation](#internal-apis-documentation)
   - [`FileSystem`](#filesystem)
   - [`JsFile` and `CssFile`](#jsfile-and-cssfile)
-  - [`FrameRegistry`](#frame-registry)
-  - [`TypeRegistry`](#type-registry)
-- [Advanced Example](#advanced-example)
+  - [`FrameRegistry`](#frameregistry)
+  - [`TypeRegistry`](#typeregistry)
+- [Example Overview](#example-overview)
 
 ## Installation
 
@@ -375,19 +379,9 @@ export class TypeRegistry {
 
 ```
 
-# Advanced Example: Integrating Monaco Editor with SolidJS
-
-This chapter provides an in-depth look at a sophisticated example of integrating the Monaco Editor within a SolidJS application. The application is designed to offer a dynamic development environment with features like live TypeScript editing, file management, and execution within a secure, isolated context.
-
-## Application Overview
+# Example Overview
 
 This application demonstrates complex interactions between various components and hooks, designed to facilitate an interactive and intuitive coding environment directly in the browser.
-
-### Components and Their Interactions
-
-- **`Repl`**: Main component setting up the editor.
-- **`useRepl`**: Hook to interact with REPL state and functionalities.
-- **`JsFile` and `CssFile`**: File abstractions within the virtual file system.
 
 ### Detailed Code Explanation
 
