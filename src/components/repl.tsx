@@ -126,6 +126,7 @@ export function Repl(props: ReplProps) {
   const [fs] = createResource(monaco, async monaco => {
     const fs = new FileSystem(monaco, config)
     await config.onReady?.({ fs, frames })
+    fs.initialize()
     return fs
   })
 

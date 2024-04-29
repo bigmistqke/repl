@@ -195,10 +195,10 @@ export function relativeToAbsolutePath(currentPath: string, relativePath: string
   return newPath.join('/')
 }
 
-export const pathIsUrl = (value: string) =>
+export const isUrl = (value: string) =>
   value.startsWith('blob:') || value.startsWith('http:') || value.startsWith('https:')
 
-export const pathIsRelativePath = (value: string) => value.startsWith('.')
+export const isRelativePath = (value: string) => value.startsWith('.')
 
 // Regex to capture package names including those with or without '@' in the beginning and versions
 const regex = /(?:@?[^@\/]*\/)?([^@\/]+)@([^\s\/]+)/
@@ -222,7 +222,8 @@ export const pathToPackageNameAndVersion = (path: string) => {
 export function mapModuleDeclarations(
   path: string,
   code: string,
-  callback: (node: ts.ImportDeclaration | ts.ExportDeclaration) => void,
+  //** Callback to modify module-declaration node. Return `false` to remove node from code. `Throw` to break execution. */
+  callback: (node: ts.ImportDeclaration | ts.ExportDeclaration) => void | false,
 ) {
   const sourceFile = ts.createSourceFile(path, code, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
   let shouldPrint = false
@@ -238,9 +239,7 @@ export function mapModuleDeclarations(
 
           const previous = node.moduleSpecifier.text
 
-          try {
-            callback(node) // Apply the callback to modify the moduleSpecifier
-          } catch {
+          if (callback(node) === false) {
             shouldPrint = true
             return
           }

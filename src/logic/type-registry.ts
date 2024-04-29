@@ -4,9 +4,9 @@ import { Monaco } from '@monaco-editor/loader'
 import { Accessor, Setter, createSignal, mergeProps } from 'solid-js'
 import {
   Mandatory,
+  isRelativePath,
+  isUrl,
   mapModuleDeclarations,
-  pathIsRelativePath,
-  pathIsUrl,
   pathToPackageNameAndVersion,
   relativeToAbsolutePath,
   when,
@@ -149,13 +149,13 @@ export class TypeRegistry {
       const transformedCode = mapModuleDeclarations(virtualPath, code, node => {
         const specifier = node.moduleSpecifier as ts.StringLiteral
         let path = specifier.text
-        if (pathIsRelativePath(path)) {
+        if (isRelativePath(path)) {
           if (path.endsWith('.js')) {
             path = path.replace('.js', '.d.ts')
             specifier.text = path
           }
           promises.push(resolvePath(relativeToAbsolutePath(url, path)))
-        } else if (pathIsUrl(path)) {
+        } else if (isUrl(path)) {
           let virtualPath = this.getVirtualPath(path)
           when(pathToPackageNameAndVersion(virtualPath))(([packageName, version]) => {
             for (const key of Object.keys(this.files())) {

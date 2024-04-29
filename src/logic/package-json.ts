@@ -57,7 +57,7 @@ export class PackageJsonParser {
     return {
       typesUrl: types && new URL(types, `${baseUrl}/`).href,
       scriptUrl: new URL(script, `${baseUrl}/`).href,
-      name: packageJson.name,
+      packageName: packageJson.name,
     }
   }
 

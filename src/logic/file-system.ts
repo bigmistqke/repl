@@ -5,9 +5,9 @@ import ts from 'typescript'
 import { ReplConfig } from '../components/repl'
 import {
   Mandatory,
+  isRelativePath,
+  isUrl,
   mapModuleDeclarations,
-  pathIsRelativePath,
-  pathIsUrl,
   relativeToAbsolutePath,
 } from '../utils'
 import { CssFile, File, JsFile } from './file'
@@ -24,8 +24,8 @@ export type CompilationHandler = (event: CompilationEvent) => void
 export class FileSystem {
   typeRegistry: TypeRegistry
   packageJsonParser = new PackageJsonParser()
-  localPackages: Record<string, string>
-  setLocalPackages: SetStoreFunction<Record<string, string>>
+  alias: Record<string, string>
+  private setAlias: SetStoreFunction<Record<string, string>>
   private files: Record<string, File>
   private setFiles: SetStoreFunction<Record<string, File>>
   private presets: Resource<any[]>
@@ -38,18 +38,16 @@ export class FileSystem {
   ) {
     this.config = mergeProps({ cdn: 'https://esm.sh' }, config)
     this.typeRegistry = new TypeRegistry(monaco, { initialState: config.initialState?.types })
-    ;[this.localPackages, this.setLocalPackages] = createStore<Record<string, string>>({})
+    ;[this.alias, this.setAlias] = createStore<Record<string, string>>({})
     ;[this.files, this.setFiles] = createStore<Record<string, File>>()
-
-    const [presets] = createResource(
+    ;[this.presets] = createResource(
       () => this.config?.babel?.presets || [],
       presets =>
         Promise.all(
           presets.map(async preset => (await import(`${this.config.cdn}/${preset}`)).default),
         ),
     )
-    this.presets = presets
-    const [plugins] = createResource(
+    ;[this.plugins] = createResource(
       () => this.config?.babel?.plugins || [],
       plugins =>
         Promise.all(
@@ -61,16 +59,17 @@ export class FileSystem {
           }),
         ),
     )
-    this.plugins = plugins
+  }
 
+  initialize() {
     createEffect(() => {
-      config.packages?.forEach(packageName => {
+      this.config.packages?.forEach(packageName => {
         this.typeRegistry.importTypesFromPackageName(packageName)
       })
     })
 
-    if (config.initialState?.files) {
-      Object.entries(config.initialState?.files).map(([path, source]) =>
+    if (this.config.initialState?.files) {
+      Object.entries(this.config.initialState?.files).map(([path, source]) =>
         this.create(path).set(source),
       )
     }
@@ -128,11 +127,9 @@ export class FileSystem {
   }
 
   async addPackage(url: string) {
-    const getVirtualPath = (url: string) => (pathIsUrl(url) ? new URL(url).pathname : url)
+    const getVirtualPath = (url: string) => (isUrl(url) ? new URL(url).pathname : url)
 
-    const { typesUrl, scriptUrl, name } = await this.packageJsonParser.parse(url)
-
-    this.setLocalPackages(name, '')
+    const { typesUrl, scriptUrl, packageName } = await this.packageJsonParser.parse(url)
 
     const project: Record<string, string> = {}
     const resolvePath = async (url: string) => {
@@ -150,7 +147,7 @@ export class FileSystem {
       const transformedCode = mapModuleDeclarations(virtualPath, code, node => {
         const specifier = node.moduleSpecifier as ts.StringLiteral
         const path = specifier.text
-        if (pathIsRelativePath(path)) {
+        if (isRelativePath(path)) {
           promises.push(resolvePath(relativeToAbsolutePath(url, path)))
         }
       })
@@ -166,13 +163,14 @@ export class FileSystem {
     await resolvePath(scriptUrl)
 
     Object.entries(project).forEach(([path, value]) => {
-      this.create(`node_modules/${path}`).set(value)
+      this.create(`node_modules${path}`).set(value)
     })
 
     if (typesUrl) {
-      await this.typeRegistry.importTypesFromUrl(typesUrl, name)
+      await this.typeRegistry.importTypesFromUrl(typesUrl, packageName)
     }
-    this.setLocalPackages(name, `node_modules/${getVirtualPath(scriptUrl)}`)
+
+    this.setAlias(packageName, `node_modules${getVirtualPath(scriptUrl)}`)
   }
 
   // resolve path according to typescript-rules

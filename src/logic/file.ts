@@ -13,9 +13,9 @@ import {
 import ts from 'typescript'
 import {
   every,
+  isRelativePath,
+  isUrl,
   mapModuleDeclarations,
-  pathIsRelativePath,
-  pathIsUrl,
   relativeToAbsolutePath,
   when,
 } from '..'
@@ -78,67 +78,65 @@ export class JsFile extends File {
       },
     )
 
-    // Transpile intermediary to module:
+    // Transpile intermediary to esm-module:
     // - Transform local dependencies to dependencies' File.url()
     // - Transform package-names to cdn-url
     // NOTE:  possible optimisation would be to memo the holes and swap them out with .slice
-    const module = createMemo<string | undefined>(previous =>
+    const esm = createMemo<string | undefined>(previous =>
       when(intermediary)(value => {
         try {
           return batch(() =>
             mapModuleDeclarations(path, value, node => {
-              /* this.setCssImports([]) */
               const specifier = node.moduleSpecifier as ts.StringLiteral
               let modulePath = specifier.text
 
-              if (pathIsUrl(modulePath)) return
+              if (isUrl(modulePath)) return
 
-              const alias = this.fs.localPackages[modulePath]
+              const alias = this.fs.alias[modulePath]
+              // If the module-path is either an aliased path or a relative path
+              if (alias || isRelativePath(modulePath)) {
+                // We resolve the path to a File
+                const resolvedFile = fs.resolve(
+                  // If path is aliased we resolve the aliased path
+                  alias ||
+                    // Else the path must be a relative path
+                    // So we transform it to an absolute path
+                    // and resolve this absolute path
+                    relativeToAbsolutePath(path, modulePath),
+                )
 
-              if (alias) {
-                const file = fs.resolve(alias)
-                if (file instanceof JsFile) {
-                  const moduleUrl = file?.moduleUrl()
+                // If the resolved file is a js-file
+                if (resolvedFile instanceof JsFile) {
+                  // We get its module-url
+                  const moduleUrl = resolvedFile?.moduleUrl()
 
                   if (moduleUrl) {
                     // If moduleUrl is defined
                     // We transform the relative depedency with the module-url
                     specifier.text = moduleUrl
                   } else {
-                    // If moduleUrl is not undefined
-                    // We throw and return previous code
+                    // If moduleUrl is not defined, we throw.
+                    // This will break the loop, so we can return the previous result.
                     throw `module ${modulePath} not defined`
                   }
                 }
-              }
-              // If the module is a local dependency
-              else if (pathIsRelativePath(modulePath)) {
-                const absolutePath = relativeToAbsolutePath(path, modulePath)
-                // We get the module-url from the module's File
-                // Which automatically subscribes
-                const file = fs.resolve(absolutePath)
-                if (file instanceof JsFile) {
-                  const moduleUrl = file?.moduleUrl()
-
-                  if (moduleUrl) {
-                    // If moduleUrl is defined
-                    // We transform the relative depedency with the module-url
-                    specifier.text = moduleUrl
-                  } else {
-                    // If moduleUrl is not undefined
-                    // We throw and return previous code
-                    throw `module ${modulePath} not defined`
-                  }
-                } else if (file instanceof CssFile) {
+                // If the resolved file is a css-file
+                else if (resolvedFile instanceof CssFile) {
+                  // We add the resolved file to the css-imports of this js-file.
                   this.setCssImports(imports =>
-                    imports.includes(file) ? imports : [...imports, file],
+                    imports.includes(resolvedFile) ? imports : [...imports, resolvedFile],
                   )
-                  throw 'remove css-import'
+                  // Returning false will remove the node from the typescript-file
+                  return false
                 }
               }
-              // If the module is not a local dependency
-              else {
-                // We transform the package-name to a cdn-url.
+              // If the module-path is
+              //    - not an aliased path,
+              //    - nor a relative dependency,
+              //    - nor a url
+              // It must be a package-name.
+              else if (!isUrl(modulePath)) {
+                // We transform this package-name to a cdn-url.
                 specifier.text = `${this.fs.config.cdn}/${modulePath}`
                 this.fs.typeRegistry.importTypesFromPackageName(modulePath)
               }
@@ -151,11 +149,11 @@ export class JsFile extends File {
       }),
     )
 
-    // Get blob-url from module
-    const moduleUrl = createMemo(() =>
-      when(module)(value => {
+    // Get module-url from esm-module
+    this.moduleUrl = createMemo(() =>
+      when(esm)(esm => {
         return URL.createObjectURL(
-          new Blob([value], {
+          new Blob([esm], {
             type: 'application/javascript',
           }),
         )
@@ -166,7 +164,6 @@ export class JsFile extends File {
     this.model.onDidChangeContent(() => {
       this.setSource(this.model.getValue())
     })
-    this.moduleUrl = moduleUrl
   }
 
   toJSON() {
