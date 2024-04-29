@@ -8,7 +8,7 @@
 
 https://github.com/bigmistqke/repl/assets/10504064/50195cb6-f3aa-4dea-a40a-d04f2d32479d
 
-___Click [here](#example-overview) for a line-by-line explanation of the above example___
+**_Click [here](#example-overview) for a line-by-line explanation of the above example_**
 
 ## Features
 
@@ -100,7 +100,7 @@ The `Repl` component integrates the Monaco Editor into a SolidJS application, fa
 
 **Type**
 
-```ts
+```tsx
 type ReplProps = ComponentProps<'div'> &
   Partial<{
     babel: {
@@ -148,7 +148,7 @@ A sub-component of `Repl` that represents an individual editor pane where users 
 
 **Type**
 
-```ts
+```tsx
 type EditorProps = ComponentProps<'div'> & {
   path: string
   onMount?: (editor: MonacoEditor) => void
@@ -179,7 +179,7 @@ Manages individual iframe containers for isolated execution environments.
 
 **Type**
 
-```ts
+```tsx
 type FrameProps = ComponentProps<'iframe'> &
   Partial<{
     name: string
@@ -195,7 +195,7 @@ A minimal wrapper around `<For/>` to assist with navigating between different fi
 
 ```jsx
 <Repl.TabBar style={{ flex: 1 }}>
-  {({ path }) => <button onClick={() => setCurrentFile(path)}>{path}</button>}
+  {({ path }) => <button onClick={() => setCurrentPath(path)}>{path}</button>}
 </Repl.TabBar>
 ```
 
@@ -206,7 +206,7 @@ A minimal wrapper around `<For/>` to assist with navigating between different fi
 
 **Type**
 
-```ts
+```tsx
 type TabBarProps = ComponentProps<'div'> & {
   children: (arg: { path: string; file: File | undefined }) => JSXElement
   paths: string[]
@@ -232,7 +232,7 @@ frame.injectFile(entry)
 
 **Type**
 
-```ts
+```tsx
 type useRepl = (): {
   fs: FileSystem,
   frames: FrameRegistry
@@ -256,7 +256,7 @@ The `FileSystem` API manages a virtual file system, allowing for the creation, r
 
 **Type**
 
-```ts
+```tsx
 class FileSystem {
   constructor(
     public monaco: Monaco,
@@ -302,7 +302,7 @@ These classes represent JavaScript and CSS files within the virtual file system,
 
 **Types**
 
-```ts
+```tsx
 class JsFile extends File {
   model: Model
   set(value: string): void
@@ -332,7 +332,7 @@ Manages `Frames`.
 - **has(name: string)**: Checks if a frame exists by name.
 - **delete(name: string)**: Removes a frame from the registry.
 
-```ts
+```tsx
 class FrameRegistry {
   add(name: string, window: Window): void
   get(name: string): Frame
@@ -349,7 +349,7 @@ Manages individual iframe containers used for isolated execution environments. T
 
 - **injectFile(file: JsFile | CssFile)**: Injects the moduleUrl of a given `JsFile | CssFile` into the frame
 
-```ts
+```tsx
 class Frame {
   constructor(public window: Window)
   injectFile(file: CssFile | JsFile): HTMLScriptElement | undefined
@@ -368,7 +368,7 @@ Handles the management and storage of TypeScript types across the application. P
 
 **Types**
 
-```ts
+```tsx
 export class TypeRegistry {
   constructor(public fs: FileSystem)
 
@@ -388,11 +388,18 @@ This application demonstrates complex interactions between various components an
 
 ### Detailed Code Explanation
 
-```ts
+```tsx
+import { Repl, useRepl } from '@bigmistqke/repl'
+import { solidReplPlugin } from '@bigmistqke/repl/plugins/solid-repl'
+import { Resizable } from 'corvu/resizable'
+import { createEffect, createSignal, mapArray, on, onCleanup } from 'solid-js'
+import { JsFile } from 'src/logic/file'
+import { JsxEmit } from 'typescript'
+
 // Main component defining the application structure
-const App: Component = () => {
+const App = () => {
   // State management for the current file path, initialized to 'src/index.tsx'
-  const [currentPath, setCurrentFile] = createSignal('src/index.tsx')
+  const [currentPath, setCurrentPath] = createSignal('src/index.tsx')
 
   // Button component for adding new files dynamically to the REPL environment
   const AddButton = () => {
@@ -410,7 +417,7 @@ const App: Component = () => {
           }
           // Create a new file in the file system and set it as the current file
           repl.fs.create(path)
-          setCurrentFile(path)
+          setCurrentPath(path)
         }}
       >
         add file
@@ -451,7 +458,7 @@ const App: Component = () => {
           const frame = frames.get('default') // Access the default frame
           if (!frame) return
 
-          const entry = fs.get('src/index.tsx') // Get the current main file
+          const entry = fs.get(currentPath()) // Get the current main file
           if (entry instanceof JsFile) {
             frame.injectFile(entry) // Inject the JS file into the iframe for execution
 
@@ -472,7 +479,7 @@ const App: Component = () => {
         <Resizable.Panel style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex' }}>
             <Repl.TabBar style={{ flex: 1 }}>
-              {({ path }) => <button onClick={() => setCurrentFile(path)}>{path}</button>}
+              {({ path }) => <button onClick={() => setCurrentPath(path)}>{path}</button>}
             </Repl.TabBar>
             <AddButton />
           </div>
@@ -502,4 +509,4 @@ export default App
 
 # Acknowledgements
 
-The main inspiration of this project is my personal favorite IDE: [solid-playground](https://github.com/solidjs/solid-playground). Some LOC are copied directly, p.ex the css- and js-injection into the iframe. 
+The main inspiration of this project is my personal favorite IDE: [solid-playground](https://github.com/solidjs/solid-playground). Some LOC are copied directly, p.ex the css- and js-injection into the iframe.
