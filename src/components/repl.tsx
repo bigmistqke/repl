@@ -5,7 +5,7 @@ import { Registry } from 'monaco-textmate'
 import { loadWASM } from 'onigasm'
 // @ts-expect-error
 import onigasm from 'onigasm/lib/onigasm.wasm?url'
-import { ParentProps, Show, createEffect, createResource, splitProps } from 'solid-js'
+import { ComponentProps, Show, createEffect, createResource, splitProps } from 'solid-js'
 import { JsxEmit, ModuleKind, ModuleResolutionKind, ScriptTarget } from 'typescript'
 
 import { deepMerge, when } from 'src/utils'
@@ -46,7 +46,7 @@ export type ReplConfig = Partial<{
     saveRepl?: boolean
   }
 }>
-export type ReplProps = ParentProps<ReplConfig>
+export type ReplProps = ComponentProps<'div'> & ReplConfig
 
 export function Repl(props: ReplProps) {
   const [, rest] = splitProps(props, ['children'])

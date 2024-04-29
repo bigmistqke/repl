@@ -7,7 +7,7 @@ import { useRepl } from './use-repl'
 import styles from './repl.module.css'
 
 type ReplTabBarProps = Omit<ComponentProps<'div'>, 'children'> & {
-  children: (arg: { path: string; file: File | undefined }) => JSXElement
+  children: (arg: { path: string; paths: File | undefined }) => JSXElement
   files?: string[]
 }
 
@@ -24,7 +24,7 @@ export function ReplTabBar(props: ReplTabBarProps) {
   }
   return (
     <div class={clsx(styles.tabBar, props.class)} {...rest}>
-      <For each={entries()}>{([path, file]) => props.children?.({ path, file })}</For>
+      <For each={entries()}>{([path, file]) => props.children?.({ path, paths: file })}</For>
     </div>
   )
 }
