@@ -26,17 +26,17 @@ export type FrameProps = ComponentProps<'iframe'> & {
 }
 
 export function ReplFrame(props: FrameProps) {
-  const [, rest] = splitProps(props, ['class'])
+  const [, rest] = splitProps(props, ['class', 'bodyStyle', 'name'])
   const config = mergeProps({ name: 'default' }, props)
   const repl = useRepl()
-  let ref: HTMLIFrameElement
+  const iframe = (<iframe class={clsx(styles.frame, props.class)} {...rest} />) as HTMLIFrameElement
 
   createEffect(() => {
     if (untrack(() => repl.frames.has(config.name))) {
       console.warn(`A frame with the same name already exist: ${config.name}`)
       return
     }
-    repl.frames.add(config.name, ref.contentWindow!)
+    repl.frames.add(config.name, iframe.contentWindow!)
     onCleanup(() => repl.frames.delete(config.name))
   })
 
@@ -48,8 +48,8 @@ export function ReplFrame(props: FrameProps) {
         : Object.entries(props.bodyStyle)
             .map(([key, value]) => `${key}: ${value};`)
             .join('')
-    ref.contentWindow?.document.body.setAttribute('style', bodyStyle)
+    iframe.contentWindow?.document.body.setAttribute('style', bodyStyle)
   })
 
-  return <iframe ref={ref!} class={clsx(styles.frame, props.class)} {...rest} />
+  return iframe
 }

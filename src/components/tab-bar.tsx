@@ -20,7 +20,7 @@ type ReplTabBarProps = Omit<ComponentProps<'div'>, 'children'> & {
 }
 
 export function ReplTabBar(props: ReplTabBarProps) {
-  const [, rest] = splitProps(props, ['class'])
+  const [, rest] = splitProps(props, ['class', 'paths', 'children'])
   const repl = useRepl()
 
   const entries = () => {

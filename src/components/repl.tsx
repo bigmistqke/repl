@@ -66,7 +66,18 @@ export type ReplProps = ComponentProps<'div'> & ReplConfig
  * @returns {JSX.Element} A JSX element that renders the REPL environment including the editor and any children components.
  */
 export function Repl(props: ReplProps) {
-  const [, rest] = splitProps(props, ['children'])
+  const [, propsWithoutChildren] = splitProps(props, ['children'])
+  const [, rest] = splitProps(props, [
+    'actions',
+    'babel',
+    'cdn',
+    'children',
+    'class',
+    'initialState',
+    'mode',
+    'onSetup',
+    'typescript',
+  ])
   const config = deepMerge(
     {
       cdn: 'https://esm.sh',
@@ -83,7 +94,7 @@ export function Repl(props: ReplProps) {
         paths: {},
       },
     },
-    rest,
+    propsWithoutChildren,
   )
   const frames = new FrameRegistry()
 
@@ -152,7 +163,9 @@ export function Repl(props: ReplProps) {
     <Show when={fs()}>
       {fs => (
         <replContext.Provider value={{ fs: fs(), frames }}>
-          <div class={clsx(styles.repl, props.class)}>{props.children}</div>
+          <div class={clsx(styles.repl, props.class)} {...rest}>
+            {props.children}
+          </div>
         </replContext.Provider>
       )}
     </Show>
@@ -160,9 +173,9 @@ export function Repl(props: ReplProps) {
 }
 
 /**
- * `Repl.Editor` is a SolidJS component that embeds a Monaco Editor instance for editing files within a virtual file system.
- * It dynamically creates an editor instance, manages its lifecycle, and binds it to a specific file based on the provided path.
- * The component also integrates custom actions such as saving the file, updating the editor's model, and cleaning up on unmount.
+ * `Repl.Editor` embeds a `monaco-editor` instance for editing files.
+ * It dynamically creates and binds a `monaco`-model and `File`
+ * in the virtual `FileSystem` based on the provided `path`-prop.
  *
  * @param {EditorProps} props - The properties passed to the editor component.
  * @returns {HTMLDivElement} The container div element that hosts the Monaco editor.
@@ -173,10 +186,9 @@ export function Repl(props: ReplProps) {
  */
 Repl.Editor = ReplEditor
 /**
- * `Repl.Frame` is a component that encapsulates an iframe element to provide an isolated execution
- * environment within the application. It is used to execute or render content separately from the main
- * document flow. The component automatically handles the lifecycle of the iframe, ensuring that it
- * integrates seamlessly with the application's state management.
+ * `Repl.Frame` encapsulates an iframe element to provide an isolated execution
+ * environment within the application. It is used to inject and execute CSS or JS module separately
+ * from the main document flow.
  *
  * @param {FrameProps} props - The props for configuring the iframe.
  * @returns {JSX.Element} The iframe element configured according to the specified props.
@@ -194,9 +206,11 @@ Repl.Editor = ReplEditor
  */
 Repl.Frame = ReplFrame
 /**
- * `Repl.TabBar` is a SolidJS component designed to render a navigation bar with tabs that represent open files
- * within a virtual file system. It dynamically creates tabs based on the files present in the system or a subset
- * specified by the `files` prop. Each tab can be customized using the `children` render prop.
+ * `Repl.TabBar` is a utility-component to filter and sort `File` of the virtual `FileSystem`.
+ * This can be used to create a tab-bar to navigate between different files. It accepts an optional
+ * prop of paths to sort and filter the files. If not provided it will display all existing files,
+ * excluding files in the `node_modules` directory: This directory contains packages imported with
+ * `FileSystem.importFromPackageJson()` and auto-imported types of external dependencies.
  *
  * @param {ReplTabBarProps} props - The properties passed to the tab bar component.
  * @returns {JSXElement} The container div element that hosts the tabs for each file.
