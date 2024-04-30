@@ -1,15 +1,51 @@
-import { Accessor } from 'solid-js'
+import { Accessor, Resource, onCleanup } from 'solid-js'
 
-/**********************************************************************************/
-/*                                                                                */
-/*                                       Log                                      */
-/*                                                                                */
-/**********************************************************************************/
+const concatTemplate = (template: TemplateStringsArray, values: string[]) =>
+  template.reduce((acc, str, i) => acc + str + (values[i] || ''), '')
 
-export const createLog =
-  (name: string, on: boolean) =>
-  (...args: any[]) =>
-    on && console.log(name, ...args)
+/**
+ * Creates a URL for a dynamically generated HTML blob from a template literal.
+ * This function combines template strings and values to form an HTML content,
+ * converts it to a Blob, and then creates an object URL for it.
+ * It automatically revokes the ObjectURL on cleanup.
+ *
+ * @param {TemplateStringsArray} template - The template strings array, containing the static parts of the template.
+ * @param {...string} values - The dynamic values to be interpolated into the template.
+ * @returns {string} The URL of the created HTML blob, which can be used in contexts such as iframes or as a link href.
+ * @example
+ * const userContent = "<p>Hello, ${username}</p>";
+ * const safeUrl = html`<div>${userContent}</div>`;
+ * iframe.src = safeUrl;
+ */
+export function html(template: TemplateStringsArray, ...values: string[]) {
+  const url = URL.createObjectURL(
+    new Blob([concatTemplate(template, values)], { type: 'text/html' }),
+  )
+  onCleanup(() => URL.revokeObjectURL(url))
+  return url
+}
+
+/**
+ * Creates a URL for a dynamically generated ESM blob from a template literal.
+ * Similar to the `html` function, it uses a tagged template to construct JavaScript content,
+ * encapsulates it in a Blob, and then creates an object URL for the Blob.
+ * It automatically revokes the ObjectURL on cleanup.
+ *
+ * @param template - The template strings array, part of the tagged template literal.
+ * @param values - The interpolated values that will be included in the JavaScript code.
+ * @returns  The URL of the created JavaScript blob, which can be used to dynamically load scripts.
+ * @example
+ 
+ * const scriptUrl = js`console.log('Hello, ${username}');`;
+ * someElement.src = scriptUrl;
+ */
+export function javascript(template: TemplateStringsArray, ...values: string[]) {
+  const url = URL.createObjectURL(
+    new Blob([concatTemplate(template, values)], { type: 'text/javascript' }),
+  )
+  onCleanup(() => URL.revokeObjectURL(url))
+  return url
+}
 
 /**********************************************************************************/
 /*                                                                                */
@@ -69,29 +105,14 @@ export type Mandatory<TTarget, TKeys extends keyof TTarget> = Required<Pick<TTar
 
 export function when<
   const T,
-  TAccessors extends Array<Accessor<T> | T>,
-  const TValues extends {
-    [TKey in keyof TAccessors]: TAccessors[TKey] extends ((...args: any[]) => any) | undefined
-      ? Exclude<ReturnType<Exclude<TAccessors[TKey], undefined>>, null | undefined | false>
-      : Exclude<TAccessors[TKey], null | undefined | false>
-  },
->(...accessors: TAccessors) {
-  // function callback(): TValues
-  // function callback<const TResult>(callback: (...values: TValues) => TResult): TResult
-  function callback<const TResult>(callback: (...values: TValues) => TResult) {
-    const values = new Array(accessors.length)
-
-    for (let i = 0; i < accessors.length; i++) {
-      const _value = typeof accessors[i] === 'function' ? (accessors[i] as () => T)() : accessors[i]
-      if (_value === undefined || _value === null || _value === false) return undefined
-      values[i] = _value
-    }
-
-    // if (!callback) return values
-
-    return callback(...(values as any))
-  }
-  return callback
+  TAccessor extends Accessor<T> | T,
+  const TValues extends TAccessor extends ((...args: any[]) => any) | undefined
+    ? Exclude<ReturnType<Exclude<TAccessor, undefined>>, null | undefined | false>
+    : Exclude<TAccessor, null | undefined | false>,
+  TResult,
+>(accessor: TAccessor, callback: (value: TValues) => TResult) {
+  const value = typeof accessor === 'function' ? accessor() : accessor
+  return value ? callback(value) : undefined
 }
 
 export function every<
@@ -115,6 +136,12 @@ export function every<
     return values as TValues
   }
   return callback
+}
+
+export function wrapNullableResource<T extends Resource<any>>(
+  value: T,
+): Accessor<false | [ReturnType<T>]> {
+  return () => value.state === 'ready' && [value()]
 }
 
 /**********************************************************************************/

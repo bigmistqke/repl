@@ -143,24 +143,24 @@ export class TypeRegistry {
           promises.push(resolvePath(relativeToAbsolutePath(path, modulePath)))
         } else if (isUrl(modulePath)) {
           let virtualPath = this.getVirtualPath(modulePath)
-          when(pathToPackageNameAndVersion(virtualPath))(([packageName, version]) => {
+          when(pathToPackageNameAndVersion(virtualPath), ([packageName, version]) => {
             for (const key of Object.keys(this.sources())) {
-              const foundSamePackageName = when(pathToPackageNameAndVersion(key))(([
-                otherPackagename,
-                otherVersion,
-              ]) => {
-                if (otherPackagename === packageName) {
-                  if (version !== otherVersion) {
-                    console.warn(
-                      `Conflicting version numbers: Overwriting version number of ${packageName} from ${version} to ${otherVersion}.\nAccessed ${modulePath} from ${path}.`,
-                    )
-                    modulePath = modulePath.replace(version, otherVersion)
-                    virtualPath = virtualPath.replace(version, otherVersion)
+              const foundSamePackageName = when(
+                pathToPackageNameAndVersion(key),
+                ([otherPackagename, otherVersion]) => {
+                  if (otherPackagename === packageName) {
+                    if (version !== otherVersion) {
+                      console.warn(
+                        `Conflicting version numbers: Overwriting version number of ${packageName} from ${version} to ${otherVersion}.\nAccessed ${modulePath} from ${path}.`,
+                      )
+                      modulePath = modulePath.replace(version, otherVersion)
+                      virtualPath = virtualPath.replace(version, otherVersion)
+                    }
+                    return true
                   }
-                  return true
-                }
-                return false
-              })
+                  return false
+                },
+              )
               if (foundSamePackageName) {
                 break
               }

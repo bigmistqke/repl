@@ -98,8 +98,9 @@ export class JsFile extends File {
             const result = repl.libs.typescript.transpile(value, options)
             if (result) value = result
           }
-          if (presets.length !== 0)
+          if (repl.libs.babel) {
             value = repl.libs.babel.transform(value, { presets, plugins }).code!
+          }
           return value
         } catch (err) {
           return source
@@ -113,7 +114,7 @@ export class JsFile extends File {
     // - Transform package-names to cdn-url
     // NOTE:  possible optimisation would be to memo the holes and swap them out with .slice
     const esm = createMemo<string | undefined>(previous =>
-      when(intermediary)(value => {
+      when(intermediary, value => {
         const staleImports = new Set(untrack(this.cssImports))
 
         try {
@@ -187,7 +188,7 @@ export class JsFile extends File {
     )
 
     this.generateModuleUrl = () =>
-      when(esm)(esm => {
+      when(esm, esm => {
         return URL.createObjectURL(
           new Blob([esm], {
             type: 'application/javascript',
@@ -198,7 +199,7 @@ export class JsFile extends File {
     // Get module-url from esm-module
     this.cachedModuleUrl = createMemo(
       previous =>
-        when(this.generateModuleUrl)(moduleUrl => {
+        when(this.generateModuleUrl, moduleUrl => {
           if (previous) URL.revokeObjectURL(previous)
           return moduleUrl
         }) || previous,
@@ -250,7 +251,7 @@ export class JsFile extends File {
    */
   dispose(frame: Frame) {
     // @ts-expect-error
-    frame.window.dispose?.()
+    frame.contentWindow.dispose?.()
   }
 }
 
@@ -345,6 +346,6 @@ export class CssFile extends File {
    *                Typically this is the window of an iframe or the main document window.
    */
   dispose(frame: Frame) {
-    frame.window.document.getElementById(`bigmistqke-repl-${this.path}`)?.remove()
+    frame.contentWindow.document.getElementById(`bigmistqke-repl-${this.path}`)?.remove()
   }
 }

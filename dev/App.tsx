@@ -7,6 +7,47 @@ import { JsFile } from 'src/logic/file'
 import styles from './App.module.css'
 import config from './repl.config.json'
 
+const Frames = () => {
+  const [isDragging, setIsDragging] = createSignal(false)
+  return (
+    <Resizable.Panel
+      as={Resizable}
+      style={{ display: 'flex', overflow: 'hidden', flex: 1 }}
+      orientation="vertical"
+    >
+      <Resizable.Panel
+        as={Repl.Frame}
+        minSize={0}
+        style={{
+          'min-height': 0,
+          'pointer-events': isDragging() ? 'none' : undefined,
+          display: 'flex',
+          overflow: 'none',
+        }}
+        bodyStyle={{
+          padding: '0px',
+          margin: '0px',
+        }}
+      />
+      <Resizable.Handle
+        onDragStart={() => setIsDragging(true)}
+        onDragEnd={() => setIsDragging(false)}
+        class={styles.handle}
+      />
+      <Resizable.Panel
+        as={Repl.DevTools}
+        minSize={0}
+        name={'default'}
+        style={{
+          'min-height': 0,
+          'pointer-events': isDragging() ? 'none' : undefined,
+          overflow: 'hidden',
+        }}
+      />
+    </Resizable.Panel>
+  )
+}
+
 const App: Component = () => {
   const [currentPath, setCurrentFile] = createSignal('src/index.tsx')
 
@@ -66,7 +107,10 @@ import "./index.css";
 
 function Counter() {
   const [count, setCount] = createSignal(1);
-  const increment = () => setCount(count => count + 1);
+  const increment = () => {
+    console.log('increment');
+    setCount(count => count + 1);
+  }
 
   return (
     <button type="button" onClick={increment}>
@@ -124,16 +168,8 @@ render(() => <Counter />, document.body);
             }}
           />
         </Resizable.Panel>
-        <Resizable.Handle />
-        <Resizable.Panel style={{ display: 'flex', overflow: 'hidden' }}>
-          <Repl.Frame
-            style={{ flex: 1 }}
-            bodyStyle={{
-              padding: '0px',
-              margin: '0px',
-            }}
-          />
-        </Resizable.Panel>
+        <Resizable.Handle class={styles.handle} />
+        <Frames />
       </Resizable>
     </Repl>
   )

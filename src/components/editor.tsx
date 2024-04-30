@@ -42,7 +42,7 @@ export function ReplEditor(props: EditorProps) {
   onMount(() => props.onMount?.(editor))
 
   // Update monaco-editor's model to current file's model
-  createEffect(() => when(file)(file => editor.setModel(file.model)))
+  createEffect(() => when(file, file => editor.setModel(file.model)))
 
   // Add action to context-menu of monaco-editor
   createEffect(() => {

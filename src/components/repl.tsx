@@ -5,9 +5,10 @@ import { Registry } from 'monaco-textmate'
 import { loadWASM } from 'onigasm'
 // @ts-expect-error
 import onigasm from 'onigasm/lib/onigasm.wasm?url'
-import { ComponentProps, Show, createEffect, createResource, splitProps } from 'solid-js'
+import { ComponentProps, Show, createRenderEffect, createResource, splitProps } from 'solid-js'
 import { ReplConfig, ReplContext } from 'src/logic/repl-context'
-import { deepMerge, every, when } from 'src/utils'
+import { deepMerge, every, when, wrapNullableResource } from 'src/utils'
+import { ReplDevTools } from './dev-tools'
 import { ReplEditor } from './editor'
 import { ReplFrame } from './frame'
 import { ReplTabBar } from './tab-bar'
@@ -119,8 +120,12 @@ export function Repl(props: ReplProps) {
 
     return monaco
   })
-  const [babel] = createResource(() => import('@babel/standalone'))
   const [typescript] = createResource(() => import('typescript'))
+  // We return undefined and prevent Babel from being imported in-browser,
+  // If no babel-preset nor babel-plugin is present in the config.
+  const [babel] = createResource(async () =>
+    config.babel?.presets || config.babel?.plugins ? await import('@babel/standalone') : undefined,
+  )
   const [babelPresets] = createResource(() =>
     config.babel?.presets
       ? Promise.all(
@@ -128,7 +133,7 @@ export function Repl(props: ReplProps) {
             async preset => (await import(`${config.cdn}/${preset}`)).default,
           ),
         )
-      : [],
+      : undefined,
   )
   const [babelPlugins] = createResource(() =>
     config.babel?.plugins
@@ -140,26 +145,39 @@ export function Repl(props: ReplProps) {
             return plugin
           }),
         )
-      : [],
+      : undefined,
   )
 
   // Once all resources are loaded, instantiate and initialize ReplContext
   const [repl] = createResource(
-    every(monaco, babel, typescript, babelPlugins, babelPresets),
-    async ([monaco, babel, typescript, babelPlugins, babelPresets]) => {
+    every(
+      monaco,
+      typescript,
+      wrapNullableResource(babel),
+      wrapNullableResource(babelPlugins),
+      wrapNullableResource(babelPresets),
+    ),
+    async ([monaco, typescript, [babel], [babelPlugins], [babelPresets]]) => {
       const repl = new ReplContext(
-        { monaco, typescript, babel, babelPlugins, babelPresets },
+        {
+          monaco,
+          typescript,
+          babel,
+          babelPlugins,
+          babelPresets,
+        },
         config,
       )
       await config.onSetup?.(repl)
-      repl.initialize()
       return repl
     },
   )
 
-  // Switch light/dark mode of monaco-editor
-  createEffect(() =>
-    when(repl)(repl => {
+  createRenderEffect(() =>
+    when(repl, repl => {
+      // Apply initial state  as provided by the config to the FileSystem and TypeRegistry
+      repl.initialize()
+      // Switch light/dark mode of monaco-editor
       repl.libs.monaco.editor.setTheme(props.mode === 'light' ? 'vs-light-plus' : 'vs-dark-plus')
     }),
   )
@@ -200,7 +218,7 @@ Repl.Editor = ReplEditor
  */
 Repl.Frame = ReplFrame
 /**
- * `Repl.TabBar` is a utility-component to filter and sort `File` of the virtual `FileSystem`.
+ * `Repl.TabBar` is a utility-component to filter and sort `Files` of the virtual `FileSystem`.
  * This can be used to create a tab-bar to navigate between different files. It accepts an optional
  * prop of paths to sort and filter the files. If not provided it will display all existing files,
  * excluding files in the `node_modules` directory: This directory contains packages imported with
@@ -210,3 +228,17 @@ Repl.Frame = ReplFrame
  * @returns  The container div element that hosts the tabs for each file.
  */
 Repl.TabBar = ReplTabBar
+/**
+ * `Repl.DevTools` embeds an iframe to provide a custom Chrome DevTools interface for debugging purposes.
+ * It connects to a `Repl.Frame` with the same `name` prop to display and interact with the frame's runtime environment,
+ * including console outputs, DOM inspections, and network activities.
+ *
+ * @param props - Props include standard iframe attributes and a unique `name` used to link the DevTools
+ *                with a specific `Repl.Frame`.
+ * @returns The iframe element that hosts the embedded Chrome DevTools, connected to the specified `Repl.Frame`.
+ * @example
+ * // To debug a frame named 'exampleFrame':
+ * <Repl.Frame name="exampleFrame" />
+ * <Repl.DevTools name="exampleFrame" />
+ */
+Repl.DevTools = ReplDevTools

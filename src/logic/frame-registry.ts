@@ -78,12 +78,26 @@ export class Frame {
   /**
    * Constructs a Frame instance associated with a given window.
    *
-   * @param window - The window object associated with this frame.
+   * @param contentWindow - The window object associated with this frame.
    */
   constructor(
     /** The window object associated with this frame, typically an iframe's window. */
-    public window: Window,
+    public contentWindow: Window,
   ) {}
+
+  injectModuleUrl(moduleUrl: string) {
+    const script = this.contentWindow.document.createElement('script')
+    script.type = 'module'
+    script.src = moduleUrl
+    this.contentWindow.document.head.appendChild(script)
+    onCleanup(() => {
+      // On cleanup we remove the script-tag
+      this.contentWindow.document.head.removeChild(script)
+      // And we dispose of the created module-url.
+      URL.revokeObjectURL(moduleUrl)
+    })
+    return script
+  }
 
   /**
    * Injects and executes the esm-module of the given `CssFile` or `JsFile` into the frame's window.
@@ -94,18 +108,6 @@ export class Frame {
    */
   injectFile(file: CssFile | JsFile) {
     // We need to generate a new module-url everytime we inject a file, to ensure the body is executed.
-    return when(file.generateModuleUrl)(moduleUrl => {
-      const script = this.window.document.createElement('script')
-      script.type = 'module'
-      script.src = moduleUrl
-      this.window.document.head.appendChild(script)
-      onCleanup(() => {
-        // On cleanup we remove the script-tag
-        this.window.document.head.removeChild(script)
-        // And we dispose of the created module-url.
-        URL.revokeObjectURL(moduleUrl)
-      })
-      return script
-    })
+    return when(file.generateModuleUrl, this.injectModuleUrl.bind(this))
   }
 }

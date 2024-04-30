@@ -203,6 +203,40 @@ type FrameProps = ComponentProps<'iframe'> &
   }>
 ```
 
+## `Repl.DevTools` Component
+
+`Repl.DevTools` embeds an iframe to provide a custom Chrome DevTools interface for debugging purposes. This component connects to a `Repl.Frame` with the same `name` prop to display and interact with the frame's runtime environment, including console outputs, DOM inspections, and network activities.
+
+**Usage**
+
+```tsx
+// To debug a frame named 'exampleFrame':
+<Repl.Frame name="exampleFrame" />
+<Repl.DevTools name="exampleFrame" />
+```
+
+**Props**
+
+- **props**: Props include standard iframe attributes and a unique `name` used to link the DevTools with a specific `Repl.Frame`.
+
+**Type**
+
+```tsx
+type ReplDevToolsProps = ComponentProps<'iframe'> & { name: string }
+```
+
+**Returns**
+
+- Returns the iframe element that hosts the embedded Chrome DevTools, connected to the specified `Repl.Frame`.
+
+**Example**
+
+```tsx
+// Example usage to integrate the DevTools with a named frame:
+<Repl.Frame name="exampleFrame" />
+<Repl.DevTools name="exampleFrame" />
+```
+
 ## `Repl.TabBar` Component
 
 A minimal wrapper around `<For/>` to assist with navigating between different files opened in the editor.

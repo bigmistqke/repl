@@ -1,6 +1,6 @@
 import * as Babel from '@babel/standalone'
 import { Monaco } from '@monaco-editor/loader'
-import { createRoot, mergeProps } from 'solid-js'
+import { mergeProps } from 'solid-js'
 import type ts from 'typescript'
 import type { SourceFile } from 'typescript'
 import type { Mandatory } from '..'
@@ -68,11 +68,11 @@ export class ReplContext {
       /**  The TypeScript library used for TypeScript code operations and transformations. */
       typescript: typeof ts
       /** The Babel library used for JavaScript code transformation. */
-      babel: typeof Babel
+      babel: typeof Babel | undefined
       /** Babel presets used for transpiling files. */
-      babelPresets: any[]
+      babelPresets: any[] | undefined
       /** Babel plugins used for transpiling files. */
-      babelPlugins: babel.PluginItem[]
+      babelPlugins: babel.PluginItem[] | undefined
     },
     /** Configuration settings for the file system within the REPL, used to initialize the FileSystem instance. */
     config: ReplConfig,
@@ -99,19 +99,15 @@ export class ReplContext {
    * Initializes the file system based on provided initial configuration, setting up files and types.
    */
   initialize() {
-    // TODO:  It feels a bit dirty having to wrap it all in a root
-    //        Maybe there is a more resource-y way of doing this.
-    createRoot(dispose => {
-      const initialState = this.config.initialState
-      if (initialState) {
-        if (initialState.types) {
-          this.typeRegistry.initialize(initialState.types)
-        }
-        if (initialState.files) {
-          this.fileSystem.initialize(initialState.files)
-        }
+    const initialState = this.config.initialState
+    if (initialState) {
+      if (initialState.types) {
+        this.typeRegistry.initialize(initialState.types)
       }
-    })
+      if (initialState.files) {
+        this.fileSystem.initialize(initialState.files)
+      }
+    }
   }
 
   /**

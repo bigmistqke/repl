@@ -11,6 +11,7 @@ import { useRepl } from './use-repl'
 
 import clsx from 'clsx'
 // @ts-expect-error
+import { html } from '..'
 import styles from './repl.module.css'
 
 export type FrameProps = ComponentProps<'iframe'> & {
@@ -29,7 +30,21 @@ export function ReplFrame(props: FrameProps) {
   const [, rest] = splitProps(props, ['class', 'bodyStyle', 'name'])
   const config = mergeProps({ name: 'default' }, props)
   const repl = useRepl()
-  const iframe = (<iframe class={clsx(styles.frame, props.class)} {...rest} />) as HTMLIFrameElement
+
+  const iframe = (
+    <iframe
+      src={html`<!doctype html>
+        <html>
+          <head>
+            <meta charset="UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          </head>
+          <body></body>
+        </html>`}
+      class={clsx(styles.frame, props.class)}
+      {...rest}
+    />
+  ) as HTMLIFrameElement
 
   createEffect(() => {
     if (untrack(() => repl.frameRegistry.has(config.name))) {
