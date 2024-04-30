@@ -75,7 +75,7 @@ export class FrameRegistry {
  *
  * @class Frame
  */
-class Frame {
+export class Frame {
   /**
    * Constructs a Frame instance associated with a given window.
    *
@@ -94,12 +94,18 @@ class Frame {
    * @returns {HTMLScriptElement} The script element that was injected.
    */
   injectFile(file: CssFile | JsFile) {
-    return when(file.moduleUrl)(moduleUrl => {
+    // We need to generate a new module-url everytime we inject a file, to ensure the body is executed.
+    return when(file.generateModuleUrl)(moduleUrl => {
       const script = this.window.document.createElement('script')
       script.type = 'module'
       script.src = moduleUrl
       this.window.document.head.appendChild(script)
-      onCleanup(() => this.window.document.head.removeChild(script))
+      onCleanup(() => {
+        // On cleanup we remove the script-tag
+        this.window.document.head.removeChild(script)
+        // And we dispose of the created module-url.
+        URL.revokeObjectURL(moduleUrl)
+      })
       return script
     })
   }

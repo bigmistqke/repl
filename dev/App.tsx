@@ -86,16 +86,17 @@ render(() => <Counter />, document.body);
           const entry = fs.get('src/index.tsx')
 
           if (entry instanceof JsFile) {
-            // inject entry's module-url into frame's window
-            frame.injectFile(entry)
-
-            // NOTE:  `solid-repl-plugin` transforms
-            //        render(() => ...) to
-            //        window.dispose = render(() => ...)
-            onCleanup(() => frame.window.dispose?.())
+            createEffect(() => {
+              // inject entry's module-url into frame's window
+              frame.injectFile(entry)
+              onCleanup(() => entry.dispose(frame))
+            })
 
             createEffect(
-              mapArray(entry.cssImports, css => createEffect(() => frame.injectFile(css))),
+              mapArray(entry.cssImports, css => {
+                createEffect(() => frame.injectFile(css))
+                onCleanup(() => css.dispose(frame))
+              }),
             )
           }
         })

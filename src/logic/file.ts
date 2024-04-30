@@ -1,6 +1,6 @@
 import * as Babel from '@babel/standalone'
 import { Monaco } from '@monaco-editor/loader'
-import { createScheduled, throttle } from '@solid-primitives/scheduled'
+import { createScheduled, debounce } from '@solid-primitives/scheduled'
 import {
   Accessor,
   Resource,
@@ -9,6 +9,7 @@ import {
   createMemo,
   createResource,
   createSignal,
+  untrack,
 } from 'solid-js'
 import ts from 'typescript'
 import {
@@ -20,12 +21,27 @@ import {
   when,
 } from '..'
 import { FileSystem } from './file-system'
+import { Frame } from './frame-registry'
 
 export type Model = ReturnType<Monaco['editor']['createModel']>
 
 export abstract class File {
+  /** Model associated with the Monaco editor for this CSS file. */
   abstract model: Model
-  abstract moduleUrl: Accessor<string | undefined>
+  /**
+   * `generateModuleUrl`: () => string | undefined
+   * This function generates a new URL for an ES Module every time it is invoked, based on the current source code of the file.
+   * It does not cache the URL. Use this if you need a new reference to the File's source, for example to re-execute the module's body.
+   * @warning Cleanup the generated module-url with URL.revokeObjectURL() after usage to prevent memory leak.
+   */
+  abstract generateModuleUrl: Accessor<string | undefined>
+  /**
+   * `cachedModuleUrl`: Accessor<string | undefined>
+   * This property holds a memoized URL for an ES Module, created from the file's source code.
+   * The URL is cached to optimize repeated accesses by avoiding redundant computations.
+   * Use this when you need consistent access to a module, for example when linking modules.
+   */
+  abstract cachedModuleUrl: Accessor<string | undefined>
   abstract toJSON(): string | undefined
   abstract set(value: string): void
   abstract get(): void
@@ -38,14 +54,13 @@ export abstract class File {
  */
 
 export class JsFile extends File {
+  model: Model
+  generateModuleUrl: Accessor<string | undefined>
+  cachedModuleUrl: Accessor<string | undefined>
   /** Source code of the file as a reactive state. */
   private source: Accessor<string | undefined>
   /** Setter for the source state. */
   private setSource: Setter<string | undefined>
-  /** Model associated with the Monaco editor for this file. */
-  model: Model
-  /** URL to the ES module generated from the file's source code. */
-  moduleUrl: Accessor<string | undefined>
   /** Reactive state of CSS files imported into this JavaScript file. */
   cssImports: Accessor<CssFile[]>
   /** Setter for the cssImports state. */
@@ -76,7 +91,7 @@ export class JsFile extends File {
     ;[this.cssImports, this.setCssImports] = createSignal<CssFile[]>([])
 
     let initialized = false
-    const scheduled = createScheduled(fn => throttle(fn, 500))
+    const scheduled = createScheduled(fn => debounce(fn, 250))
     // Transpile source to javascript
     const [intermediary] = createResource(
       every(
@@ -110,6 +125,8 @@ export class JsFile extends File {
     // NOTE:  possible optimisation would be to memo the holes and swap them out with .slice
     const esm = createMemo<string | undefined>(previous =>
       when(intermediary)(value => {
+        const staleImports = new Set(untrack(this.cssImports))
+
         try {
           return batch(() =>
             mapModuleDeclarations(path, value, node => {
@@ -134,7 +151,7 @@ export class JsFile extends File {
                 // If the resolved file is a js-file
                 if (resolvedFile instanceof JsFile) {
                   // We get its module-url
-                  const moduleUrl = resolvedFile?.moduleUrl()
+                  const moduleUrl = resolvedFile?.cachedModuleUrl()
 
                   if (moduleUrl) {
                     // If moduleUrl is defined
@@ -152,6 +169,7 @@ export class JsFile extends File {
                   this.setCssImports(imports =>
                     imports.includes(resolvedFile) ? imports : [...imports, resolvedFile],
                   )
+                  staleImports.delete(resolvedFile)
                   // Returning false will remove the node from the typescript-file
                   return false
                 }
@@ -171,19 +189,30 @@ export class JsFile extends File {
         } catch (error) {
           console.warn('error', error)
           return previous
+        } finally {
+          this.setCssImports(cssImports =>
+            cssImports.filter(cssImport => !staleImports.has(cssImport)),
+          )
         }
       }),
     )
 
-    // Get module-url from esm-module
-    this.moduleUrl = createMemo(() =>
+    this.generateModuleUrl = () =>
       when(esm)(esm => {
         return URL.createObjectURL(
           new Blob([esm], {
             type: 'application/javascript',
           }),
         )
-      }),
+      })
+
+    // Get module-url from esm-module
+    this.cachedModuleUrl = createMemo(
+      previous =>
+        when(this.generateModuleUrl)(moduleUrl => {
+          if (previous) URL.revokeObjectURL(previous)
+          return moduleUrl
+        }) || previous,
     )
 
     // Subscribe to onDidChangeContent of this.model
@@ -216,6 +245,25 @@ export class JsFile extends File {
     this.source()
     return this.model.getValue()
   }
+
+  /**
+   * Executes the cleanup function attached to the `dispose` property of the window object in the provided frame.
+   * This method is intended for use in environments where the cleanup logic is either explicitly mentioned in the code
+   * or added through the code via a Babel transform: p.ex `solid-repl-plugin` of `@bigmistqke/repl/plugins`.
+   * This plugin automatically assigns Solid.js's `render()` cleanup function to `window.dispose` so that the DOM can
+   * be emptied in between runs.
+   *
+   * If you are using a different UI library or want to implement a custom cleanup mechanism, you will need to create or adapt
+   * a Babel plugin to set the appropriate cleanup function to `window.dispose` according to your application's needs.
+   *
+   * @param {Frame} frame - The frame containing the window object on which the cleanup function is called.
+   *                        This is typically an iframe or a similar isolated environment where the UI components are rendered.
+   */
+  dispose(frame: Frame) {
+    // Use babel-transform to add cleanup-function to window.dispose.
+    // For usage with solid-js there is `solid-repl-plugin` in `plugins`
+    frame.window.dispose?.()
+  }
 }
 
 /**
@@ -223,19 +271,22 @@ export class JsFile extends File {
  * Manages the editing and application of CSS within the IDE environment.
  */
 export class CssFile extends File {
+  model: Model
+  generateModuleUrl: Accessor<string | undefined>
+  cachedModuleUrl: Accessor<string | undefined>
+
   /** Source code of the CSS file as a reactive state. */
   private source: Accessor<string | undefined>
-  /** Model associated with the Monaco editor for this CSS file. */
-  model: Model
-  /** URL to the dynamically generated CSS module. */
-  moduleUrl: Accessor<string | undefined>
 
   /**
    * Constructs an instance of a CSS file.
    * @param {FileSystem} fs - Reference to the file system managing this file.
    * @param {string} path - Path to the CSS file within the file system.
    */
-  constructor(fs: FileSystem, path: string) {
+  constructor(
+    fs: FileSystem,
+    public path: string,
+  ) {
     super()
     const uri = fs.monaco.Uri.parse(`file:///${path.replace('./', '')}`)
     this.model = fs.monaco.editor.getModel(uri) || fs.monaco.editor.createModel('', 'css', uri)
@@ -243,24 +294,27 @@ export class CssFile extends File {
     const [source, setSource] = createSignal<string | undefined>()
     this.source = source
 
-    const scheduled = createScheduled(fn => throttle(fn, 1000))
+    const scheduled = createScheduled(fn => debounce(fn, 250))
 
-    this.moduleUrl = createMemo(previous => {
-      if (!scheduled) previous
+    this.generateModuleUrl = () => {
       const source = `(() => {
-        let stylesheet = document.getElementById('${path}');
+        let stylesheet = document.getElementById('bigmistqke-repl-${this.path}');
         if (!stylesheet) {
           stylesheet = document.createElement('style')
-          stylesheet.setAttribute('id', '${path}')
+          stylesheet.setAttribute('id', 'bigmistqke-repl-${this.path}');
           document.head.appendChild(stylesheet)
         }
         const styles = document.createTextNode(\`${this.source()}\`)
         stylesheet.innerHTML = ''
         stylesheet.appendChild(styles)
       })()`
+      return URL.createObjectURL(new Blob([source], { type: 'application/javascript' }))
+    }
 
-      const url = URL.createObjectURL(new Blob([source], { type: 'application/javascript' }))
-      return url
+    this.cachedModuleUrl = createMemo(previous => {
+      if (!scheduled) previous
+      if (previous) URL.revokeObjectURL(previous)
+      return this.generateModuleUrl()
     })
     // Subscribe to onDidChangeContent of this.model
     this.model.onDidChangeContent(() => {
@@ -291,5 +345,15 @@ export class CssFile extends File {
   get() {
     this.source()
     return this.model.getValue()
+  }
+
+  /**
+   * Removes the style element associated with this instance from the specified document frame.
+   *
+   * @param {Window} frame - The window object of the frame from which the style is to be removed.
+   *                         Typically this is the window of an iframe or the main document window.
+   */
+  dispose(frame: Frame) {
+    frame.window.document.getElementById(`bigmistqke-repl-${this.path}`)?.remove()
   }
 }
