@@ -260,8 +260,7 @@ export class JsFile extends File {
    *                        This is typically an iframe or a similar isolated environment where the UI components are rendered.
    */
   dispose(frame: Frame) {
-    // Use babel-transform to add cleanup-function to window.dispose.
-    // For usage with solid-js there is `solid-repl-plugin` in `plugins`
+    // @ts-expect-error
     frame.window.dispose?.()
   }
 }
