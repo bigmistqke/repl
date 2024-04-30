@@ -12,13 +12,12 @@ https://github.com/bigmistqke/repl/assets/10504064/50195cb6-f3aa-4dea-a40a-d04f2
 
 ## Features
 
-- **Monaco Editor Integration**
-- **Comprehensive TypeScript Support**
+- **Monaco Editor Integration**: `vscode` like experience in-browser with Typescript support.
 - **Real-time Transpilation**: Direct transpilation of TypeScript code into ESM, allowing for immediate feedback.
-- **Automatic Type Imports**: Streamline coding with automatic type discovery and imports of external dependencies.
-- **Theme Flexibility**: Supports both dark and light themes, easily switchable to suit preferences.
+- **Automatic Imports of External Dependencies**: Streamline coding with automatic imports of external dependencies, including type definitions.
+- **Flexible API**: Direct access to the internals and to the generated ESM Modules. Application can scale from a minimal playground to a feature-complete IDE.
 - **Advanced File System Management**: Robust management of file states and operations within the editor.
-- **Configurable Build and Runtime Options**: Easily configurable TypeScript compiler settings and other operational parameters.
+- **Configurable Build and Runtime Options**: Easily configurable TypeScript compiler settings and integration with Babel-plugins/presets.
 
 # Table of Contents
 
@@ -31,6 +30,7 @@ https://github.com/bigmistqke/repl/assets/10504064/50195cb6-f3aa-4dea-a40a-d04f2
 - [Hooks](#hooks)
   - [`useRepl`](#userepl)
 - [Internal APIs Documentation](#internal-apis-documentation)
+  - [`ReplContext`](#replcontext)
   - [`FileSystem`](#filesystem)
   - [`JsFile` and `CssFile`](#jsfile-and-cssfile)
   - [`FrameRegistry`](#frameregistry)
