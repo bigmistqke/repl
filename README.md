@@ -8,7 +8,7 @@
 
 https://github.com/bigmistqke/repl/assets/10504064/50195cb6-f3aa-4dea-a40a-d04f2d32479d
 
-**_Click [here](#example-overview) for a line-by-line explanation of the above example_**
+**_Click [here](#example-overview) for a line-by-line explanation of the above example and [here](https://bigmistqke.github.io/repl/) for a live-demo._**
 
 ## Features
 
@@ -384,7 +384,7 @@ export class TypeRegistry {
 
 # Example Overview
 
-This application demonstrates complex interactions between various components and hooks, designed to facilitate an interactive and intuitive coding environment directly in the browser.
+This application demonstrates complex interactions between various components and hooks, designed to facilitate an interactive and intuitive coding environment directly in the browser. Click [here](https://bigmistqke.github.io/repl/) for a live-demo.
 
 ### Detailed Code Explanation
 
