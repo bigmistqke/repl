@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import {
   ComponentProps,
   createEffect,
@@ -7,11 +8,10 @@ import {
   untrack,
   type JSX,
 } from 'solid-js'
+import { html } from '..'
 import { useRepl } from './use-repl'
 
-import clsx from 'clsx'
 // @ts-expect-error
-import { html } from '..'
 import styles from './repl.module.css'
 
 export type FrameProps = ComponentProps<'iframe'> & {

@@ -150,7 +150,7 @@ export function wrapNullableResource<T extends Resource<any>>(
 /*                                                                                */
 /**********************************************************************************/
 
-export type Vector = {
+type Delta = {
   x: number
   y: number
 }
@@ -164,9 +164,9 @@ export type Vector = {
  */
 export const cursor = (
   e: MouseEvent,
-  callback: (delta: Vector, event: MouseEvent, timespan: number) => void,
+  callback: (delta: Delta, event: MouseEvent, timespan: number) => void,
 ) => {
-  return new Promise<{ delta: Vector; event: MouseEvent; timespan: number }>(resolve => {
+  return new Promise<{ delta: Delta; event: MouseEvent; timespan: number }>(resolve => {
     const start = {
       x: e.clientX,
       y: e.clientY,
@@ -198,8 +198,6 @@ export const cursor = (
     window.addEventListener('mouseup', onMouseUp)
   })
 }
-
-export const waitFor = (time = 1000) => new Promise(resolve => setTimeout(resolve, time))
 
 /**********************************************************************************/
 /*                                                                                */

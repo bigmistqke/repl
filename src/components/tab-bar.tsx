@@ -6,7 +6,7 @@ import { useRepl } from './use-repl'
 // @ts-expect-error
 import styles from './repl.module.css'
 
-type ReplTabBarProps = Omit<ComponentProps<'div'>, 'children'> & {
+export type TabBarProps = Omit<ComponentProps<'div'>, 'children'> & {
   /**
    * A render prop function that receives an object with the current path and file object.
    * It should return a `JSX.Element` to render for each tab.
@@ -19,7 +19,7 @@ type ReplTabBarProps = Omit<ComponentProps<'div'>, 'children'> & {
   paths?: string[]
 }
 
-export function ReplTabBar(props: ReplTabBarProps) {
+export function ReplTabBar(props: TabBarProps) {
   const [, rest] = splitProps(props, ['class', 'paths', 'children'])
   const repl = useRepl()
 

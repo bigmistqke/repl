@@ -1,8 +1,7 @@
-import { Repl, useRepl } from '@bigmistqke/repl'
-import { solidReplPlugin } from '@bigmistqke/repl/plugins/solid-repl'
+import { JsFile, Repl, useRepl } from '@bigmistqke/repl'
+import { solidReplPlugin } from '@bigmistqke/repl/plugins'
 import { Resizable } from 'corvu/resizable'
 import { createEffect, createSignal, mapArray, on, onCleanup, type Component } from 'solid-js'
-import { JsFile } from 'src/logic/file'
 
 import styles from './App.module.css'
 import config from './repl.config.json'
@@ -147,7 +146,6 @@ render(() => <Counter />, document.body);
             )
           }
         })
-        /* await fileSystem.addPackage('./solid-three') */
       }}
     >
       <Resizable style={{ width: '100vw', height: '100vh', display: 'flex' }}>

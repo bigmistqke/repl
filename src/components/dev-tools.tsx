@@ -7,9 +7,9 @@ import { useRepl } from './use-repl'
 // @ts-expect-error
 import styles from './repl.module.css'
 
-type ReplDevToolsProps = ComponentProps<'iframe'> & { name: string }
+export type DevToolsProps = ComponentProps<'iframe'> & { name: string }
 
-export function ReplDevTools(props: ReplDevToolsProps) {
+export function ReplDevTools(props: DevToolsProps) {
   const [, rest] = splitProps(props, ['class'])
   const repl = useRepl()
 
