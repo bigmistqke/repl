@@ -5,6 +5,7 @@ import { createEffect, createSignal, mapArray, on, onCleanup, type Component } f
 import { JsFile } from 'src/logic/file'
 
 import styles from './App.module.css'
+import config from './repl.config.json'
 
 const App: Component = () => {
   const [currentPath, setCurrentFile] = createSignal('src/index.tsx')
@@ -52,6 +53,7 @@ const App: Component = () => {
         strict: true,
       }}
       initialState={{
+        types: config.types,
         files: {
           sources: {
             'src/index.css': `body {
