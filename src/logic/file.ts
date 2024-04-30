@@ -1,9 +1,7 @@
-import * as Babel from '@babel/standalone'
 import { Monaco } from '@monaco-editor/loader'
 import { createScheduled, debounce } from '@solid-primitives/scheduled'
 import {
   Accessor,
-  Resource,
   Setter,
   batch,
   createMemo,
@@ -11,17 +9,10 @@ import {
   createSignal,
   untrack,
 } from 'solid-js'
-import ts from 'typescript'
-import {
-  every,
-  isRelativePath,
-  isUrl,
-  mapModuleDeclarations,
-  relativeToAbsolutePath,
-  when,
-} from '..'
-import { FileSystem } from './file-system'
+import type ts from 'typescript'
+import { every, isRelativePath, isUrl, relativeToAbsolutePath, when } from '..'
 import { Frame } from './frame-registry'
+import { ReplContext } from './repl-context'
 
 export type Model = ReturnType<Monaco['editor']['createModel']>
 
@@ -42,7 +33,7 @@ export abstract class File {
    * Use this when you need consistent access to a module, for example when linking modules.
    */
   abstract cachedModuleUrl: Accessor<string | undefined>
-  abstract toJSON(): string | undefined
+  abstract toJSON(): string
   abstract set(value: string): void
   abstract get(): void
 }
@@ -58,36 +49,32 @@ export class JsFile extends File {
   generateModuleUrl: Accessor<string | undefined>
   cachedModuleUrl: Accessor<string | undefined>
   /** Source code of the file as a reactive state. */
-  private source: Accessor<string | undefined>
+  private source: Accessor<string>
   /** Setter for the source state. */
-  private setSource: Setter<string | undefined>
+  private setSource: Setter<string>
   /** Reactive state of CSS files imported into this JavaScript file. */
   cssImports: Accessor<CssFile[]>
   /** Setter for the cssImports state. */
   private setCssImports: Setter<CssFile[]>
 
   /**
-   * Constructs an instance of a JavaScript file.
-   * @param {FileSystem} fs - Reference to the file system managing this file.
-   * @param {string} path - Path to the file within the file system.
-   * @param {Object} config - Configuration for transpilation, including Babel presets and plugins.
+   * Constructs an instance of a Javascript file
+   * @param repl - Reference to the ReplContext
+   * @param path - Path in virtual file system
    */
   constructor(
-    private fs: FileSystem,
+    private repl: ReplContext,
     path: string,
-    config: {
-      presets: Resource<any[]>
-      plugins: Resource<babel.PluginItem[]>
-    },
   ) {
     super()
 
     const extension = path.split('/').pop()?.split('.')[1]
     const isTypescript = extension === 'ts' || extension === 'tsx'
-    const uri = fs.monaco.Uri.parse(`file:///${path.replace('./', '')}`)
+    const uri = repl.libs.monaco.Uri.parse(`file:///${path.replace('./', '')}`)
     this.model =
-      fs.monaco.editor.getModel(uri) || fs.monaco.editor.createModel('', 'typescript', uri)
-    ;[this.source, this.setSource] = createSignal<string | undefined>()
+      repl.libs.monaco.editor.getModel(uri) ||
+      repl.libs.monaco.editor.createModel('', 'typescript', uri)
+    ;[this.source, this.setSource] = createSignal<string>('')
     ;[this.cssImports, this.setCssImports] = createSignal<CssFile[]>([])
 
     let initialized = false
@@ -96,8 +83,8 @@ export class JsFile extends File {
     const [intermediary] = createResource(
       every(
         this.source,
-        config.presets,
-        config.plugins,
+        this.repl.libs.babelPresets,
+        this.repl.libs.babelPlugins,
         // If no intermediary has been created before we do not throttle.
         () => !initialized || scheduled(),
       ),
@@ -106,11 +93,13 @@ export class JsFile extends File {
         try {
           let value: string = source
           if (isTypescript) {
-            const options = fs.monaco.languages.typescript.typescriptDefaults.getCompilerOptions()
-            const result = ts.transpile(value, options)
+            const options =
+              repl.libs.monaco.languages.typescript.typescriptDefaults.getCompilerOptions()
+            const result = repl.libs.typescript.transpile(value, options)
             if (result) value = result
           }
-          if (presets.length !== 0) value = Babel.transform(value, { presets, plugins }).code!
+          if (presets.length !== 0)
+            value = repl.libs.babel.transform(value, { presets, plugins }).code!
           return value
         } catch (err) {
           return source
@@ -129,17 +118,17 @@ export class JsFile extends File {
 
         try {
           return batch(() =>
-            mapModuleDeclarations(path, value, node => {
+            this.repl.mapModuleDeclarations(path, value, node => {
               const specifier = node.moduleSpecifier as ts.StringLiteral
               let modulePath = specifier.text
 
               if (isUrl(modulePath)) return
 
-              const alias = this.fs.alias[modulePath]
+              const alias = this.repl.fileSystem.alias[modulePath]
               // If the module-path is either an aliased path or a relative path
               if (alias || isRelativePath(modulePath)) {
                 // We resolve the path to a File
-                const resolvedFile = fs.resolve(
+                const resolvedFile = this.repl.fileSystem.resolve(
                   // If path is aliased we resolve the aliased path
                   alias ||
                     // Else the path must be a relative path
@@ -181,8 +170,8 @@ export class JsFile extends File {
               // It must be a package-name.
               else if (!isUrl(modulePath)) {
                 // We transform this package-name to a cdn-url.
-                specifier.text = `${this.fs.config.cdn}/${modulePath}`
-                this.fs.typeRegistry.importTypesFromPackageName(modulePath)
+                specifier.text = `${this.repl.config.cdn}/${modulePath}`
+                this.repl.typeRegistry.importTypesFromPackageName(modulePath)
               }
             }),
           )
@@ -223,7 +212,7 @@ export class JsFile extends File {
 
   /**
    * Serializes the file's current state to a JSON-compatible string.
-   * @returns {string | undefined} The current source code of the file.
+   * @returns The current source code of the file.
    */
   toJSON() {
     return this.source()
@@ -231,7 +220,7 @@ export class JsFile extends File {
 
   /**
    * Sets the source code of the file.
-   * @param {string} value - New source code to set.
+   * @param value - New source code to set.
    */
   set(value: string) {
     this.model.setValue(value)
@@ -239,7 +228,7 @@ export class JsFile extends File {
 
   /**
    * Retrieves the current source code of the file.
-   * @returns {string} The current source code.
+   * @returns The current source code.
    */
   get() {
     this.source()
@@ -256,8 +245,8 @@ export class JsFile extends File {
    * If you are using a different UI library or want to implement a custom cleanup mechanism, you will need to create or adapt
    * a Babel plugin to set the appropriate cleanup function to `window.dispose` according to your application's needs.
    *
-   * @param {Frame} frame - The frame containing the window object on which the cleanup function is called.
-   *                        This is typically an iframe or a similar isolated environment where the UI components are rendered.
+   * @param frame - The frame containing the window object on which the cleanup function is called.
+   *                This is typically an iframe or a similar isolated environment where the UI components are rendered.
    */
   dispose(frame: Frame) {
     // @ts-expect-error
@@ -274,23 +263,26 @@ export class CssFile extends File {
   generateModuleUrl: Accessor<string | undefined>
   cachedModuleUrl: Accessor<string | undefined>
 
-  /** Source code of the CSS file as a reactive state. */
-  private source: Accessor<string | undefined>
+  /**
+   * Source code of the CSS file as a reactive state.
+   */
+  private source: Accessor<string>
 
   /**
    * Constructs an instance of a CSS file.
-   * @param {FileSystem} fs - Reference to the file system managing this file.
-   * @param {string} path - Path to the CSS file within the file system.
+   * @param repl - Reference to the repl instance.
+   * @param path - Path to the CSS file within the file system.
    */
   constructor(
-    fs: FileSystem,
-    public path: string,
+    repl: ReplContext,
+    private path: string,
   ) {
     super()
-    const uri = fs.monaco.Uri.parse(`file:///${path.replace('./', '')}`)
-    this.model = fs.monaco.editor.getModel(uri) || fs.monaco.editor.createModel('', 'css', uri)
+    const uri = repl.libs.monaco.Uri.parse(`file:///${path.replace('./', '')}`)
+    this.model =
+      repl.libs.monaco.editor.getModel(uri) || repl.libs.monaco.editor.createModel('', 'css', uri)
 
-    const [source, setSource] = createSignal<string | undefined>()
+    const [source, setSource] = createSignal<string>('')
     this.source = source
 
     const scheduled = createScheduled(fn => debounce(fn, 250))
@@ -323,7 +315,7 @@ export class CssFile extends File {
 
   /**
    * Serializes the CSS file's current state to a JSON-compatible string.
-   * @returns {string | undefined} The current source code of the CSS file.
+   * @returns  The current source code of the CSS file.
    */
   toJSON() {
     return this.source()
@@ -331,7 +323,7 @@ export class CssFile extends File {
 
   /**
    * Sets the source code of the CSS file.
-   * @param {string} value - New source code to set.
+   * @param value - New source code to set.
    */
   set(value: string) {
     this.model.setValue(value)
@@ -339,7 +331,7 @@ export class CssFile extends File {
 
   /**
    * Retrieves the current source code of the CSS file.
-   * @returns {string} The current source code.
+   * @returns The current source code.
    */
   get() {
     this.source()
@@ -349,8 +341,8 @@ export class CssFile extends File {
   /**
    * Removes the style element associated with this instance from the specified document frame.
    *
-   * @param {Window} frame - The window object of the frame from which the style is to be removed.
-   *                         Typically this is the window of an iframe or the main document window.
+   * @param frame - The window object of the frame from which the style is to be removed.
+   *                Typically this is the window of an iframe or the main document window.
    */
   dispose(frame: Frame) {
     frame.window.document.getElementById(`bigmistqke-repl-${this.path}`)?.remove()

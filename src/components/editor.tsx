@@ -28,10 +28,12 @@ export function ReplEditor(props: EditorProps) {
   const container = (<div class={props.class} {...rest} />) as HTMLDivElement
 
   // Get or create file
-  const file = createMemo(() => repl.fs.get(props.path) || repl.fs.create(props.path))
+  const file = createMemo(
+    () => repl.fileSystem.get(props.path) || repl.fileSystem.create(props.path),
+  )
 
   // Create monaco-editor
-  const editor = repl.fs.monaco.editor.create(container, {
+  const editor = repl.libs.monaco.editor.create(container, {
     value: '',
     language: 'typescript',
     automaticLayout: true,
@@ -44,15 +46,15 @@ export function ReplEditor(props: EditorProps) {
 
   // Add action to context-menu of monaco-editor
   createEffect(() => {
-    if (repl.fs.config.actions?.saveRepl === false) return
+    if (repl.config.actions?.saveRepl === false) return
     const cleanup = editor.addAction({
       id: 'save-repl',
       label: 'Save Repl',
-      keybindings: [repl.fs.monaco.KeyMod.CtrlCmd | repl.fs.monaco.KeyCode.KeyY], // Optional: set a keybinding
+      keybindings: [repl.libs.monaco.KeyMod.CtrlCmd | repl.libs.monaco.KeyCode.KeyY], // Optional: set a keybinding
       precondition: undefined,
       keybindingContext: undefined,
       contextMenuGroupId: 'repl',
-      run: () => repl.fs.download(),
+      run: () => repl.download(),
     })
     onCleanup(() => cleanup.dispose())
   })

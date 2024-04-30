@@ -3,7 +3,6 @@ import { solidReplPlugin } from '@bigmistqke/repl/plugins/solid-repl'
 import { Resizable } from 'corvu/resizable'
 import { createEffect, createSignal, mapArray, on, onCleanup, type Component } from 'solid-js'
 import { JsFile } from 'src/logic/file'
-import { JsxEmit } from 'typescript'
 
 import styles from './App.module.css'
 
@@ -18,12 +17,12 @@ const App: Component = () => {
         onClick={() => {
           let index = 1
           let path = `src/index.tsx`
-          while (repl.fs.has(path)) {
+          while (repl.fileSystem.has(path)) {
             path = `src/index${index}.tsx`
             index++
           }
-          console.log('path is ', path, repl.fs.has(path))
-          repl.fs.create(path)
+          console.log('path is ', path, repl.fileSystem.has(path))
+          repl.fileSystem.create(path)
           setCurrentFile(path)
         }}
       >
@@ -48,16 +47,17 @@ const App: Component = () => {
         forceConsistentCasingInFileNames: true,
         noUncheckedIndexedAccess: true,
         paths: {},
-        jsx: JsxEmit.Preserve,
+        jsx: /* JsxEmit.Preserve */ 1,
         jsxImportSource: 'solid-js',
         strict: true,
       }}
       initialState={{
         files: {
-          'src/index.css': `body {
+          sources: {
+            'src/index.css': `body {
   background: blue;
 }`,
-          'src/index.tsx': `import { render } from "solid-js/web";
+            'src/index.tsx': `import { render } from "solid-js/web";
 import { createSignal } from "solid-js";
 import "solid-js/jsx-runtime";
 import "./index.css";
@@ -75,15 +75,16 @@ function Counter() {
 
 render(() => <Counter />, document.body);
 `,
+          },
         },
       }}
       class={styles.repl}
-      onSetup={async ({ fs, frames }) => {
+      onSetup={async ({ fileSystem, frameRegistry }) => {
         createEffect(() => {
-          const frame = frames.get('default')
+          const frame = frameRegistry.get('default')
           if (!frame) return
 
-          const entry = fs.get('src/index.tsx')
+          const entry = fileSystem.get('src/index.tsx')
 
           if (entry instanceof JsFile) {
             createEffect(() => {
@@ -100,7 +101,7 @@ render(() => <Counter />, document.body);
             )
           }
         })
-        /* await fs.addPackage('./solid-three') */
+        /* await fileSystem.addPackage('./solid-three') */
       }}
     >
       <Resizable style={{ width: '100vw', height: '100vh', display: 'flex' }}>
@@ -122,7 +123,7 @@ render(() => <Counter />, document.body);
           />
         </Resizable.Panel>
         <Resizable.Handle />
-        <Resizable.Panel style={{ display: 'flex' }}>
+        <Resizable.Panel style={{ display: 'flex', overflow: 'hidden' }}>
           <Repl.Frame
             style={{ flex: 1 }}
             bodyStyle={{

@@ -70,6 +70,17 @@
     "lint:types": "tsc --noEmit",
     "update-deps": "pnpm up -Li"
   },
+  "dependencies": {
+    "@babel/standalone": "^7.24.4",
+    "@monaco-editor/loader": "^1.4.0",
+    "@solid-primitives/scheduled": "^1.4.3",
+    "clsx": "^2.1.0",
+    "fflate": "^0.8.2",
+    "monaco-editor-textmate": "^4.0.0",
+    "monaco-textmate": "^3.0.1",
+    "onigasm": "^2.2.5",
+    "typescript": "^5.1.6"
+  },
   "peerDependencies": {
     "solid-js": "^1.6.0"
   },
@@ -81,19 +92,19 @@
     "@typescript-eslint/parser": "^6.1.0",
     "concurrently": "^8.2.0",
     "corvu": "^0.5.0",
-    "esbuild": "^0.18.15",
     "esbuild-plugin-solid": "^0.5.0",
-    "eslint": "^8.45.0",
+    "esbuild": "^0.18.15",
     "eslint-plugin-eslint-comments": "^3.2.0",
     "eslint-plugin-no-only-tests": "^3.1.0",
+    "eslint": "^8.45.0",
     "jsdom": "^22.1.0",
     "prettier": "3.0.0",
-    "tsup": "^7.1.0",
     "tsup-preset-solid": "^2.0.1",
+    "tsup": "^7.1.0",
     "typescript": "^5.1.6",
-    "vite": "^4.4.6",
     "vite-plugin-solid": "^2.7.0",
     "vite-tsconfig-paths": "^4.3.2",
+    "vite": "^4.4.6",
     "vitest": "^0.33.0"
   },
   "keywords": [
@@ -103,17 +114,5 @@
   "engines": {
     "node": ">=18",
     "pnpm": ">=8.6.0"
-  },
-  "dependencies": {
-    "@babel/standalone": "^7.24.4",
-    "@bigmistqke/minni": "^0.0.7",
-    "@monaco-editor/loader": "^1.4.0",
-    "@solid-primitives/scheduled": "^1.4.3",
-    "clsx": "^2.1.0",
-    "fflate": "^0.8.2",
-    "monaco-editor-textmate": "^4.0.0",
-    "monaco-textmate": "^3.0.1",
-    "onigasm": "^2.2.5",
-    "solid-js": "^1.8.0"
   }
 }

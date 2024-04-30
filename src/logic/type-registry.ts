@@ -1,15 +1,14 @@
-import * as ts from 'typescript'
+import type ts from 'typescript'
 
 import { Accessor, Setter, batch, createSignal } from 'solid-js'
 import {
   isRelativePath,
   isUrl,
-  mapModuleDeclarations,
   pathToPackageNameAndVersion,
   relativeToAbsolutePath,
   when,
 } from '../utils'
-import { FileSystem } from './file-system'
+import { ReplContext } from './repl-context'
 
 export type TypeRegistryState = {
   alias: Record<string, string[]>
@@ -34,9 +33,9 @@ export class TypeRegistry {
   /**
    * Initializes a new instance of the TypeRegistry class.
    *
-   * @param {FileSystem} fs The file system instance that interacts with this type registry.
+   * @param repl The repl-instance that interacts with this type registry.
    */
-  constructor(public fs: FileSystem) {
+  constructor(public repl: ReplContext) {
     ;[this.sources, this.setSources] = createSignal({}, { equals: false })
     ;[this.alias, this.setAlias] = createSignal({})
   }
@@ -44,7 +43,7 @@ export class TypeRegistry {
   /**
    * Converts the current state of the type registry into a JSON object.
    *
-   * @returns {TypeRegistryState} The current state of the type registry.
+   * @returns The current state of the type registry.
    */
   toJSON(): TypeRegistryState {
     return {
@@ -56,41 +55,48 @@ export class TypeRegistry {
   /**
    * Initializes the registry with a predefined state, setting up known types and aliases.
    *
-   * @param {TypeRegistryState} initialState The initial state to load into the registry.
+   * @param initialState The initial state to load into the registry.
    */
-  initialize(initialState: TypeRegistryState) {
+  initialize(initialState: Partial<TypeRegistryState>) {
     batch(() => {
-      this.setSources(initialState.sources)
-      this.setAlias(initialState.alias)
+      if (initialState.sources) {
+        this.setSources(initialState.sources)
+        Object.entries(initialState.sources).forEach(([key, value]) => {
+          this.cachedUrls.add(key)
+          if (value) {
+            this.repl.libs.monaco.languages.typescript.typescriptDefaults.addExtraLib(
+              value,
+              `file:///node_modules/${key}`,
+            )
+          }
+        })
+      }
 
-      Object.entries(initialState.sources).forEach(([key, value]) => {
-        this.cachedUrls.add(key)
-        if (value) {
-          this.fs.monaco.languages.typescript.typescriptDefaults.addExtraLib(
-            value,
-            `file:///node_modules/${key}`,
+      if (initialState.alias) {
+        this.setAlias(initialState.alias)
+        Object.entries(initialState.alias).forEach(([key, value]) => {
+          this.cachedPackageNames.add(key)
+          // add virtual path to monaco's tsconfig's `path`-property
+          const tsCompilerOptions =
+            this.repl.libs.monaco.languages.typescript.typescriptDefaults.getCompilerOptions()
+          tsCompilerOptions.paths![key] = value
+          this.repl.libs.monaco.languages.typescript.typescriptDefaults.setCompilerOptions(
+            tsCompilerOptions,
           )
-        }
-      })
-
-      Object.entries(initialState.alias).forEach(([key, value]) => {
-        this.cachedPackageNames.add(key)
-        // add virtual path to monaco's tsconfig's `path`-property
-        const tsCompilerOptions =
-          this.fs.monaco.languages.typescript.typescriptDefaults.getCompilerOptions()
-        tsCompilerOptions.paths![key] = value
-        this.fs.monaco.languages.typescript.typescriptDefaults.setCompilerOptions(tsCompilerOptions)
-        this.fs.monaco.languages.typescript.javascriptDefaults.setCompilerOptions(tsCompilerOptions)
-      })
+          this.repl.libs.monaco.languages.typescript.javascriptDefaults.setCompilerOptions(
+            tsCompilerOptions,
+          )
+        })
+      }
     })
   }
 
   /**
    * Imports type definitions from a URL, checking if the types are already cached before importing.
    *
-   * @param {string} url The URL of the type definition to import.
-   * @param {string} [packageName] The package name associated with the type definitions.
-   * @returns {Promise<void>}
+   * @param url The URL of the type definition to import.
+   * @param [packageName] The package name associated with the type definitions.
+   * @returns
    * @async
    */
 
@@ -126,7 +132,7 @@ export class TypeRegistry {
 
       const promises: Promise<void>[] = []
 
-      const transformedCode = mapModuleDeclarations(virtualPath, code, node => {
+      const transformedCode = this.repl.mapModuleDeclarations(virtualPath, code, node => {
         const specifier = node.moduleSpecifier as ts.StringLiteral
         let modulePath = specifier.text
         if (isRelativePath(modulePath)) {
@@ -184,7 +190,7 @@ export class TypeRegistry {
 
     Object.entries(newFiles).forEach(([key, value]) => {
       if (value) {
-        this.fs.monaco.languages.typescript.typescriptDefaults.addExtraLib(
+        this.repl.libs.monaco.languages.typescript.typescriptDefaults.addExtraLib(
           value,
           `file:///node_modules/${key}`,
         )
@@ -200,15 +206,15 @@ export class TypeRegistry {
   /**
    * Imports type definitions based on a package name by resolving it to a CDN path.
    *
-   * @param {string} packageName The package name whose types to import.
-   * @returns {Promise<void>}
+   * @param packageName The package name whose types to import.
+   * @returns
    * @async
    */
   async importTypesFromPackageName(packageName: string) {
     if (this.cachedPackageNames.has(packageName)) return
     this.cachedPackageNames.add(packageName)
 
-    const typeUrl = await fetch(`${this.fs.config.cdn}/${packageName}`)
+    const typeUrl = await fetch(`${this.repl.config.cdn}/${packageName}`)
       .then(result => result.headers.get('X-TypeScript-Types'))
       .catch(error => {
         console.info(error)
@@ -230,25 +236,29 @@ export class TypeRegistry {
   /**
    * Adds or updates a path in the TypeScript configuration to map to an aliased package.
    *
-   * @param {string} packageName The package name to alias.
-   * @param {string} virtualPath The virtual path that the alias points to.
+   * @param packageName The package name to alias.
+   * @param virtualPath The virtual path that the alias points to.
    * @private
    */
   private aliasPath(packageName: string, virtualPath: string) {
     // add virtual path to monaco's tsconfig's `path`-property
     const tsCompilerOptions =
-      this.fs.monaco.languages.typescript.typescriptDefaults.getCompilerOptions()
+      this.repl.libs.monaco.languages.typescript.typescriptDefaults.getCompilerOptions()
     tsCompilerOptions.paths![packageName] = [`file:///node_modules/${virtualPath}`]
-    this.fs.monaco.languages.typescript.typescriptDefaults.setCompilerOptions(tsCompilerOptions)
-    this.fs.monaco.languages.typescript.javascriptDefaults.setCompilerOptions(tsCompilerOptions)
+    this.repl.libs.monaco.languages.typescript.typescriptDefaults.setCompilerOptions(
+      tsCompilerOptions,
+    )
+    this.repl.libs.monaco.languages.typescript.javascriptDefaults.setCompilerOptions(
+      tsCompilerOptions,
+    )
     this.setAlias(tsCompilerOptions.paths!)
   }
 
   /**
    * Adds or updates a type definition source to the registry.
    *
-   * @param {string} path The path of the type definition file.
-   * @param {string} value The content of the type definition file.
+   * @param path The path of the type definition file.
+   * @param value The content of the type definition file.
    * @private
    */
   private set(path: string, value: string) {
@@ -261,8 +271,8 @@ export class TypeRegistry {
   /**
    * Checks if a specific path is already registered in the type sources.
    *
-   * @param {string} path The path to check.
-   * @returns {boolean} True if the path is registered, false otherwise.
+   * @param path The path to check.
+   * @returns True if the path is registered, false otherwise.
    * @private
    */
   private has(path: string) {
@@ -272,14 +282,14 @@ export class TypeRegistry {
   /**
    * Converts a URL into a virtual path by stripping the CDN URL and protocol.
    *
-   * @param {string} url The URL to convert.
-   * @returns {string} The virtual path derived from the URL.
+   * @param url The URL to convert.
+   * @returns The virtual path derived from the URL.
    * @private
    */
   private getVirtualPath(url: string) {
     return (
       url
-        .replace(`${this.fs.config.cdn}/`, '')
+        .replace(`${this.repl.config.cdn}/`, '')
         .replace('http://', '')
         // replace version-number
         .split('/')

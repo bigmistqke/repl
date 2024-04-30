@@ -32,12 +32,12 @@ export function ReplFrame(props: FrameProps) {
   const iframe = (<iframe class={clsx(styles.frame, props.class)} {...rest} />) as HTMLIFrameElement
 
   createEffect(() => {
-    if (untrack(() => repl.frames.has(config.name))) {
+    if (untrack(() => repl.frameRegistry.has(config.name))) {
       console.warn(`A frame with the same name already exist: ${config.name}`)
       return
     }
-    repl.frames.add(config.name, iframe.contentWindow!)
-    onCleanup(() => repl.frames.delete(config.name))
+    repl.frameRegistry.add(config.name, iframe.contentWindow!)
+    onCleanup(() => repl.frameRegistry.delete(config.name))
   })
 
   createEffect(() => {

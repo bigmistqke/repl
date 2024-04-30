@@ -8,9 +8,6 @@ dependencies:
   '@babel/standalone':
     specifier: ^7.24.4
     version: 7.24.4
-  '@bigmistqke/minni':
-    specifier: ^0.0.7
-    version: 0.0.7
   '@monaco-editor/loader':
     specifier: ^1.4.0
     version: 1.4.0(monaco-editor@0.45.0)
@@ -33,8 +30,11 @@ dependencies:
     specifier: ^2.2.5
     version: 2.2.5
   solid-js:
-    specifier: ^1.8.0
+    specifier: ^1.6.0
     version: 1.8.17
+  typescript:
+    specifier: ^5.1.6
+    version: 5.1.6
 
 devDependencies:
   '@babel/plugin-syntax-import-attributes':
@@ -85,9 +85,6 @@ devDependencies:
   tsup-preset-solid:
     specifier: ^2.0.1
     version: 2.0.1(esbuild@0.18.15)(solid-js@1.8.17)(tsup@7.1.0)
-  typescript:
-    specifier: ^5.1.6
-    version: 5.1.6
   vite:
     specifier: ^4.4.6
     version: 4.4.6(@types/node@20.4.2)
@@ -536,12 +533,6 @@ packages:
       '@babel/helper-validator-identifier': 7.22.20
       to-fast-properties: 2.0.0
     dev: true
-
-  /@bigmistqke/minni@0.0.7:
-    resolution: {integrity: sha512-BoK/fu4cXIa4lki0npUORSdHRhZc/z96SdwQlxQv92mOt/O0FgMwU95qtiGoJrCafeEZi+eOlTWjZRyuzKDSBQ==}
-    dependencies:
-      typescript: 4.9.5
-    dev: false
 
   /@corvu/utils@0.1.1(solid-js@1.8.17):
     resolution: {integrity: sha512-NY6s6ZvOJKQw3gI6Ra9CixHslKeGTQJsaGCPBVX/K5DtDXgEPeinD5k2EnCvWmey92L2btPtasDrlGUx0sY9JA==}
@@ -3007,17 +2998,10 @@ packages:
     engines: {node: '>=10'}
     dev: true
 
-  /typescript@4.9.5:
-    resolution: {integrity: sha512-1FXk9E2Hm+QzZQ7z+McJiHL4NW1F2EzMu9Nq9i3zAaGqibafqYwCVU6WyWAuyQRRzOlxou8xZSyXLEN8oKj24g==}
-    engines: {node: '>=4.2.0'}
-    hasBin: true
-    dev: false
-
   /typescript@5.1.6:
     resolution: {integrity: sha512-zaWCozRZ6DLEWAWFrVDz1H6FVXzUSfTy5FUMWsQlU8Ym5JP9eO4xkTIROFCQvhQf61z6O/G6ugw3SgAnvvm+HA==}
     engines: {node: '>=14.17'}
     hasBin: true
-    dev: true
 
   /ufo@1.1.2:
     resolution: {integrity: sha512-TrY6DsjTQQgyS3E3dBaOXf0TpPD8u9FVrVYmKVegJuFw51n/YB9XPt+U6ydzFG5ZIN7+DIjPbNmXoBj9esYhgQ==}

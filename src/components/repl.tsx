@@ -6,19 +6,14 @@ import { loadWASM } from 'onigasm'
 // @ts-expect-error
 import onigasm from 'onigasm/lib/onigasm.wasm?url'
 import { ComponentProps, Show, createEffect, createResource, splitProps } from 'solid-js'
-import { JsxEmit, ModuleKind, ModuleResolutionKind, ScriptTarget } from 'typescript'
-
-import { deepMerge, when } from 'src/utils'
-import { FileSystem, FileSystemState } from '../logic/file-system'
-import { FrameRegistry } from '../logic/frame-registry'
+import { ReplConfig, ReplContext } from 'src/logic/repl-context'
+import { deepMerge, every, when } from 'src/utils'
 import { ReplEditor } from './editor'
 import { ReplFrame } from './frame'
 import { ReplTabBar } from './tab-bar'
-import typescriptReactTM from './text-mate/TypeScriptReact.tmLanguage.json'
-import cssTM from './text-mate/css.tmLanguage.json'
 import vsDark from './themes/vs_dark_good.json'
 import vsLight from './themes/vs_light_good.json'
-import { replContext } from './use-repl'
+import { ReplContextProvider } from './use-repl'
 
 // @ts-expect-error
 import styles from './repl.module.css'
@@ -29,31 +24,6 @@ const GRAMMARS = new Map([
   ['css', 'source.css'],
 ])
 
-export type TypescriptConfig = Parameters<
-  Monaco['languages']['typescript']['typescriptDefaults']['setCompilerOptions']
->[0]
-export type BabelConfig = Partial<{ presets: string[]; plugins: (string | babel.PluginItem)[] }>
-export type ReplConfig = Partial<{
-  /** Configuration options for Babel, used for code transformation. */
-  babel: BabelConfig
-  /** The CDN URL used to load TypeScript and other external libraries. */
-  cdn: string
-  /** CSS class for styling the root REPL component. */
-  class: string
-  /** Initial state of the virtual file system to preload files. */
-  initialState: Partial<FileSystemState>
-  /** Theme setting for the Monaco editor. */
-  mode: 'light' | 'dark'
-  /** Callback function that runs after initializing the editor and file system. */
-  onSetup: (event: { fs: FileSystem; frames: FrameRegistry }) => Promise<void> | void
-  /** TypeScript compiler options for the Monaco editor. */
-  typescript: TypescriptConfig
-  /** Optional actions like saving the current state of the REPL. */
-  actions?: {
-    saveRepl?: boolean
-  }
-}>
-
 export type ReplProps = ComponentProps<'div'> & ReplConfig
 
 /**
@@ -62,8 +32,8 @@ export type ReplProps = ComponentProps<'div'> & ReplConfig
  * This component merges user-specified configuration with defaults to setup the editor environment, handle theming, and manage file
  * operations interactively.
  *
- * @param {ReplProps} props - The properties passed to configure the REPL environment.
- * @returns {JSX.Element} A JSX element that renders the REPL environment including the editor and any children components.
+ * @param props - The properties passed to configure the REPL environment.
+ * @returns A JSX element that renders the REPL environment including the editor and any children components.
  */
 export function Repl(props: ReplProps) {
   const [, propsWithoutChildren] = splitProps(props, ['children'])
@@ -87,17 +57,17 @@ export function Repl(props: ReplProps) {
         esModuleInterop: true,
         allowUmdGlobalAccess: true,
         // enums inlined
-        jsx: JsxEmit.Preserve as 1,
-        module: ModuleKind.ESNext as 99,
-        moduleResolution: ModuleResolutionKind.Node10 as 2,
-        target: ScriptTarget.ESNext as 99,
+        jsx: /* JsxEmit.Preserve as */ 1,
+        module: /* ModuleKind.ESNext as */ 99,
+        moduleResolution: /* ModuleResolutionKind.Node10 as */ 2,
+        target: /* ScriptTarget.ESNext as */ 99,
         paths: {},
       },
     },
     propsWithoutChildren,
   )
-  const frames = new FrameRegistry()
 
+  // Import and load all of the repl's resources
   const [monaco] = createResource(async () => {
     const monaco = await (loader.init() as Promise<Monaco>)
     monaco.languages.typescript.typescriptDefaults.setCompilerOptions(config.typescript)
@@ -117,12 +87,15 @@ export function Repl(props: ReplProps) {
       monaco.editor.defineTheme('vs-dark-plus', vsDark as any)
       monaco.editor.defineTheme('vs-light-plus', vsLight as any)
 
+      const typescriptReactTM = await import('./text-mate/TypeScriptReact.tmLanguage.json')
+      const cssTM = await import('./text-mate/css.tmLanguage.json')
+
       // Initialize textmate-registry
       const registry = new Registry({
         async getGrammarDefinition(scopeName) {
           return {
             format: 'json',
-            content: scopeName === 'source.tsx' ? typescriptReactTM : cssTM,
+            content: scopeName === 'source.tsx' ? typescriptReactTM.default : cssTM.default,
           }
         },
       })
@@ -144,29 +117,59 @@ export function Repl(props: ReplProps) {
 
     return monaco
   })
+  const [babel] = createResource(() => import('@babel/standalone'))
+  const [typescript] = createResource(() => import('typescript'))
+  const [babelPresets] = createResource(() =>
+    config.babel?.presets
+      ? Promise.all(
+          config.babel.presets.map(
+            async preset => (await import(`${config.cdn}/${preset}`)).default,
+          ),
+        )
+      : [],
+  )
+  const [babelPlugins] = createResource(() =>
+    config.babel?.plugins
+      ? Promise.all(
+          config.babel.plugins.map(async plugin => {
+            if (typeof plugin === 'string') {
+              return (await import(`${config.cdn}/${plugin}`)).default
+            }
+            return plugin
+          }),
+        )
+      : [],
+  )
 
+  // Once all resources are loaded, instantiate and initialize ReplContext
+  const [repl] = createResource(
+    every(monaco, babel, typescript, babelPlugins, babelPresets),
+    async ([monaco, babel, typescript, babelPlugins, babelPresets]) => {
+      const repl = new ReplContext(
+        { monaco, typescript, babel, babelPlugins, babelPresets },
+        config,
+      )
+      await config.onSetup?.(repl)
+      repl.initialize()
+      return repl
+    },
+  )
+
+  // Switch light/dark mode of monaco-editor
   createEffect(() =>
-    when(monaco)(monaco => {
-      // Switch light/dark mode of monaco-editor
-      monaco.editor.setTheme(props.mode === 'light' ? 'vs-light-plus' : 'vs-dark-plus')
+    when(repl)(repl => {
+      repl.libs.monaco.editor.setTheme(props.mode === 'light' ? 'vs-light-plus' : 'vs-dark-plus')
     }),
   )
 
-  const [fs] = createResource(monaco, async monaco => {
-    const fs = new FileSystem(monaco, config)
-    await config.onSetup?.({ fs, frames })
-    fs.initialize()
-    return fs
-  })
-
   return (
-    <Show when={fs()}>
-      {fs => (
-        <replContext.Provider value={{ fs: fs(), frames }}>
+    <Show when={repl()}>
+      {repl => (
+        <ReplContextProvider value={repl()}>
           <div class={clsx(styles.repl, props.class)} {...rest}>
             {props.children}
           </div>
-        </replContext.Provider>
+        </ReplContextProvider>
       )}
     </Show>
   )
@@ -177,12 +180,8 @@ export function Repl(props: ReplProps) {
  * It dynamically creates and binds a `monaco`-model and `File`
  * in the virtual `FileSystem` based on the provided `path`-prop.
  *
- * @param {EditorProps} props - The properties passed to the editor component.
- * @returns {HTMLDivElement} The container div element that hosts the Monaco editor.
- *
- * @typedef {Object} EditorProps
- * @property {string} path - The path to the file that the editor should open and display.
- * @property {Function} [onMount] - Optional callback that is called when the editor is mounted. It receives the created MonacoEditor instance.
+ * @param  props - The properties passed to the editor component.
+ * @returns The container div element that hosts the Monaco editor.
  */
 Repl.Editor = ReplEditor
 /**
@@ -190,15 +189,8 @@ Repl.Editor = ReplEditor
  * environment within the application. It is used to inject and execute CSS or JS module separately
  * from the main document flow.
  *
- * @param {FrameProps} props - The props for configuring the iframe.
- * @returns {JSX.Element} The iframe element configured according to the specified props.
- *
- * @typedef {Object} FrameProps
- * @property {string} [name='default'] - The unique identifier for the iframe, which is used to manage its
- * presence in the global frame registry. If not specified, 'default' is used as a fallback.
- * @property {JSX.CSSProperties | string | undefined} bodyStyle - Optional CSS properties or a string
- * that defines the style of the iframe's body. This allows for dynamic styling of the content within
- * the iframe.
+ * @param props - The props for configuring the iframe.
+ * @returns The iframe element configured according to the specified props.
  *
  * @example
  * // To create an iframe with specific styles and a unique name:
@@ -212,13 +204,7 @@ Repl.Frame = ReplFrame
  * excluding files in the `node_modules` directory: This directory contains packages imported with
  * `FileSystem.importFromPackageJson()` and auto-imported types of external dependencies.
  *
- * @param {ReplTabBarProps} props - The properties passed to the tab bar component.
- * @returns {JSXElement} The container div element that hosts the tabs for each file.
- *
- * @typedef {Object} ReplTabBarProps
- * @property {string[]} [files] - Optional array of file paths to specifically include in the tab bar. If not provided,
- *                                all files from the file system are used.
- * @property {Function} children - A render prop function that receives an object with the current path and file object.
- *                                 It should return a JSX element to render for each tab.
+ * @param props - The properties passed to the tab bar component.
+ * @returns  The container div element that hosts the tabs for each file.
  */
 Repl.TabBar = ReplTabBar

@@ -1,14 +1,8 @@
 import { createContext, useContext } from 'solid-js'
-import { FileSystem } from 'src/logic/file-system'
-import { FrameRegistry } from 'src/logic/frame-registry'
+import { ReplContext } from 'src/logic/repl-context'
 
-type ReplContext = {
-  /** The virtual file system instance used to manage files within the Repl. */
-  fs: FileSystem
-  /** The registry of frames for managing isolated execution contexts. */
-  frames: FrameRegistry
-}
-export const replContext = createContext<ReplContext>()
+const replContext = createContext<ReplContext>()
+export const ReplContextProvider = replContext.Provider
 
 /**
  * This hook facilitates the retrieval  of the Repl context, which includes the `FileSystem` and `FrameRegistry`.

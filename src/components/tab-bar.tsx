@@ -24,7 +24,7 @@ export function ReplTabBar(props: ReplTabBarProps) {
   const repl = useRepl()
 
   const entries = () => {
-    const files = repl.fs.all()
+    const files = repl.fileSystem.all()
     if (props.paths) {
       return props.paths.map(path => [path, files[path]] as const)
     }

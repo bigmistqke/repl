@@ -32,8 +32,8 @@ export class FrameRegistry {
   /**
    * Adds a new frame to the registry with the given name and window object. Used internally by `Repl.Frame`
    *
-   * @param {string} name - The name to associate with the frame.
-   * @param {Window} window - The window object of the frame.
+   * @param name - The name to associate with the frame.
+   * @param window - The window object of the frame.
    */
   add(name: string, window: Window) {
     this.set(name, new Frame(window))
@@ -42,7 +42,7 @@ export class FrameRegistry {
   /**
    * Deletes a frame from the registry by its name. Used internally by `Repl.Frame`.
    *
-   * @param {string} name - The name of the frame to delete.
+   * @param name - The name of the frame to delete.
    */
   delete(name: string) {
     this.set(name, undefined!)
@@ -51,8 +51,8 @@ export class FrameRegistry {
   /**
    * Retrieves a frame by its name.
    *
-   * @param {string} name - The name of the frame to retrieve.
-   * @returns {Frame | undefined} The frame associated with the given name, if it exists.
+   * @param name - The name of the frame to retrieve.
+   * @returns The frame associated with the given name, if it exists.
    */
   get(name: string) {
     return this.frames[name]
@@ -79,7 +79,7 @@ export class Frame {
   /**
    * Constructs a Frame instance associated with a given window.
    *
-   * @param {Window} window - The window object associated with this frame.
+   * @param window - The window object associated with this frame.
    */
   constructor(
     /** The window object associated with this frame, typically an iframe's window. */
@@ -90,8 +90,8 @@ export class Frame {
    * Injects and executes the esm-module of the given `CssFile` or `JsFile` into the frame's window.
    * Returns the injected script-element.
    *
-   * @param {CssFile | JsFile} file - The file to inject, which could be a `CssFile` or `JsFile`.
-   * @returns {HTMLScriptElement} The script element that was injected.
+   * @param file - The file to inject, which could be a `CssFile` or `JsFile`.
+   * @returns The script element that was injected.
    */
   injectFile(file: CssFile | JsFile) {
     // We need to generate a new module-url everytime we inject a file, to ensure the body is executed.
