@@ -1,7 +1,15 @@
-import { ComponentProps, createEffect, createMemo, onCleanup, onMount, splitProps } from 'solid-js'
+import {
+  ComponentProps,
+  createEffect,
+  createMemo,
+  onCleanup,
+  onMount,
+  splitProps,
+  untrack,
+} from 'solid-js'
 
 import { Monaco } from '@monaco-editor/loader'
-import { when } from '../utils'
+import { every, when } from '../utils'
 import { useRepl } from './use-repl'
 
 type MonacoEditor = ReturnType<Monaco['editor']['create']>
@@ -24,12 +32,31 @@ export function ReplEditor(props: EditorProps) {
   const [, rest] = splitProps(props, ['class'])
   const repl = useRepl()
 
-  // Initialize html-element of monaco-editor
-  const container = (<div class={props.class} {...rest} />) as HTMLDivElement
-
   // Get or create file
   const file = createMemo(
     () => repl.fileSystem.get(props.path) || repl.fileSystem.create(props.path),
+  )
+
+  const model = createMemo(() =>
+    when(file, file => {
+      const uri = repl.libs.monaco.Uri.parse(`file:///${props.path.replace('./', '')}`)
+      return (
+        repl.libs.monaco.editor.getModel(uri) ||
+        repl.libs.monaco.editor.createModel(untrack(() => file.get()) || '', 'typescript', uri)
+      )
+    }),
+  )
+
+  // Initialize html-element of monaco-editor
+  const container = (<div class={props.class} {...rest} />) as HTMLDivElement
+
+  createEffect(() =>
+    when(every(file, model), ([file, model]) => {
+      if (model.getValue() !== file.get()) {
+        model.setValue(file.get())
+      }
+      model.onDidChangeContent(() => file.set(model.getValue()))
+    }),
   )
 
   // Create monaco-editor
@@ -42,7 +69,7 @@ export function ReplEditor(props: EditorProps) {
   onMount(() => props.onMount?.(editor))
 
   // Update monaco-editor's model to current file's model
-  createEffect(() => when(file, file => editor.setModel(file.model)))
+  createEffect(() => when(model, model => editor.setModel(model)))
 
   // Add action to context-menu of monaco-editor
   createEffect(() => {
