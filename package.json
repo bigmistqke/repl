@@ -1,6 +1,6 @@
 {
   "name": "@bigmistqke/repl",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Repl with typescript support, powered by solid-js and monaco-editor.",
   "license": "MIT",
   "author": "bigmistqke",
