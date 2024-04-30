@@ -27,13 +27,15 @@ const GRAMMARS = new Map([
 export type ReplProps = ComponentProps<'div'> & ReplConfig
 
 /**
- * The `Repl` component serves as the root of your application's REPL environment. It initializes `monaco-editor`,
- * sets up the virtual `FileSystem`, and provides a context that is accessible to all descendant components with `useRepl`.
- * This component merges user-specified configuration with defaults to setup the editor environment, handle theming, and manage file
- * operations interactively.
+ * Initializes the Repl environment by dynamically loading required libraries (`Babel`, `TypeScript` and `monaco-editor`)
+ * and any Babel presets/plugins defined in the props. Configures and instantiates `ReplContext`, which sets up `FileSystem`
+ * and `TypeRegistry`. The component ensures no children are rendered until all dependencies are fully loaded and the optional
+ * `onSetup`-callback has been completed.
  *
- * @param props - The properties passed to configure the REPL environment.
- * @returns A JSX element that renders the REPL environment including the editor and any children components.
+ * It provides access for its children to its internal `ReplContext` through the `useRepl`-hook.
+ *
+ * @param props Configuration properties for the Repl
+ * @returns A JSX element that renders the Repl environment, delaying rendering of child components until all dependencies are loaded.
  */
 export function Repl(props: ReplProps) {
   const [, propsWithoutChildren] = splitProps(props, ['children'])
