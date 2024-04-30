@@ -251,7 +251,7 @@ The `FileSystem` API manages a virtual file system, allowing for the creation, r
 - **get(path: string)**: Retrieves a `File` instance by its path.
 - **has(path: string)**: Checks if a file exists at the specified path.
 - **resolve(path: string)**: Resolves a path according to TypeScript resolution rules, supporting both relative and absolute paths.
-- **addPackage(url: string)**: Adds a package by URL, analyzing and importing its contents into the virtual file system.
+- **importFromPackageJson(url: string)**: Imports a package from a specified URL by parsing its package.json.
 - **initialize()**: Initializes the file system with the specified initial state, including preloading files and setting aliases.
 
 **Type**
@@ -282,7 +282,7 @@ class FileSystem {
   has(path: string): boolean
   get(path: string): File | undefined
   addProject(files: Record<string, string>): void
-  addPackage(url: string): Promise<void>
+  importFromPackageJson(url: string): Promise<void>
   resolve(path: string): File | undefined
   all(): Record<string, File>
 }
@@ -472,7 +472,7 @@ const App = () => {
           }
         })
         // Optional: Load external packages dynamically
-        /* await fs.addPackage('./solid-three') */
+        /* await fs.importFromPackageJson('./solid-three') */
       }}
     >
       <Resizable style={{ width: '100vw', height: '100vh', display: 'flex' }}>
