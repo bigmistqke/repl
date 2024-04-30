@@ -52,7 +52,7 @@ pnpm install `@bigmistqke/repl`
 
 ## `Repl` Component
 
-Initializes the Repl environment by dynamically loading required libraries (`Babel`, `TypeScript` and `monaco-editor`) and any Babel presets/plugins defined in the props. Configures and instantiates [`ReplContext`](#replcontext), which sets up [`FileSystem`](#filesystem) and [`TypeRegistry`](#typeregistry). The component ensures no children are rendered until all dependencies are fully loaded and the optionally provided `onSetup`-prop has been resolved.
+Initializes the Repl environment by dynamically loading the required libraries (`Babel`, `TypeScript` and `monaco-editor`) and any Babel presets/plugins defined in the props. Configures and instantiates [`ReplContext`](#replcontext), which sets up [`FileSystem`](#filesystem) and [`TypeRegistry`](#typeregistry). The component ensures no children are rendered until all dependencies are fully loaded and the optionally provided `onSetup`-prop has been resolved.
 
 It provides access for its children to its internal [`ReplContext`](#replcontext) through the [`useRepl`](#userepl)-hook.
 
@@ -233,7 +233,7 @@ type TabBarProps = ComponentProps<'div'> & {
 
 ## `useRepl`
 
-Hook to interact with the internals of `@bigmistqke/repl`: the [`ReplContext`](#replcontext). This class contains the virtual [`FileSystem`](#filesystem), ['TypeRegistry'](#typeregistry) and ['FrameRegistry'](#frameregistry).
+Hook to interact with the internal api of `@bigmistqke/repl` through the [`ReplContext`](#replcontext). This class contains the virtual [`FileSystem`](#filesystem), [`TypeRegistry`](#typeregistry) and [`FrameRegistry`](#frameregistry).
 
 This hook should be used in a descendant of [`Repl`](#repl-component), otherwise it will throw.
 
@@ -306,7 +306,7 @@ The `FileSystem` API manages a virtual file system, allowing for the creation, r
 - **create(path: string)**: Creates and returns a new [`File`](#jsfile-and-cssfile) instance at the specified path.
 - **get(path: string)**: Retrieves a [`File`](#jsfile-and-cssfile) instance by its path.
 - **has(path: string)**: Checks if a [`File`](#jsfile-and-cssfile) exists at the specified path.
-- **resolve(path: string)**: Resolves a path according to TypeScript resolution rules, supporting both relative and absolute paths.
+- **resolve(path: string)**: Resolves a path according to TypeScript resolution rules, supporting both relative and absolute paths. Returns [`File`](#jsfile-and-cssfile) or `undefined`.
 - **importFromPackageJson(url: string)**: Imports a package from a specified URL by parsing its package.json.
 - **initialize()**: Initializes the file system with the specified initial state, including preloading files and setting aliases.
 
@@ -513,9 +513,9 @@ const App = () => {
         },
       }}
       class={styles.repl} // CSS class for styling the Repl component
-      onSetup={async ({ fileSystem, frames }) => {
+      onSetup={async ({ fileSystem, frameRegistry }) => {
         createEffect(() => {
-          const frame = frames.get('default') // Access the default frame
+          const frame = frameRegistry.get('default') // Access the default frame
           if (!frame) return
 
           const entry = fs.get(currentPath()) // Get the current main file
