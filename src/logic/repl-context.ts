@@ -63,8 +63,8 @@ export class ReplContext {
   constructor(
     /** An object containing references to external libraries utilized by the REPL. */
     public libs: {
-      /** An instance of Monaco, used for powering the code editor in the REPL. */
-      monaco: Monaco
+      // /** An instance of Monaco, used for powering the code editor in the REPL. */
+      // monaco: Monaco
       /**  The TypeScript library used for TypeScript code operations and transformations. */
       typescript: typeof ts
       /** The Babel library used for JavaScript code transformation. */
