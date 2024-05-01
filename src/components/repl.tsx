@@ -4,12 +4,13 @@ import { ComponentProps, Show, createResource, splitProps } from 'solid-js'
 import { ReplConfig, ReplContext } from 'src/logic/repl-context'
 import { deepMerge, every, wrapNullableResource } from 'src/utils'
 import { ReplDevTools } from './dev-tools'
-import { ReplEditor } from './editor'
+import { ReplMonacoEditor } from './editors/monaco-editor'
 import { ReplFrame } from './frame'
 import { ReplTabBar } from './tab-bar'
 import { ReplContextProvider } from './use-repl'
 
 // @ts-expect-error
+import { ReplMonacoProvider } from './editors/monaco-provider'
 import styles from './repl.module.css'
 
 const GRAMMARS = new Map([
@@ -136,7 +137,8 @@ export function Repl(props: ReplProps) {
  * @param  props - The properties passed to the editor component.
  * @returns The container div element that hosts the Monaco editor.
  */
-Repl.Editor = ReplEditor
+Repl.MonacoEditor = ReplMonacoEditor
+Repl.MonacoProvider = ReplMonacoProvider
 /**
  * `Repl.Frame` encapsulates an iframe element to provide an isolated execution
  * environment within the application. It is used to inject and execute CSS or JS module separately

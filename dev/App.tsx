@@ -148,27 +148,29 @@ render(() => <Counter />, document.body);
         })
       }}
     >
-      <Resizable style={{ width: '100vw', height: '100vh', display: 'flex' }}>
-        <Resizable.Panel
-          style={{ overflow: 'hidden', display: 'flex', 'flex-direction': 'column' }}
-        >
-          <div style={{ display: 'flex' }}>
-            <Repl.TabBar style={{ flex: 1 }}>
-              {({ path }) => <button onClick={() => setCurrentFile(path)}>{path}</button>}
-            </Repl.TabBar>
-            <AddButton />
-          </div>
-          <Repl.Editor
-            style={{ flex: 1 }}
-            path={currentPath()}
-            onMount={editor => {
-              createEffect(on(currentPath, () => editor.focus()))
-            }}
-          />
-        </Resizable.Panel>
-        <Resizable.Handle class={styles.handle} />
-        <Frames />
-      </Resizable>
+      <Repl.MonacoProvider>
+        <Resizable style={{ width: '100vw', height: '100vh', display: 'flex' }}>
+          <Resizable.Panel
+            style={{ overflow: 'hidden', display: 'flex', 'flex-direction': 'column' }}
+          >
+            <div style={{ display: 'flex' }}>
+              <Repl.TabBar style={{ flex: 1 }}>
+                {({ path }) => <button onClick={() => setCurrentFile(path)}>{path}</button>}
+              </Repl.TabBar>
+              <AddButton />
+            </div>
+            <Repl.MonacoEditor
+              style={{ flex: 1 }}
+              path={currentPath()}
+              onMount={editor => {
+                createEffect(on(currentPath, () => editor.focus()))
+              }}
+            />
+          </Resizable.Panel>
+          <Resizable.Handle class={styles.handle} />
+          <Frames />
+        </Resizable>
+      </Repl.MonacoProvider>
     </Repl>
   )
 }
