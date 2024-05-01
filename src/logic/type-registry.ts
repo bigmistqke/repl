@@ -1,6 +1,7 @@
 import type ts from 'typescript'
 
-import { Accessor, Setter, batch, createSignal } from 'solid-js'
+import { batch } from 'solid-js'
+import { SetStoreFunction, createStore } from 'solid-js/store'
 import {
   isRelativePath,
   isUrl,
@@ -25,10 +26,10 @@ export type TypeRegistryState = {
 export class TypeRegistry {
   private cachedUrls = new Set<string>()
   private cachedPackageNames = new Set<string>()
-  private sources: Accessor<Record<string, string>>
-  private setSources: Setter<Record<string, string>>
-  private alias: Accessor<Record<string, string[]>>
-  private setAlias: Setter<Record<string, string[]>>
+  sources: Record<string, string>
+  private setSources: SetStoreFunction<Record<string, string>>
+  alias: Record<string, string[]>
+  private setAlias: SetStoreFunction<Record<string, string[]>>
 
   /**
    * Initializes a new instance of the TypeRegistry class.
@@ -36,8 +37,8 @@ export class TypeRegistry {
    * @param repl The repl-instance that interacts with this type registry.
    */
   constructor(public repl: ReplContext) {
-    ;[this.sources, this.setSources] = createSignal({}, { equals: false })
-    ;[this.alias, this.setAlias] = createSignal({})
+    ;[this.sources, this.setSources] = createStore({})
+    ;[this.alias, this.setAlias] = createStore({})
   }
 
   /**
@@ -47,8 +48,8 @@ export class TypeRegistry {
    */
   toJSON(): TypeRegistryState {
     return {
-      alias: this.alias(),
-      sources: this.sources(),
+      alias: this.alias,
+      sources: this.sources,
     }
   }
 
@@ -61,11 +62,8 @@ export class TypeRegistry {
     batch(() => {
       if (initialState.sources) {
         this.setSources(initialState.sources)
-        Object.entries(initialState.sources).forEach(([key, value]) => {
+        Object.keys(initialState.sources).forEach(key => {
           this.cachedUrls.add(key)
-          if (value) {
-            this.addLib(`file:///node_modules/${key}`, value)
-          }
         })
       }
 
@@ -132,7 +130,7 @@ export class TypeRegistry {
         } else if (isUrl(modulePath)) {
           let virtualPath = this.getVirtualPath(modulePath)
           when(pathToPackageNameAndVersion(virtualPath), ([packageName, version]) => {
-            for (const key of Object.keys(this.sources())) {
+            for (const key of Object.keys(this.sources)) {
               const foundSamePackageName = when(
                 pathToPackageNameAndVersion(key),
                 ([otherPackagename, otherVersion]) => {
@@ -171,16 +169,9 @@ export class TypeRegistry {
 
       // Set file to its contents.
       this.set(virtualPath, transformedCode)
-      newFiles[virtualPath] = transformedCode
     }
 
     await resolvePath(url)
-
-    Object.entries(newFiles).forEach(([key, value]) => {
-      if (value) {
-        this.addLib(`file:///node_modules/${key}`, value)
-      }
-    })
 
     if (packageName) {
       this.cachedPackageNames.add(packageName)
@@ -218,10 +209,6 @@ export class TypeRegistry {
     this.aliasPath(packageName, `file:///node_modules/${virtualPath}`)
   }
 
-  addLib(virtualPath: string, value: string) {
-    this.repl.libs.monaco.languages.typescript.typescriptDefaults.addExtraLib(value, virtualPath)
-  }
-
   /**
    * Adds or updates a path in the TypeScript configuration to map to an aliased package.
    *
@@ -230,17 +217,7 @@ export class TypeRegistry {
    * @private
    */
   private aliasPath(packageName: string, virtualPath: string) {
-    // add virtual path to monaco's tsconfig's `path`-property
-    const tsCompilerOptions =
-      this.repl.libs.monaco.languages.typescript.typescriptDefaults.getCompilerOptions()
-    tsCompilerOptions.paths![packageName] = [virtualPath]
-    this.repl.libs.monaco.languages.typescript.typescriptDefaults.setCompilerOptions(
-      tsCompilerOptions,
-    )
-    this.repl.libs.monaco.languages.typescript.javascriptDefaults.setCompilerOptions(
-      tsCompilerOptions,
-    )
-    this.setAlias(tsCompilerOptions.paths!)
+    this.setAlias(packageName, [virtualPath])
   }
 
   /**
@@ -251,10 +228,7 @@ export class TypeRegistry {
    * @private
    */
   private set(path: string, value: string) {
-    this.setSources(files => {
-      files[path] = value
-      return files
-    })
+    this.setSources(path, value)
   }
 
   /**
@@ -265,7 +239,7 @@ export class TypeRegistry {
    * @private
    */
   private has(path: string) {
-    return path in this.sources()
+    return path in this.sources
   }
 
   /**

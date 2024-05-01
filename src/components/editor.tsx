@@ -2,6 +2,7 @@ import {
   ComponentProps,
   createEffect,
   createMemo,
+  mapArray,
   onCleanup,
   onMount,
   splitProps,
@@ -45,6 +46,39 @@ export function ReplEditor(props: EditorProps) {
         repl.libs.monaco.editor.createModel(untrack(() => file.get()) || '', 'typescript', uri)
       )
     }),
+  )
+
+  createEffect(
+    mapArray(
+      () => Object.keys(repl.typeRegistry.alias),
+      key => {
+        // add virtual path to monaco's tsconfig's `path`-property
+        const tsCompilerOptions = {
+          ...repl.config.typescript,
+          paths: { ...repl.typeRegistry.alias, [key]: repl.typeRegistry.alias[key]! },
+        }
+        repl.libs.monaco.languages.typescript.typescriptDefaults.setCompilerOptions(
+          tsCompilerOptions,
+        )
+        repl.libs.monaco.languages.typescript.javascriptDefaults.setCompilerOptions(
+          tsCompilerOptions,
+        )
+      },
+    ),
+  )
+
+  createEffect(
+    mapArray(
+      () => Object.keys(repl.typeRegistry.sources),
+      virtualPath => {
+        createEffect(() => {
+          repl.libs.monaco.languages.typescript.typescriptDefaults.addExtraLib(
+            repl.typeRegistry.sources[virtualPath]!,
+            virtualPath,
+          )
+        })
+      },
+    ),
   )
 
   // Initialize html-element of monaco-editor

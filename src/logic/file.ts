@@ -89,9 +89,7 @@ export class JsFile extends File {
         try {
           let value: string = source
           if (isTypescript) {
-            const options =
-              repl.libs.monaco.languages.typescript.typescriptDefaults.getCompilerOptions()
-            const result = repl.libs.typescript.transpile(value, options)
+            const result = repl.libs.typescript.transpile(value, repl.config.typescript)
             if (result) value = result
           }
           if (repl.libs.babel) {
