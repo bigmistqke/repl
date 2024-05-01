@@ -1,22 +1,16 @@
-import loader, { Monaco } from '@monaco-editor/loader'
 import clsx from 'clsx'
-import { wireTmGrammars } from 'monaco-editor-textmate'
-import { Registry } from 'monaco-textmate'
-import { loadWASM } from 'onigasm'
 // @ts-expect-error
-import onigasm from 'onigasm/lib/onigasm.wasm?url'
-import { ComponentProps, Show, createRenderEffect, createResource, splitProps } from 'solid-js'
+import { ComponentProps, Show, createResource, splitProps } from 'solid-js'
 import { ReplConfig, ReplContext } from 'src/logic/repl-context'
-import { deepMerge, every, when, wrapNullableResource } from 'src/utils'
+import { deepMerge, every, wrapNullableResource } from 'src/utils'
 import { ReplDevTools } from './dev-tools'
-import { ReplEditor } from './editor'
+import { ReplMonacoEditor } from './editors/monaco-editor'
 import { ReplFrame } from './frame'
 import { ReplTabBar } from './tab-bar'
-import vsDark from './themes/vs_dark_good.json'
-import vsLight from './themes/vs_light_good.json'
 import { ReplContextProvider } from './use-repl'
 
 // @ts-expect-error
+import { ReplMonacoProvider } from './editors/monaco-provider'
 import styles from './repl.module.css'
 
 const GRAMMARS = new Map([
@@ -70,56 +64,6 @@ export function Repl(props: ReplProps) {
     propsWithoutChildren,
   )
 
-  // Import and load all of the repl's resources
-  const [monaco] = createResource(async () => {
-    const monaco = await (loader.init() as Promise<Monaco>)
-    monaco.languages.typescript.typescriptDefaults.setCompilerOptions(config.typescript)
-
-    // Initialize typescript-services with empty editor
-    {
-      const editor = monaco.editor.create(document.createElement('div'), {
-        language: 'typescript',
-      })
-      editor.dispose()
-    }
-
-    // Syntax highlighting
-    {
-      // Monaco's built-in themes aren't powereful enough to handle TM tokens
-      // https://github.com/Nishkalkashyap/monaco-vscode-textmate-theme-converter#monaco-vscode-textmate-theme-converter
-      monaco.editor.defineTheme('vs-dark-plus', vsDark as any)
-      monaco.editor.defineTheme('vs-light-plus', vsLight as any)
-
-      const typescriptReactTM = await import('./text-mate/TypeScriptReact.tmLanguage.json')
-      const cssTM = await import('./text-mate/css.tmLanguage.json')
-
-      // Initialize textmate-registry
-      const registry = new Registry({
-        async getGrammarDefinition(scopeName) {
-          return {
-            format: 'json',
-            content: scopeName === 'source.tsx' ? typescriptReactTM.default : cssTM.default,
-          }
-        },
-      })
-
-      // Load onigasm
-      let hasLoadedOnigasm: boolean | Promise<void> = false
-      const setLanguageConfiguration = monaco.languages.setLanguageConfiguration
-      monaco.languages.setLanguageConfiguration = (languageId, configuration) => {
-        initialiseGrammars()
-        return setLanguageConfiguration(languageId, configuration)
-      }
-      async function initialiseGrammars(): Promise<void> {
-        if (!hasLoadedOnigasm) hasLoadedOnigasm = loadWASM(onigasm)
-        if (hasLoadedOnigasm instanceof Promise) await hasLoadedOnigasm
-        hasLoadedOnigasm = true
-        await wireTmGrammars(monaco, registry, GRAMMARS)
-      }
-    }
-
-    return monaco
-  })
   const [typescript] = createResource(() => import('typescript'))
   // We return undefined and prevent Babel from being imported in-browser,
   // If no babel-preset nor babel-plugin is present in the config.
@@ -151,16 +95,14 @@ export function Repl(props: ReplProps) {
   // Once all resources are loaded, instantiate and initialize ReplContext
   const [repl] = createResource(
     every(
-      monaco,
       typescript,
       wrapNullableResource(babel),
       wrapNullableResource(babelPlugins),
       wrapNullableResource(babelPresets),
     ),
-    async ([monaco, typescript, [babel], [babelPlugins], [babelPresets]]) => {
+    async ([typescript, [babel], [babelPlugins], [babelPresets]]) => {
       const repl = new ReplContext(
         {
-          monaco,
           typescript,
           babel,
           babelPlugins,
@@ -169,17 +111,9 @@ export function Repl(props: ReplProps) {
         config,
       )
       await config.onSetup?.(repl)
+      repl.initialize()
       return repl
     },
-  )
-
-  createRenderEffect(() =>
-    when(repl, repl => {
-      // Apply initial state  as provided by the config to the FileSystem and TypeRegistry
-      repl.initialize()
-      // Switch light/dark mode of monaco-editor
-      repl.libs.monaco.editor.setTheme(props.mode === 'light' ? 'vs-light-plus' : 'vs-dark-plus')
-    }),
   )
 
   return (
@@ -203,7 +137,8 @@ export function Repl(props: ReplProps) {
  * @param  props - The properties passed to the editor component.
  * @returns The container div element that hosts the Monaco editor.
  */
-Repl.Editor = ReplEditor
+Repl.MonacoEditor = ReplMonacoEditor
+Repl.MonacoProvider = ReplMonacoProvider
 /**
  * `Repl.Frame` encapsulates an iframe element to provide an isolated execution
  * environment within the application. It is used to inject and execute CSS or JS module separately

@@ -17,8 +17,8 @@ import { ReplContext } from './repl-context'
 export type Model = ReturnType<Monaco['editor']['createModel']>
 
 export abstract class File {
-  /** Model associated with the Monaco editor for this CSS file. */
-  abstract model: Model
+  // /** Model associated with the Monaco editor for this CSS file. */
+  // abstract model: Model
   /**
    * `generateModuleUrl`: () => string | undefined
    * This function generates a new URL for an ES Module every time it is invoked, based on the current source code of the file.
@@ -35,7 +35,7 @@ export abstract class File {
   abstract cachedModuleUrl: Accessor<string | undefined>
   abstract toJSON(): string
   abstract set(value: string): void
-  abstract get(): void
+  abstract get(): string
 }
 
 /**
@@ -45,7 +45,6 @@ export abstract class File {
  */
 
 export class JsFile extends File {
-  model: Model
   generateModuleUrl: Accessor<string | undefined>
   cachedModuleUrl: Accessor<string | undefined>
   /** Source code of the file as a reactive state. */
@@ -70,10 +69,7 @@ export class JsFile extends File {
 
     const extension = path.split('/').pop()?.split('.')[1]
     const isTypescript = extension === 'ts' || extension === 'tsx'
-    const uri = repl.libs.monaco.Uri.parse(`file:///${path.replace('./', '')}`)
-    this.model =
-      repl.libs.monaco.editor.getModel(uri) ||
-      repl.libs.monaco.editor.createModel('', 'typescript', uri)
+
     ;[this.source, this.setSource] = createSignal<string>('')
     ;[this.cssImports, this.setCssImports] = createSignal<CssFile[]>([])
 
@@ -93,9 +89,7 @@ export class JsFile extends File {
         try {
           let value: string = source
           if (isTypescript) {
-            const options =
-              repl.libs.monaco.languages.typescript.typescriptDefaults.getCompilerOptions()
-            const result = repl.libs.typescript.transpile(value, options)
+            const result = repl.libs.typescript.transpile(value, repl.config.typescript)
             if (result) value = result
           }
           if (repl.libs.babel) {
@@ -205,10 +199,10 @@ export class JsFile extends File {
         }) || previous,
     )
 
-    // Subscribe to onDidChangeContent of this.model
+    /* // Subscribe to onDidChangeContent of this.model
     this.model.onDidChangeContent(() => {
       this.setSource(this.model.getValue())
-    })
+    }) */
   }
 
   /**
@@ -224,7 +218,7 @@ export class JsFile extends File {
    * @param value - New source code to set.
    */
   set(value: string) {
-    this.model.setValue(value)
+    this.setSource(value)
   }
 
   /**
@@ -232,8 +226,7 @@ export class JsFile extends File {
    * @returns The current source code.
    */
   get() {
-    this.source()
-    return this.model.getValue()
+    return this.source()
   }
 
   /**
@@ -260,7 +253,6 @@ export class JsFile extends File {
  * Manages the editing and application of CSS within the IDE environment.
  */
 export class CssFile extends File {
-  model: Model
   generateModuleUrl: Accessor<string | undefined>
   cachedModuleUrl: Accessor<string | undefined>
 
@@ -268,6 +260,10 @@ export class CssFile extends File {
    * Source code of the CSS file as a reactive state.
    */
   private source: Accessor<string>
+  /**
+   * Setter of source code of the CSS file.
+   */
+  private setSource: Setter<string>
 
   /**
    * Constructs an instance of a CSS file.
@@ -279,14 +275,7 @@ export class CssFile extends File {
     private path: string,
   ) {
     super()
-    const uri = repl.libs.monaco.Uri.parse(`file:///${path.replace('./', '')}`)
-    this.model =
-      repl.libs.monaco.editor.getModel(uri) || repl.libs.monaco.editor.createModel('', 'css', uri)
-
-    const [source, setSource] = createSignal<string>('')
-    this.source = source
-
-    const scheduled = createScheduled(fn => debounce(fn, 250))
+    ;[this.source, this.setSource] = createSignal<string>('')
 
     this.generateModuleUrl = () => {
       const source = `(() => {
@@ -303,14 +292,11 @@ export class CssFile extends File {
       return URL.createObjectURL(new Blob([source], { type: 'application/javascript' }))
     }
 
+    const scheduled = createScheduled(fn => debounce(fn, 250))
     this.cachedModuleUrl = createMemo(previous => {
       if (!scheduled) previous
       if (previous) URL.revokeObjectURL(previous)
       return this.generateModuleUrl()
-    })
-    // Subscribe to onDidChangeContent of this.model
-    this.model.onDidChangeContent(() => {
-      setSource(this.model.getValue())
     })
   }
 
@@ -327,7 +313,7 @@ export class CssFile extends File {
    * @param value - New source code to set.
    */
   set(value: string) {
-    this.model.setValue(value)
+    this.setSource(value)
   }
 
   /**
@@ -335,8 +321,7 @@ export class CssFile extends File {
    * @returns The current source code.
    */
   get() {
-    this.source()
-    return this.model.getValue()
+    return this.source()
   }
 
   /**
