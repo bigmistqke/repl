@@ -64,10 +64,7 @@ export class TypeRegistry {
         Object.entries(initialState.sources).forEach(([key, value]) => {
           this.cachedUrls.add(key)
           if (value) {
-            this.repl.libs.monaco.languages.typescript.typescriptDefaults.addExtraLib(
-              value,
-              `file:///node_modules/${key}`,
-            )
+            this.addLib(`file:///node_modules/${key}`, value)
           }
         })
       }
@@ -76,16 +73,7 @@ export class TypeRegistry {
         this.setAlias(initialState.alias)
         Object.entries(initialState.alias).forEach(([key, value]) => {
           this.cachedPackageNames.add(key)
-          // add virtual path to monaco's tsconfig's `path`-property
-          const tsCompilerOptions =
-            this.repl.libs.monaco.languages.typescript.typescriptDefaults.getCompilerOptions()
-          tsCompilerOptions.paths![key] = value
-          this.repl.libs.monaco.languages.typescript.typescriptDefaults.setCompilerOptions(
-            tsCompilerOptions,
-          )
-          this.repl.libs.monaco.languages.typescript.javascriptDefaults.setCompilerOptions(
-            tsCompilerOptions,
-          )
+          this.aliasPath(key, value[0]!)
         })
       }
     })
@@ -169,7 +157,7 @@ export class TypeRegistry {
 
           specifier.text = virtualPath
           promises.push(this.importTypesFromUrl(modulePath))
-          this.aliasPath(virtualPath, virtualPath)
+          this.aliasPath(virtualPath, `file:///node_modules/${virtualPath}`)
         } else {
           promises.push(this.importTypesFromPackageName(modulePath))
         }
@@ -190,16 +178,13 @@ export class TypeRegistry {
 
     Object.entries(newFiles).forEach(([key, value]) => {
       if (value) {
-        this.repl.libs.monaco.languages.typescript.typescriptDefaults.addExtraLib(
-          value,
-          `file:///node_modules/${key}`,
-        )
+        this.addLib(`file:///node_modules/${key}`, value)
       }
     })
 
     if (packageName) {
       this.cachedPackageNames.add(packageName)
-      this.aliasPath(packageName, virtualPath)
+      this.aliasPath(packageName, `file:///node_modules/${virtualPath}`)
     }
   }
 
@@ -230,7 +215,11 @@ export class TypeRegistry {
 
     await this.importTypesFromUrl(typeUrl)
 
-    this.aliasPath(packageName, virtualPath)
+    this.aliasPath(packageName, `file:///node_modules/${virtualPath}`)
+  }
+
+  addLib(virtualPath: string, value: string) {
+    this.repl.libs.monaco.languages.typescript.typescriptDefaults.addExtraLib(value, virtualPath)
   }
 
   /**
@@ -244,7 +233,7 @@ export class TypeRegistry {
     // add virtual path to monaco's tsconfig's `path`-property
     const tsCompilerOptions =
       this.repl.libs.monaco.languages.typescript.typescriptDefaults.getCompilerOptions()
-    tsCompilerOptions.paths![packageName] = [`file:///node_modules/${virtualPath}`]
+    tsCompilerOptions.paths![packageName] = [virtualPath]
     this.repl.libs.monaco.languages.typescript.typescriptDefaults.setCompilerOptions(
       tsCompilerOptions,
     )
