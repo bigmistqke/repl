@@ -1,11 +1,22 @@
+import { CssFile, useRepl } from '@bigmistqke/repl'
 import loader, { Monaco } from '@monaco-editor/loader'
 import { wireTmGrammars } from 'monaco-editor-textmate'
 import { Registry } from 'monaco-textmate'
 import { loadWASM } from 'onigasm'
 // @ts-expect-error
 import onigasm from 'onigasm/lib/onigasm.wasm?url'
-import { ParentProps, Show, createContext, createResource, useContext } from 'solid-js'
-import { useRepl } from '../use-repl'
+import {
+  ParentProps,
+  Show,
+  Suspense,
+  createContext,
+  createEffect,
+  createResource,
+  mapArray,
+  useContext,
+} from 'solid-js'
+import { unwrap } from 'solid-js/store'
+import { whenever } from 'src/utils/conditionals'
 
 const GRAMMARS = new Map([
   ['typescript', 'source.tsx'],
@@ -22,37 +33,36 @@ export const useMonaco = () => {
 
 export function ReplMonacoProvider(props: ParentProps) {
   const repl = useRepl()
-  // Import and load all of the repl's resources
-  const [monaco] = createResource(async () => {
-    const monaco = await (loader.init() as Promise<Monaco>)
-    monaco.languages.typescript.typescriptDefaults.setCompilerOptions(repl.config.typescript || {})
-    // Initialize typescript-services with empty editor
-    {
-      const editor = monaco.editor.create(document.createElement('div'), {
-        language: 'typescript',
-      })
-      editor.dispose()
-    }
-    // Syntax highlighting
-    {
-      const vsDark = await import('./themes/vs_dark_good.json')
-      const vsLight = await import('./themes/vs_light_good.json')
-      // Monaco's built-in themes aren't powereful enough to handle TM tokens
+  // Load monaco and import all of the repl's resources
+  const [resources] = createResource(() =>
+    Promise.all([
+      loader.init(),
+      import('./themes/vs_dark_good.json'),
+      import('./themes/vs_light_good.json'),
+      import('./text-mate/TypeScriptReact.tmLanguage.json'),
+      import('./text-mate/css.tmLanguage.json'),
+    ]),
+  )
+
+  // Initialise syntax highlighting
+  createEffect(
+    whenever(resources, async ([monaco, vsDarkTheme, vsLightTheme, tsTextMate, cssTextMate]) => {
+      // Monaco's built-in themes aren't powereful enough to handle text-mate tokens
       // https://github.com/Nishkalkashyap/monaco-vscode-textmate-theme-converter#monaco-vscode-textmate-theme-converter
-      monaco.editor.defineTheme('vs-dark-plus', vsDark as any)
-      monaco.editor.defineTheme('vs-light-plus', vsLight as any)
-      const typescriptReactTM = await import('./text-mate/TypeScriptReact.tmLanguage.json')
-      const cssTM = await import('./text-mate/css.tmLanguage.json')
-      // Initialize textmate-registry
+      monaco.editor.defineTheme('vs-dark-plus', vsDarkTheme as any)
+      monaco.editor.defineTheme('vs-light-plus', vsLightTheme as any)
+
+      // Initialise text-mate registry
       const registry = new Registry({
         async getGrammarDefinition(scopeName) {
           return {
             format: 'json',
-            content: scopeName === 'source.tsx' ? typescriptReactTM.default : cssTM.default,
+            content: scopeName === 'source.tsx' ? tsTextMate.default : cssTextMate.default,
           }
         },
       })
-      // Load onigasm
+
+      // Load text-mate grammars
       let hasLoadedOnigasm: boolean | Promise<void> = false
       const setLanguageConfiguration = monaco.languages.setLanguageConfiguration
       monaco.languages.setLanguageConfiguration = (languageId, configuration) => {
@@ -65,13 +75,68 @@ export function ReplMonacoProvider(props: ParentProps) {
         hasLoadedOnigasm = true
         await wireTmGrammars(monaco, registry, GRAMMARS)
       }
-    }
-    return monaco
-  })
+    }),
+  )
+
+  createEffect(
+    whenever(resources, ([monaco]) => {
+      // Initialize typescript-services with empty editor
+      monaco.editor
+        .create(document.createElement('div'), {
+          language: 'typescript',
+        })
+        .dispose()
+
+      // Set light/dark-mode of monaco-editor
+      createEffect(() =>
+        monaco.editor.setTheme(repl.config.mode === 'light' ? 'vs-light-plus' : 'vs-dark-plus'),
+      )
+
+      // Initialize models for all Files in FileSystem
+      Object.entries(repl.fileSystem.all()).forEach(([path, value]) => {
+        const uri = monaco.Uri.parse(`file:///${path}`)
+        if (!monaco.editor.getModel(uri)) {
+          const type = value instanceof CssFile ? 'css' : 'typescript'
+          monaco.editor.createModel('', type, uri)
+        }
+      })
+
+      // Sync monaco-editor's virtual file-system with type-registry's sources
+      createEffect(
+        mapArray(
+          () => Object.keys(repl.typeRegistry.sources),
+          virtualPath => {
+            monaco.languages.typescript.typescriptDefaults.addExtraLib(
+              repl.typeRegistry.sources[virtualPath]!,
+              `file:///node_modules/${virtualPath}`,
+            )
+          },
+        ),
+      )
+
+      // Sync monaco-editor's tsconfig with repl's typescript-prop and type-registry's alias-property.
+      createEffect(() => {
+        // add virtual path to monaco's tsconfig's `path`-property
+        const tsCompilerOptions = unwrap({
+          ...repl.config.typescript,
+          paths: {
+            ...repl.config.typescript?.paths,
+            ...repl.typeRegistry.alias,
+          },
+        })
+        monaco.languages.typescript.typescriptDefaults.setCompilerOptions(tsCompilerOptions)
+        monaco.languages.typescript.javascriptDefaults.setCompilerOptions(tsCompilerOptions)
+      })
+    }),
+  )
 
   return (
-    <Show when={monaco()}>
-      <monacoContext.Provider value={monaco()}>{props.children}</monacoContext.Provider>
-    </Show>
+    <Suspense>
+      <Show when={resources()} keyed>
+        {([monaco]) => (
+          <monacoContext.Provider value={monaco}>{props.children}</monacoContext.Provider>
+        )}
+      </Show>
+    </Suspense>
   )
 }

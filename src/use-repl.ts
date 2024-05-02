@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'solid-js'
-import { ReplContext } from 'src/logic/repl-context'
+import { ReplContext } from 'src/run-time/repl-context'
 
 const replContext = createContext<ReplContext>()
 export const ReplContextProvider = replContext.Provider

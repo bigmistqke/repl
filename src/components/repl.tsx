@@ -1,16 +1,16 @@
 import clsx from 'clsx'
-// @ts-expect-error
 import { ComponentProps, Show, createResource, splitProps } from 'solid-js'
-import { ReplConfig, ReplContext } from 'src/logic/repl-context'
-import { deepMerge, every, wrapNullableResource } from 'src/utils'
+import { ReplConfig, ReplContext } from 'src/run-time/repl-context'
+import { every, wrapNullableResource } from 'src/utils/conditionals'
+import { deepMerge } from 'src/utils/deep-merge'
+import { ReplContextProvider } from '../use-repl'
 import { ReplDevTools } from './dev-tools'
 import { ReplMonacoEditor } from './editors/monaco-editor'
+import { ReplMonacoProvider } from './editors/monaco-provider'
 import { ReplFrame } from './frame'
 import { ReplTabBar } from './tab-bar'
-import { ReplContextProvider } from './use-repl'
 
 // @ts-expect-error
-import { ReplMonacoProvider } from './editors/monaco-provider'
 import styles from './repl.module.css'
 
 const GRAMMARS = new Map([

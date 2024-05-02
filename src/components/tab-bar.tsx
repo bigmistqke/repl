@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { ComponentProps, For, JSXElement, splitProps } from 'solid-js'
-import { File } from 'src/logic/file'
-import { useRepl } from './use-repl'
+import { File } from 'src/run-time/file'
+import { useRepl } from 'src/use-repl'
 
 // @ts-expect-error
 import styles from './repl.module.css'

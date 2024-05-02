@@ -1,19 +1,16 @@
 import { Monaco } from '@monaco-editor/loader'
-// @ts-expect-error
-import { ComponentProps, createResource, splitProps } from 'solid-js'
-import { when } from 'src/utils'
-
-// @ts-expect-error
-import { createEffect, createMemo, mapArray, onCleanup, untrack } from 'solid-js'
-
-const GRAMMARS = new Map([
-  ['typescript', 'source.tsx'],
-  ['javascript', 'source.tsx'],
-  ['css', 'source.css'],
-])
-
-import { CssFile } from '../..'
-import { useRepl } from '../use-repl'
+import {
+  ComponentProps,
+  createEffect,
+  createMemo,
+  createResource,
+  onCleanup,
+  splitProps,
+  untrack,
+} from 'solid-js'
+import { CssFile } from 'src/run-time/file'
+import { useRepl } from 'src/use-repl'
+import { whenever } from 'src/utils/conditionals'
 import { useMonaco } from './monaco-provider'
 
 type MonacoEditor = ReturnType<Monaco['editor']['create']>
@@ -54,8 +51,8 @@ export function ReplMonacoEditor(props: EditorProps) {
     () => repl.fileSystem.get(props.path) || repl.fileSystem.create(props.path),
   )
 
-  const model = createMemo(() =>
-    when(file, file => {
+  const model = createMemo(
+    whenever(file, file => {
       const uri = monaco.Uri.parse(`file:///${file.path}`)
       const source = untrack(() => file.get())
       const type = file instanceof CssFile ? 'css' : 'typescript'
@@ -63,77 +60,37 @@ export function ReplMonacoEditor(props: EditorProps) {
     }),
   )
 
-  createEffect(() =>
-    when(editor, editor => {
+  createEffect(
+    whenever(editor, editor => {
       // Call onMount-prop
       props.onMount?.(editor)
 
-      // Initialize models for all Files in FileSystem
-      Object.entries(repl.fileSystem.all()).forEach(([path, value]) => {
-        const uri = monaco.Uri.parse(`file:///${path}`)
-        if (!monaco.editor.getModel(uri)) {
-          const type = value instanceof CssFile ? 'css' : 'typescript'
-          monaco.editor.createModel('', type, uri)
-        }
-      })
-
-      createEffect(() =>
-        monaco.editor.setTheme(props.mode === 'light' ? 'vs-light-plus' : 'vs-dark-plus'),
-      )
-
-      createEffect(() =>
-        when(model, model => {
+      // Link model with file in file-system
+      createEffect(
+        whenever(model, model => {
           // Update monaco-editor's model to current file's model
           editor.setModel(model)
           // Set the value
           model.setValue(file().get())
           // Update the file when the model changes content
           model.onDidChangeContent(() => file().set(model.getValue()))
-          // Add action to context-menu of monaco-editor
-          createEffect(() => {
-            if (repl.config.actions?.saveRepl === false) return
-            const cleanup = editor.addAction({
-              id: 'save-repl',
-              label: 'Save Repl',
-              keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyY], // Optional: set a keybinding
-              precondition: undefined,
-              keybindingContext: undefined,
-              contextMenuGroupId: 'repl',
-              run: () => repl.download(),
-            })
-            onCleanup(() => cleanup.dispose())
-          })
         }),
       )
 
-      createEffect(
-        mapArray(
-          () => Object.keys(repl.typeRegistry.alias),
-          key => {
-            // add virtual path to monaco's tsconfig's `path`-property
-            const tsCompilerOptions = {
-              ...repl.config.typescript,
-              paths: { ...repl.typeRegistry.alias, [key]: repl.typeRegistry.alias[key]! },
-            }
-            monaco.languages.typescript.typescriptDefaults.setCompilerOptions(tsCompilerOptions)
-            monaco.languages.typescript.javascriptDefaults.setCompilerOptions(tsCompilerOptions)
-          },
-        ),
-      )
-
-      createEffect(
-        mapArray(
-          () => Object.keys(repl.typeRegistry.sources),
-          virtualPath => {
-            createEffect(() => {
-              monaco.languages.typescript.typescriptDefaults.addExtraLib(
-                repl.typeRegistry.sources[virtualPath]!,
-                virtualPath,
-              )
-            })
-          },
-        ),
-      )
+      // Add action to context-menu of monaco-editor
+      createEffect(() => {
+        if (repl.config.actions?.saveRepl === false) return
+        const { dispose } = editor.addAction({
+          id: 'save-repl',
+          label: 'Save Repl',
+          keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyY], // Optional: set a keybinding
+          precondition: undefined,
+          keybindingContext: undefined,
+          contextMenuGroupId: 'repl',
+          run: () => repl.download(),
+        })
+        onCleanup(() => dispose())
+      })
 
       // Dispose monaco-editor after cleanup
       onCleanup(() => editor.dispose())

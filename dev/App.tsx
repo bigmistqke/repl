@@ -16,7 +16,6 @@ const Frames = () => {
     >
       <Resizable.Panel
         as={Repl.Frame}
-        minSize={0}
         style={{
           'min-height': 0,
           'pointer-events': isDragging() ? 'none' : undefined,
@@ -135,13 +134,13 @@ render(() => <Counter />, document.body);
             createEffect(() => {
               // inject entry's module-url into frame's window
               frame.injectFile(entry)
-              onCleanup(() => entry.dispose(frame))
+              onCleanup(() => entry.module.dispose(frame))
             })
 
             createEffect(
-              mapArray(entry.cssImports, css => {
+              mapArray(entry.module.cssImports, css => {
                 createEffect(() => frame.injectFile(css))
-                onCleanup(() => css.dispose(frame))
+                onCleanup(() => css.module.dispose(frame))
               }),
             )
           }

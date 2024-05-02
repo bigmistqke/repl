@@ -1,6 +1,6 @@
 import { onCleanup } from 'solid-js'
 import { SetStoreFunction, createStore } from 'solid-js/store'
-import { when } from '..'
+import { when } from 'src/utils/conditionals'
 import { CssFile, JsFile } from './file'
 
 /**
@@ -86,6 +86,7 @@ export class Frame {
   ) {}
 
   injectModuleUrl(moduleUrl: string) {
+    console.log('inject module url', moduleUrl)
     const script = this.contentWindow.document.createElement('script')
     script.type = 'module'
     script.src = moduleUrl
@@ -108,6 +109,6 @@ export class Frame {
    */
   injectFile(file: CssFile | JsFile) {
     // We need to generate a new module-url everytime we inject a file, to ensure the body is executed.
-    return when(file.generateModuleUrl, this.injectModuleUrl.bind(this))
+    return when(file.module.generate(), url => this.injectModuleUrl(url))
   }
 }

@@ -4,12 +4,12 @@ import {
   createEffect,
   mergeProps,
   onCleanup,
+  onMount,
   splitProps,
-  untrack,
   type JSX,
 } from 'solid-js'
-import { html } from '..'
-import { useRepl } from './use-repl'
+import { html } from 'src/utils/module-literal'
+import { useRepl } from '../use-repl'
 
 // @ts-expect-error
 import styles from './repl.module.css'
@@ -46,24 +46,42 @@ export function ReplFrame(props: FrameProps) {
     />
   ) as HTMLIFrameElement
 
-  createEffect(() => {
-    if (untrack(() => repl.frameRegistry.has(config.name))) {
-      console.warn(`A frame with the same name already exist: ${config.name}`)
+  onMount(() => {
+    if (!iframe.contentWindow) {
+      console.error('contentWindow is not defined on iframe:', iframe)
       return
     }
-    repl.frameRegistry.add(config.name, iframe.contentWindow!)
-    onCleanup(() => repl.frameRegistry.delete(config.name))
-  })
 
-  createEffect(() => {
-    if (!props.bodyStyle) return
-    const bodyStyle =
-      typeof props.bodyStyle === 'string'
-        ? props.bodyStyle
-        : Object.entries(props.bodyStyle)
-            .map(([key, value]) => `${key}: ${value};`)
-            .join('')
-    iframe.contentWindow?.document.body.setAttribute('style', bodyStyle)
+    const onReady = () => {
+      if (repl.frameRegistry.has(config.name)) {
+        console.warn(`A frame with the same name already exist: ${config.name}`)
+        return
+      }
+      repl.frameRegistry.add(config.name, iframe.contentWindow!)
+      iframe.contentWindow?.removeEventListener('DOMContentLoaded', onReady)
+    }
+
+    iframe.contentWindow.addEventListener('DOMContentLoaded', onReady)
+
+    onCleanup(() => {
+      console.log('cleanup!')
+      repl.frameRegistry.delete(config.name)
+    })
+
+    createEffect(() => {
+      if (!props.bodyStyle) return
+      if (!iframe.contentWindow) {
+        console.error('contentWindow is not defined on iframe:', iframe)
+        return
+      }
+      const bodyStyle =
+        typeof props.bodyStyle === 'string'
+          ? props.bodyStyle
+          : Object.entries(props.bodyStyle)
+              .map(([key, value]) => `${key}: ${value};`)
+              .join('')
+      iframe.contentWindow.document.body.setAttribute('style', bodyStyle)
+    })
   })
 
   return iframe

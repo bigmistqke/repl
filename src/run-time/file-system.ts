@@ -1,7 +1,7 @@
 import { createRoot, onCleanup } from 'solid-js'
 import { SetStoreFunction, createStore } from 'solid-js/store'
+import { isRelativePath, isUrl, relativeToAbsolutePath } from 'src/utils/path'
 import type ts from 'typescript'
-import { isRelativePath, isUrl, relativeToAbsolutePath } from '../utils'
 import { CssFile, File, JsFile } from './file'
 import { PackageJsonParser } from './package-json'
 import { ReplContext } from './repl-context'
@@ -96,7 +96,7 @@ export class FileSystem {
    * @returns The newly created file instance.
    */
   create(path: string) {
-    const file = path.endsWith('.css') ? new CssFile(this.repl, path) : new JsFile(this.repl, path)
+    const file = path.endsWith('.css') ? new CssFile(path) : new JsFile(this.repl, path)
     this.setFiles(path, file)
     return file
   }

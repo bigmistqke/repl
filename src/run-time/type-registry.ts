@@ -2,13 +2,13 @@ import type ts from 'typescript'
 
 import { batch } from 'solid-js'
 import { SetStoreFunction, createStore } from 'solid-js/store'
+import { when } from '../utils/conditionals'
 import {
   isRelativePath,
   isUrl,
   pathToPackageNameAndVersion,
   relativeToAbsolutePath,
-  when,
-} from '../utils'
+} from '../utils/path'
 import { ReplContext } from './repl-context'
 
 export type TypeRegistryState = {
@@ -99,8 +99,6 @@ export class TypeRegistry {
     if (packageName) {
       this.cachedPackageNames.add(packageName)
     }
-
-    const newFiles: Record<string, string> = {}
 
     const resolvePath = async (path: string) => {
       const virtualPath = this.getVirtualPath(path)

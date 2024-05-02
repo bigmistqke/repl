@@ -1,8 +1,9 @@
 import clsx from 'clsx'
 import { ComponentProps, createEffect, createResource, onCleanup, splitProps } from 'solid-js'
-import { Frame } from 'src/logic/frame-registry'
-import { html, javascript, when } from '..'
-import { useRepl } from './use-repl'
+import { Frame } from 'src/run-time/frame-registry'
+import { whenever } from 'src/utils/conditionals'
+import { html, javascript } from 'src/utils/module-literal'
+import { useRepl } from '../use-repl'
 
 // @ts-expect-error
 import styles from './repl.module.css'
@@ -55,8 +56,8 @@ export function ReplDevTools(props: DevToolsProps) {
     },
   )
 
-  createEffect(() =>
-    when(targetFrame, targetFrame => {
+  createEffect(
+    whenever(targetFrame, targetFrame => {
       const messageListener = (event: MessageEvent) => {
         if (event.source === targetFrame.contentWindow) {
           iframe.contentWindow!.postMessage(event.data, '*')
@@ -70,8 +71,8 @@ export function ReplDevTools(props: DevToolsProps) {
     }),
   )
 
-  createEffect(() =>
-    when(targetFrame, targetFrame =>
+  createEffect(
+    whenever(targetFrame, targetFrame =>
       targetFrame.injectModuleUrl(javascript`
         import('https://cdn.jsdelivr.net/npm/chobitsu').then(shobitsu => {
           const sendToDevtools = (message) => {

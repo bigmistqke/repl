@@ -9,68 +9,50 @@ import {
   createSignal,
   untrack,
 } from 'solid-js'
+import { every, when, whenever } from 'src/utils/conditionals'
+import { javascript } from 'src/utils/module-literal'
+import { isRelativePath, isUrl, relativeToAbsolutePath } from 'src/utils/path'
 import type ts from 'typescript'
-import { every, isRelativePath, isUrl, relativeToAbsolutePath, when } from '..'
+import { CssFile, JsFile } from './file'
 import { Frame } from './frame-registry'
 import { ReplContext } from './repl-context'
 
 export type Model = ReturnType<Monaco['editor']['createModel']>
 
-export abstract class File {
-  // /** Model associated with the Monaco editor for this CSS file. */
-  // abstract model: Model
+export abstract class Module {
   /**
-   * `generateModuleUrl`: () => string | undefined
+   * `generate`: () => string | undefined
    * This function generates a new URL for an ES Module every time it is invoked, based on the current source code of the file.
    * It does not cache the URL. Use this if you need a new reference to the File's source, for example to re-execute the module's body.
    * @warning Cleanup the generated module-url with URL.revokeObjectURL() after usage to prevent memory leak.
    */
-  abstract generateModuleUrl: Accessor<string | undefined>
-  /**
-   * `cachedModuleUrl`: Accessor<string | undefined>
-   * This property holds a memoized URL for an ES Module, created from the file's source code.
-   * The URL is cached to optimize repeated accesses by avoiding redundant computations.
-   * Use this when you need consistent access to a module, for example when linking modules.
-   */
-  abstract cachedModuleUrl: Accessor<string | undefined>
-  abstract toJSON(): string
-  abstract set(value: string): void
-  abstract get(): string
+  abstract generate: Accessor<string | undefined>
+
+  abstract url: string | undefined
 }
 
 /**
- * Represents a JavaScript file within the virtual file system, extending the generic File class.
- * This class handles the transpilation of JavaScript or TypeScript into ES modules,
- * manages CSS imports, and maintains the source code state.
+ * Represents a JavaScript executable within the run time, extending the generic Executable class.
+ * This class handles the transpilation of a Javascript File of the virtual FileSystem.
  */
-
-export class JsFile extends File {
-  generateModuleUrl: Accessor<string | undefined>
-  cachedModuleUrl: Accessor<string | undefined>
-  /** Source code of the file as a reactive state. */
-  private source: Accessor<string>
-  /** Setter for the source state. */
-  private setSource: Setter<string>
+export class JsModule extends Module {
+  generate: Accessor<string | undefined>
+  private get: Accessor<string | undefined>
   /** Reactive state of CSS files imported into this JavaScript file. */
   cssImports: Accessor<CssFile[]>
   /** Setter for the cssImports state. */
   private setCssImports: Setter<CssFile[]>
-
   /**
    * Constructs an instance of a Javascript file
    * @param repl - Reference to the ReplContext
    * @param path - Path in virtual file system
    */
-  constructor(
-    private repl: ReplContext,
-    path: string,
-  ) {
+  constructor(repl: ReplContext, file: JsFile) {
     super()
 
-    const extension = path.split('/').pop()?.split('.')[1]
+    const extension = file.path.split('/').pop()?.split('.')[1]
     const isTypescript = extension === 'ts' || extension === 'tsx'
 
-    ;[this.source, this.setSource] = createSignal<string>('')
     ;[this.cssImports, this.setCssImports] = createSignal<CssFile[]>([])
 
     let initialized = false
@@ -78,9 +60,9 @@ export class JsFile extends File {
     // Transpile source to javascript
     const [intermediary] = createResource(
       every(
-        this.source,
-        this.repl.libs.babelPresets,
-        this.repl.libs.babelPlugins,
+        file.get.bind(file),
+        repl.libs.babelPresets,
+        repl.libs.babelPlugins,
         // If no intermediary has been created before we do not throttle.
         () => !initialized || scheduled(),
       ),
@@ -113,34 +95,32 @@ export class JsFile extends File {
 
         try {
           return batch(() =>
-            this.repl.mapModuleDeclarations(path, value, node => {
+            repl.mapModuleDeclarations(file.path, value, node => {
               const specifier = node.moduleSpecifier as ts.StringLiteral
               let modulePath = specifier.text
 
               if (isUrl(modulePath)) return
 
-              const alias = this.repl.fileSystem.alias[modulePath]
+              const alias = repl.fileSystem.alias[modulePath]
               // If the module-path is either an aliased path or a relative path
               if (alias || isRelativePath(modulePath)) {
                 // We resolve the path to a File
-                const resolvedFile = this.repl.fileSystem.resolve(
+                const resolvedFile = repl.fileSystem.resolve(
                   // If path is aliased we resolve the aliased path
                   alias ||
                     // Else the path must be a relative path
                     // So we transform it to an absolute path
                     // and resolve this absolute path
-                    relativeToAbsolutePath(path, modulePath),
+                    relativeToAbsolutePath(file.path, modulePath),
                 )
 
                 // If the resolved file is a js-file
                 if (resolvedFile instanceof JsFile) {
                   // We get its module-url
-                  const moduleUrl = resolvedFile?.cachedModuleUrl()
-
-                  if (moduleUrl) {
+                  if (resolvedFile.module.url) {
                     // If moduleUrl is defined
                     // We transform the relative depedency with the module-url
-                    specifier.text = moduleUrl
+                    specifier.text = resolvedFile.module.url
                   } else {
                     // If moduleUrl is not defined, we throw.
                     // This will break the loop, so we can return the previous result.
@@ -165,8 +145,8 @@ export class JsFile extends File {
               // It must be a package-name.
               else if (!isUrl(modulePath)) {
                 // We transform this package-name to a cdn-url.
-                specifier.text = `${this.repl.config.cdn}/${modulePath}`
-                this.repl.typeRegistry.importTypesFromPackageName(modulePath)
+                specifier.text = `${repl.config.cdn}/${modulePath}`
+                repl.typeRegistry.importTypesFromPackageName(modulePath)
               }
             }),
           )
@@ -181,52 +161,26 @@ export class JsFile extends File {
       }),
     )
 
-    this.generateModuleUrl = () =>
-      when(esm, esm => {
-        return URL.createObjectURL(
-          new Blob([esm], {
-            type: 'application/javascript',
-          }),
-        )
-      })
+    this.generate = whenever(esm, esm =>
+      URL.createObjectURL(
+        new Blob([esm], {
+          type: 'application/javascript',
+        }),
+      ),
+    )
 
     // Get module-url from esm-module
-    this.cachedModuleUrl = createMemo(
+    this.get = createMemo(
       previous =>
-        when(this.generateModuleUrl, moduleUrl => {
+        when(this.generate, moduleUrl => {
           if (previous) URL.revokeObjectURL(previous)
           return moduleUrl
         }) || previous,
     )
-
-    /* // Subscribe to onDidChangeContent of this.model
-    this.model.onDidChangeContent(() => {
-      this.setSource(this.model.getValue())
-    }) */
   }
 
-  /**
-   * Serializes the file's current state to a JSON-compatible string.
-   * @returns The current source code of the file.
-   */
-  toJSON() {
-    return this.source()
-  }
-
-  /**
-   * Sets the source code of the file.
-   * @param value - New source code to set.
-   */
-  set(value: string) {
-    this.setSource(value)
-  }
-
-  /**
-   * Retrieves the current source code of the file.
-   * @returns The current source code.
-   */
-  get() {
-    return this.source()
+  get url() {
+    return this.get()
   }
 
   /**
@@ -252,76 +206,40 @@ export class JsFile extends File {
  * Represents a CSS file within the virtual file system, extending the generic File class.
  * Manages the editing and application of CSS within the IDE environment.
  */
-export class CssFile extends File {
-  generateModuleUrl: Accessor<string | undefined>
-  cachedModuleUrl: Accessor<string | undefined>
-
-  /**
-   * Source code of the CSS file as a reactive state.
-   */
-  private source: Accessor<string>
-  /**
-   * Setter of source code of the CSS file.
-   */
-  private setSource: Setter<string>
+export class CssModule extends Module {
+  generate: Accessor<string | undefined>
+  private get: Accessor<string | undefined>
 
   /**
    * Constructs an instance of a CSS file.
    * @param repl - Reference to the repl instance.
    * @param path - Path to the CSS file within the file system.
    */
-  constructor(
-    repl: ReplContext,
-    private path: string,
-  ) {
+  constructor(file: CssFile) {
     super()
-    ;[this.source, this.setSource] = createSignal<string>('')
 
-    this.generateModuleUrl = () => {
-      const source = `(() => {
-        let stylesheet = document.getElementById('bigmistqke-repl-${this.path}');
+    const scheduled = createScheduled(fn => debounce(fn, 250))
+
+    this.generate = () => javascript`(() => {
+        let stylesheet = document.getElementById('bigmistqke-repl-${file.path}');
         if (!stylesheet) {
           stylesheet = document.createElement('style')
-          stylesheet.setAttribute('id', 'bigmistqke-repl-${this.path}');
+          stylesheet.setAttribute('id', 'bigmistqke-repl-${file.path}');
           document.head.appendChild(stylesheet)
         }
-        const styles = document.createTextNode(\`${this.source()}\`)
+        const styles = document.createTextNode(\`${file.get()}\`)
         stylesheet.innerHTML = ''
         stylesheet.appendChild(styles)
       })()`
-      return URL.createObjectURL(new Blob([source], { type: 'application/javascript' }))
-    }
 
-    const scheduled = createScheduled(fn => debounce(fn, 250))
-    this.cachedModuleUrl = createMemo(previous => {
+    this.get = createMemo(previous => {
       if (!scheduled) previous
-      if (previous) URL.revokeObjectURL(previous)
-      return this.generateModuleUrl()
+      return this.generate()
     })
   }
 
-  /**
-   * Serializes the CSS file's current state to a JSON-compatible string.
-   * @returns  The current source code of the CSS file.
-   */
-  toJSON() {
-    return this.source()
-  }
-
-  /**
-   * Sets the source code of the CSS file.
-   * @param value - New source code to set.
-   */
-  set(value: string) {
-    this.setSource(value)
-  }
-
-  /**
-   * Retrieves the current source code of the CSS file.
-   * @returns The current source code.
-   */
-  get() {
-    return this.source()
+  get url() {
+    return this.get()
   }
 
   /**
