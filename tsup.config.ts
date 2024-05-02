@@ -18,6 +18,13 @@ const preset_options: preset.PresetOptions = {
       // will generate a separate development entry
       dev_entry: true,
     },
+    {
+      // entries with '.tsx' extension will have `solid` export condition generated
+      entry: 'src/runtime/index.ts',
+      name: 'plugins',
+      // will generate a separate development entry
+      dev_entry: true,
+    },
   ],
   // Set to `true` to remove all `console.*` calls and `debugger` statements in prod builds
   // drop_console: true,

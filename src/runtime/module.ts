@@ -10,12 +10,12 @@ import {
   untrack,
 } from 'solid-js'
 import { every, when, whenever } from 'src/utils/conditionals'
-import { javascript } from 'src/utils/module-literal'
+import { javascript } from 'src/utils/object-url-literal'
 import { isRelativePath, isUrl, relativeToAbsolutePath } from 'src/utils/path'
 import type ts from 'typescript'
 import { CssFile, JsFile } from './file'
 import { Frame } from './frame-registry'
-import { ReplContext } from './repl-context'
+import { Runtime } from './runtime'
 
 export type Model = ReturnType<Monaco['editor']['createModel']>
 
@@ -44,10 +44,10 @@ export class JsModule extends Module {
   private setCssImports: Setter<CssFile[]>
   /**
    * Constructs an instance of a Javascript file
-   * @param repl - Reference to the ReplContext
+   * @param runtime - Reference to the ReplContext
    * @param path - Path in virtual file system
    */
-  constructor(repl: ReplContext, file: JsFile) {
+  constructor(runtime: Runtime, file: JsFile) {
     super()
 
     const extension = file.path.split('/').pop()?.split('.')[1]
@@ -61,8 +61,8 @@ export class JsModule extends Module {
     const [intermediary] = createResource(
       every(
         file.get.bind(file),
-        repl.libs.babelPresets,
-        repl.libs.babelPlugins,
+        runtime.libs.babelPresets,
+        runtime.libs.babelPlugins,
         // If no intermediary has been created before we do not throttle.
         () => !initialized || scheduled(),
       ),
@@ -71,11 +71,11 @@ export class JsModule extends Module {
         try {
           let value: string = source
           if (isTypescript) {
-            const result = repl.libs.typescript.transpile(value, repl.config.typescript)
+            const result = runtime.libs.typescript.transpile(value, runtime.config.typescript)
             if (result) value = result
           }
-          if (repl.libs.babel) {
-            value = repl.libs.babel.transform(value, { presets, plugins }).code!
+          if (runtime.libs.babel) {
+            value = runtime.libs.babel.transform(value, { presets, plugins }).code!
           }
           return value
         } catch (err) {
@@ -95,17 +95,17 @@ export class JsModule extends Module {
 
         try {
           return batch(() =>
-            repl.mapModuleDeclarations(file.path, value, node => {
+            runtime.utils.mapModuleDeclarations(file.path, value, node => {
               const specifier = node.moduleSpecifier as ts.StringLiteral
               let modulePath = specifier.text
 
               if (isUrl(modulePath)) return
 
-              const alias = repl.fileSystem.alias[modulePath]
+              const alias = runtime.fileSystem.alias[modulePath]
               // If the module-path is either an aliased path or a relative path
               if (alias || isRelativePath(modulePath)) {
                 // We resolve the path to a File
-                const resolvedFile = repl.fileSystem.resolve(
+                const resolvedFile = runtime.fileSystem.resolve(
                   // If path is aliased we resolve the aliased path
                   alias ||
                     // Else the path must be a relative path
@@ -145,8 +145,8 @@ export class JsModule extends Module {
               // It must be a package-name.
               else if (!isUrl(modulePath)) {
                 // We transform this package-name to a cdn-url.
-                specifier.text = `${repl.config.cdn}/${modulePath}`
-                repl.typeRegistry.importTypesFromPackageName(modulePath)
+                specifier.text = `${runtime.config.cdn}/${modulePath}`
+                runtime.typeRegistry.import.fromPackageName(modulePath)
               }
             }),
           )
@@ -215,7 +215,7 @@ export class CssModule extends Module {
    * @param repl - Reference to the repl instance.
    * @param path - Path to the CSS file within the file system.
    */
-  constructor(file: CssFile) {
+  constructor(private file: CssFile) {
     super()
 
     const scheduled = createScheduled(fn => debounce(fn, 250))
@@ -249,6 +249,6 @@ export class CssModule extends Module {
    *                Typically this is the window of an iframe or the main document window.
    */
   dispose(frame: Frame) {
-    frame.contentWindow.document.getElementById(`bigmistqke-repl-${this.path}`)?.remove()
+    frame.contentWindow.document.getElementById(`bigmistqke-repl-${this.file.path}`)?.remove()
   }
 }

@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { ComponentProps, For, JSXElement, splitProps } from 'solid-js'
-import { File } from 'src/run-time/file'
+import { File } from 'src/runtime'
 import { useRepl } from 'src/use-repl'
 
 // @ts-expect-error

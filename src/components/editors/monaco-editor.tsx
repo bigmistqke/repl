@@ -8,7 +8,7 @@ import {
   splitProps,
   untrack,
 } from 'solid-js'
-import { CssFile } from 'src/run-time/file'
+import { CssFile } from 'src/runtime/file'
 import { useRepl } from 'src/use-repl'
 import { whenever } from 'src/utils/conditionals'
 import { useMonaco } from './monaco-provider'

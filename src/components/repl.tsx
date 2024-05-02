@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { ComponentProps, Show, createResource, splitProps } from 'solid-js'
-import { ReplConfig, ReplContext } from 'src/run-time/repl-context'
+import { Runtime, RuntimeConfig } from 'src/runtime'
 import { every, wrapNullableResource } from 'src/utils/conditionals'
 import { deepMerge } from 'src/utils/deep-merge'
 import { ReplContextProvider } from '../use-repl'
@@ -19,7 +19,7 @@ const GRAMMARS = new Map([
   ['css', 'source.css'],
 ])
 
-export type ReplProps = ComponentProps<'div'> & ReplConfig
+export type ReplProps = ComponentProps<'div'> & RuntimeConfig
 
 /**
  * Initializes the Repl environment by dynamically loading required libraries (`Babel`, `TypeScript` and `monaco-editor`)
@@ -101,7 +101,7 @@ export function Repl(props: ReplProps) {
       wrapNullableResource(babelPresets),
     ),
     async ([typescript, [babel], [babelPlugins], [babelPresets]]) => {
-      const repl = new ReplContext(
+      const repl = new Runtime(
         {
           typescript,
           babel,

@@ -1,10 +1,10 @@
-import { JsFile, Repl, useRepl } from '@bigmistqke/repl'
+import { Repl, useRepl } from '@bigmistqke/repl'
 import { solidReplPlugin } from '@bigmistqke/repl/plugins'
+import { JsFile } from '@bigmistqke/repl/runtime'
 import { Resizable } from 'corvu/resizable'
 import { createEffect, createSignal, mapArray, on, onCleanup, type Component } from 'solid-js'
 
 import styles from './App.module.css'
-import config from './repl.config.json'
 
 const Frames = () => {
   const [isDragging, setIsDragging] = createSignal(false)
@@ -92,7 +92,6 @@ const App: Component = () => {
         strict: true,
       }}
       initialState={{
-        types: config.types,
         files: {
           sources: {
             'src/index.css': `body {

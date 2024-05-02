@@ -9,7 +9,7 @@ import {
   pathToPackageNameAndVersion,
   relativeToAbsolutePath,
 } from '../utils/path'
-import { ReplContext } from './repl-context'
+import { Runtime } from './runtime'
 
 export type TypeRegistryState = {
   alias: Record<string, string[]>
@@ -24,21 +24,21 @@ export type TypeRegistryState = {
  * @class TypeRegistry
  */
 export class TypeRegistry {
-  private cachedUrls = new Set<string>()
-  private cachedPackageNames = new Set<string>()
   sources: Record<string, string>
   private setSources: SetStoreFunction<Record<string, string>>
   alias: Record<string, string[]>
   private setAlias: SetStoreFunction<Record<string, string[]>>
+  import: TypeImports
 
   /**
    * Initializes a new instance of the TypeRegistry class.
    *
-   * @param repl The repl-instance that interacts with this type registry.
+   * @param runtime The repl-instance that interacts with this type registry.
    */
-  constructor(public repl: ReplContext) {
+  constructor(public runtime: Runtime) {
     ;[this.sources, this.setSources] = createStore({})
     ;[this.alias, this.setAlias] = createStore({})
+    this.import = new TypeImports(runtime, this)
   }
 
   /**
@@ -62,19 +62,71 @@ export class TypeRegistry {
     batch(() => {
       if (initialState.sources) {
         this.setSources(initialState.sources)
-        Object.keys(initialState.sources).forEach(key => {
-          this.cachedUrls.add(key)
-        })
       }
-
       if (initialState.alias) {
         this.setAlias(initialState.alias)
         Object.entries(initialState.alias).forEach(([key, value]) => {
-          this.cachedPackageNames.add(key)
           this.aliasPath(key, value[0]!)
         })
       }
     })
+    this.import.initialize(initialState)
+  }
+
+  /**
+   * Adds or updates a path in the TypeScript configuration to map to an aliased package.
+   *
+   * @param packageName The package name to alias.
+   * @param virtualPath The virtual path that the alias points to.
+   * @private
+   */
+  aliasPath(packageName: string, virtualPath: string) {
+    this.setAlias(packageName, [virtualPath])
+  }
+
+  /**
+   * Adds or updates a type definition source to the registry.
+   *
+   * @param path The path of the type definition file.
+   * @param value The content of the type definition file.
+   * @private
+   */
+  set(path: string, value: string) {
+    this.setSources(path, value)
+  }
+
+  /**
+   * Checks if a specific path is already registered in the type sources.
+   *
+   * @param path The path to check.
+   * @returns True if the path is registered, false otherwise.
+   * @private
+   */
+  has(path: string) {
+    return path in this.sources
+  }
+}
+
+class TypeImports {
+  private cachedUrls = new Set<string>()
+  private cachedPackageNames = new Set<string>()
+
+  constructor(
+    public runtime: Runtime,
+    public typeRegistry: TypeRegistry,
+  ) {}
+
+  initialize(initialState: Partial<TypeRegistryState>) {
+    if (initialState.sources) {
+      Object.keys(initialState.sources).forEach(key => {
+        this.cachedUrls.add(key)
+      })
+    }
+    if (initialState.alias) {
+      Object.entries(initialState.alias).forEach(([key]) => {
+        this.cachedPackageNames.add(key)
+      })
+    }
   }
 
   /**
@@ -85,8 +137,7 @@ export class TypeRegistry {
    * @returns
    * @async
    */
-
-  async importTypesFromUrl(url: string, packageName?: string) {
+  async fromUrl(url: string, packageName?: string) {
     const virtualPath = this.getVirtualPath(url)
 
     if (
@@ -102,10 +153,10 @@ export class TypeRegistry {
 
     const resolvePath = async (path: string) => {
       const virtualPath = this.getVirtualPath(path)
-      if (this.has(virtualPath)) return
+      if (this.typeRegistry.has(virtualPath)) return
 
       // Set file to 'null' to prevent re-fetching.
-      this.set(virtualPath, null!)
+      this.typeRegistry.set(virtualPath, null!)
 
       const code = await fetch(path).then(response => {
         if (response.status !== 200) {
@@ -116,9 +167,10 @@ export class TypeRegistry {
 
       const promises: Promise<void>[] = []
 
-      const transformedCode = this.repl.mapModuleDeclarations(virtualPath, code, node => {
+      const transformedCode = this.runtime.utils.mapModuleDeclarations(virtualPath, code, node => {
         const specifier = node.moduleSpecifier as ts.StringLiteral
         let modulePath = specifier.text
+
         if (isRelativePath(modulePath)) {
           if (modulePath.endsWith('.js')) {
             modulePath = modulePath.replace('.js', '.d.ts')
@@ -128,7 +180,7 @@ export class TypeRegistry {
         } else if (isUrl(modulePath)) {
           let virtualPath = this.getVirtualPath(modulePath)
           when(pathToPackageNameAndVersion(virtualPath), ([packageName, version]) => {
-            for (const key of Object.keys(this.sources)) {
+            for (const key of Object.keys(this.typeRegistry.sources)) {
               const foundSamePackageName = when(
                 pathToPackageNameAndVersion(key),
                 ([otherPackagename, otherVersion]) => {
@@ -152,10 +204,10 @@ export class TypeRegistry {
           })
 
           specifier.text = virtualPath
-          promises.push(this.importTypesFromUrl(modulePath))
-          this.aliasPath(virtualPath, `file:///node_modules/${virtualPath}`)
+          promises.push(this.fromUrl(modulePath))
+          this.typeRegistry.aliasPath(virtualPath, `file:///node_modules/${virtualPath}`)
         } else {
-          promises.push(this.importTypesFromPackageName(modulePath))
+          promises.push(this.fromPackageName(modulePath))
         }
       })
 
@@ -166,14 +218,14 @@ export class TypeRegistry {
       await Promise.all(promises)
 
       // Set file to its contents.
-      this.set(virtualPath, transformedCode)
+      this.typeRegistry.set(virtualPath, transformedCode)
     }
 
     await resolvePath(url)
 
     if (packageName) {
       this.cachedPackageNames.add(packageName)
-      this.aliasPath(packageName, `file:///node_modules/${virtualPath}`)
+      this.typeRegistry.aliasPath(packageName, `file:///node_modules/${virtualPath}`)
     }
   }
 
@@ -184,11 +236,11 @@ export class TypeRegistry {
    * @returns
    * @async
    */
-  async importTypesFromPackageName(packageName: string) {
+  async fromPackageName(packageName: string) {
     if (this.cachedPackageNames.has(packageName)) return
     this.cachedPackageNames.add(packageName)
 
-    const typeUrl = await fetch(`${this.repl.config.cdn}/${packageName}`)
+    const typeUrl = await fetch(`${this.runtime.config.cdn}/${packageName}`)
       .then(result => result.headers.get('X-TypeScript-Types'))
       .catch(error => {
         console.info(error)
@@ -202,42 +254,9 @@ export class TypeRegistry {
 
     const virtualPath = this.getVirtualPath(typeUrl)
 
-    await this.importTypesFromUrl(typeUrl)
+    await this.fromUrl(typeUrl)
 
-    this.aliasPath(packageName, `file:///node_modules/${virtualPath}`)
-  }
-
-  /**
-   * Adds or updates a path in the TypeScript configuration to map to an aliased package.
-   *
-   * @param packageName The package name to alias.
-   * @param virtualPath The virtual path that the alias points to.
-   * @private
-   */
-  private aliasPath(packageName: string, virtualPath: string) {
-    this.setAlias(packageName, [virtualPath])
-  }
-
-  /**
-   * Adds or updates a type definition source to the registry.
-   *
-   * @param path The path of the type definition file.
-   * @param value The content of the type definition file.
-   * @private
-   */
-  private set(path: string, value: string) {
-    this.setSources(path, value)
-  }
-
-  /**
-   * Checks if a specific path is already registered in the type sources.
-   *
-   * @param path The path to check.
-   * @returns True if the path is registered, false otherwise.
-   * @private
-   */
-  private has(path: string) {
-    return path in this.sources
+    this.typeRegistry.aliasPath(packageName, `file:///node_modules/${virtualPath}`)
   }
 
   /**
@@ -250,7 +269,7 @@ export class TypeRegistry {
   private getVirtualPath(url: string) {
     return (
       url
-        .replace(`${this.repl.config.cdn}/`, '')
+        .replace(`${this.runtime.config.cdn}/`, '')
         .replace('http://', '')
         // replace version-number
         .split('/')

@@ -1,19 +1,22 @@
 import * as Babel from '@babel/standalone'
 import { Monaco } from '@monaco-editor/loader'
-import { mergeProps } from 'solid-js'
+import { PackageJsonParser } from 'dist/plugins'
+import { createEffect, createResource, mergeProps } from 'solid-js'
+import { whenever } from 'src/utils/conditionals'
+import { isRelativePath, isUrl, relativeToAbsolutePath } from 'src/utils/path'
 import type { Mandatory } from 'src/utils/type'
 import type ts from 'typescript'
-import type { SourceFile } from 'typescript'
 import { FileSystem, FileSystemState } from './file-system'
 import { FrameRegistry } from './frame-registry'
 import { TypeRegistry, TypeRegistryState } from './type-registry'
+import { Utils } from './utils'
 
-export type ReplState = {
+export type RuntimeState = {
   files: FileSystemState
   types: TypeRegistryState
 }
 
-export type InitialReplState = Partial<{
+export type InitialState = Partial<{
   files: Partial<FileSystemState>
   types: Partial<TypeRegistryState>
 }>
@@ -22,7 +25,7 @@ export type TypescriptConfig = Parameters<
   Monaco['languages']['typescript']['typescriptDefaults']['setCompilerOptions']
 >[0]
 export type BabelConfig = Partial<{ presets: string[]; plugins: (string | babel.PluginItem)[] }>
-export type ReplConfig = Partial<{
+export type RuntimeConfig = Partial<{
   /** Configuration options for Babel, used for code transformation. */
   babel: BabelConfig
   /** The CDN URL used to load TypeScript and other external libraries. */
@@ -30,11 +33,11 @@ export type ReplConfig = Partial<{
   /** CSS class for styling the root REPL component. */
   class: string
   /** Initial state of the virtual file system to preload files. */
-  initialState: InitialReplState
+  initialState: InitialState
   /** Theme setting for the Monaco editor. */
   mode: 'light' | 'dark'
   /** Callback function that runs after initializing the editor and file system. */
-  onSetup: (repl: ReplContext) => Promise<void> | void
+  onSetup: (runtime: Runtime) => Promise<void> | void
   /** TypeScript compiler options for the Monaco editor. */
   typescript: TypescriptConfig
   /** Optional actions like saving the current state of the REPL. */
@@ -48,23 +51,26 @@ export type ReplConfig = Partial<{
  * This class is responsible for handling and integrating the core libraries and configurations necessary for the REPL's operation.
  * It maintains references to the file system and frame management systems, along with essential development libraries.
  */
-export class ReplContext {
+export class Runtime {
   /**
    * Configuration for the file system, requiring 'cdn' as a mandatory setting.
    */
-  config: Mandatory<ReplConfig, 'cdn'>
+  config: Mandatory<RuntimeConfig, 'cdn'>
   fileSystem: FileSystem
   frameRegistry: FrameRegistry
   /**
    * Manages TypeScript declaration-files.
    */
   typeRegistry: TypeRegistry
+  /**
+   * Utility to parse package.json files for module management.
+   */
+  packageJsonParser: PackageJsonParser
+  utils: Utils
 
   constructor(
     /** An object containing references to external libraries utilized by the REPL. */
     public libs: {
-      // /** An instance of Monaco, used for powering the code editor in the REPL. */
-      // monaco: Monaco
       /**  The TypeScript library used for TypeScript code operations and transformations. */
       typescript: typeof ts
       /** The Babel library used for JavaScript code transformation. */
@@ -75,12 +81,14 @@ export class ReplContext {
       babelPlugins: babel.PluginItem[] | undefined
     },
     /** Configuration settings for the file system within the REPL, used to initialize the FileSystem instance. */
-    config: ReplConfig,
+    config: RuntimeConfig,
   ) {
     this.config = mergeProps({ cdn: 'https://esm.sh' }, config)
     this.frameRegistry = new FrameRegistry()
     this.fileSystem = new FileSystem(this)
     this.typeRegistry = new TypeRegistry(this)
+    this.packageJsonParser = new PackageJsonParser()
+    this.utils = new Utils(this)
   }
 
   /**
@@ -88,7 +96,7 @@ export class ReplContext {
    *
    * @returns JSON representation of the repl state.
    */
-  toJSON(): ReplState {
+  toJSON(): RuntimeState {
     return {
       files: this.fileSystem.toJSON(),
       types: this.typeRegistry.toJSON(),
@@ -135,79 +143,66 @@ export class ReplContext {
   }
 
   /**
-   * Transforms module declarations (import/export) within a TypeScript code file, according to the provided callback function.
-   * The callback can modify the nodes by returning updated nodes, or it can signal to remove nodes by returning `false`.
-   * If an exception is thrown within the callback, it breaks the execution of the function.
+   * Imports a package from a specified URL by parsing its package.json and loading its main script and types.
+   * This method handles resolving paths, fetching content, and transforming module declarations to maintain compatibility.
    *
-   * @param path - The path of the source file to be modified.
-   * @param code - The TypeScript code as a string.
-   * @param callback - Callback function to apply on each import or export declaration node. This function can return `false` to signal the removal of the node from the code, or modify the node directly. The execution is stopped if the callback throws an error.
-   * @returns - The transformed code as a string. Returns `undefined` if no transformations were made to the original code or if no changes are detected.
+   * @param url - The URL to the package.json of the package to import.
+   * @returns A promise that resolves when the package has been fully imported.
+   * @async
    */
-  mapModuleDeclarations(
-    path: string,
-    code: string,
-    //** Callback to modify module-declaration node. Return `false` to remove node from code. `Throw` to break execution. */
-    callback: (node: ts.ImportDeclaration | ts.ExportDeclaration) => void | false,
-  ) {
-    const sourceFile = this.libs.typescript.createSourceFile(
-      path,
-      code,
-      this.libs.typescript.ScriptTarget.Latest,
-      true,
-      this.libs.typescript.ScriptKind.TS,
-    )
-    let shouldPrint = false
-    const result = this.libs.typescript.transform(sourceFile, [
-      context => {
-        const visit: ts.Visitor = node => {
-          if (
-            (this.libs.typescript.isImportDeclaration(node) ||
-              this.libs.typescript.isExportDeclaration(node)) &&
-            node.moduleSpecifier &&
-            this.libs.typescript.isStringLiteral(node.moduleSpecifier)
-          ) {
-            const isImport = this.libs.typescript.isImportDeclaration(node)
+  async importFromPackageJson(url: string) {
+    const getVirtualPath = (url: string) => (isUrl(url) ? new URL(url).pathname : url)
 
-            const previous = node.moduleSpecifier.text
+    const [packageJson] = createResource(() => this.packageJsonParser.parse(url))
+    const [project] = createResource(packageJson, async ({ scriptUrl, packageName }) => {
+      const project: Record<string, string> = {}
+      const resolvePath = async (url: string) => {
+        const virtualPath = getVirtualPath(url)
 
-            if (callback(node) === false) {
-              shouldPrint = true
-              return
-            }
-
-            if (previous !== node.moduleSpecifier.text) {
-              shouldPrint = true
-              if (isImport) {
-                return this.libs.typescript.factory.updateImportDeclaration(
-                  node,
-                  node.modifiers,
-                  node.importClause,
-                  this.libs.typescript.factory.createStringLiteral(node.moduleSpecifier.text),
-                  node.assertClause, // Preserve the assert clause if it exists
-                )
-              } else {
-                return this.libs.typescript.factory.updateExportDeclaration(
-                  node,
-                  node.modifiers,
-                  false,
-                  node.exportClause,
-                  this.libs.typescript.factory.createStringLiteral(node.moduleSpecifier.text),
-                  node.assertClause, // Preserve the assert clause if it exists
-                )
-              }
-            }
+        const code = await fetch(url).then(response => {
+          if (response.status !== 200) {
+            throw new Error(`Error while loading ${url}: ${response.statusText}`)
           }
-          return this.libs.typescript.visitEachChild(node, visit, context)
+          return response.text()
+        })
+
+        const promises: Promise<void>[] = []
+
+        const transformedCode = this.utils.mapModuleDeclarations(virtualPath, code, node => {
+          const specifier = node.moduleSpecifier as ts.StringLiteral
+          const path = specifier.text
+          if (isRelativePath(path)) {
+            promises.push(resolvePath(relativeToAbsolutePath(url, path)))
+          }
+        })
+
+        if (!transformedCode) {
+          throw new Error(`Transform returned undefined for ${virtualPath}`)
         }
-        return node => this.libs.typescript.visitNode(node, visit) as SourceFile
-      },
-    ])
-    if (!result.transformed[0]) return undefined
-    if (!shouldPrint) return code
-    const printer = this.libs.typescript.createPrinter({
-      newLine: this.libs.typescript.NewLineKind.LineFeed,
+
+        await Promise.all(promises)
+
+        project[virtualPath] = transformedCode
+      }
+      await resolvePath(scriptUrl)
+
+      this.fileSystem.setAlias(packageName, `node_modules${getVirtualPath(scriptUrl)}`)
+
+      return project
     })
-    return printer.printFile(result.transformed[0])
+
+    createEffect(
+      whenever(packageJson, ({ typesUrl, packageName }) => {
+        if (typesUrl) this.typeRegistry.import.fromUrl(typesUrl, packageName)
+      }),
+    )
+
+    createEffect(
+      whenever(project, project =>
+        Object.entries(project).forEach(([path, value]) => {
+          this.fileSystem.create(`node_modules${path}`).set(value)
+        }),
+      ),
+    )
   }
 }

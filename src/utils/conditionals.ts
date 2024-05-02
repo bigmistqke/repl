@@ -1,4 +1,4 @@
-import { Accessor } from 'solid-js'
+import { Accessor, Resource } from 'solid-js'
 
 /**
  * Executes a callback with a value derived from an accessor if the value is truthy.
@@ -14,9 +14,9 @@ export function when<
     ? Exclude<ReturnType<Exclude<TAccessor, undefined>>, null | undefined | false>
     : Exclude<TAccessor, null | undefined | false>,
   TResult,
->(accessor: TAccessor, callback: (value: TValues) => TResult) {
+>(accessor: TAccessor, callback: (value: TValues) => TResult, fallback?: () => TResult) {
   const value = typeof accessor === 'function' ? accessor() : accessor
-  return value ? callback(value) : undefined
+  return value ? callback(value) : fallback?.()
 }
 
 /**
@@ -33,8 +33,8 @@ export function whenever<
     ? Exclude<ReturnType<Exclude<TAccessor, undefined>>, null | undefined | false>
     : Exclude<TAccessor, null | undefined | false>,
   TResult,
->(accessor: TAccessor, callback: (value: TValues) => TResult) {
-  return () => when(accessor, callback)
+>(accessor: TAccessor, callback: (value: TValues) => TResult, fallback?: () => TResult) {
+  return () => when(accessor, callback, fallback)
 }
 
 /**

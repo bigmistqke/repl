@@ -19,7 +19,8 @@
     "target": "ESNext",
     "paths": {
       "@bigmistqke/repl": ["./src"],
-      "@bigmistqke/repl/plugins": ["./src/plugins"]
+      "@bigmistqke/repl/plugins": ["./src/plugins"],
+      "@bigmistqke/repl/runtime": ["./src/runtime"]
     }
   },
   "exclude": ["node_modules", "dev/public/distdist", "./dev"]

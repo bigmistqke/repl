@@ -8,8 +8,8 @@ import {
   splitProps,
   type JSX,
 } from 'solid-js'
-import { html } from 'src/utils/module-literal'
-import { useRepl } from '../use-repl'
+import { useRepl } from 'src/use-repl'
+import { html } from 'src/utils/object-url-literal'
 
 // @ts-expect-error
 import styles from './repl.module.css'

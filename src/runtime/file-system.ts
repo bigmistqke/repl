@@ -1,10 +1,7 @@
-import { createRoot, onCleanup } from 'solid-js'
+import { onCleanup } from 'solid-js'
 import { SetStoreFunction, createStore } from 'solid-js/store'
-import { isRelativePath, isUrl, relativeToAbsolutePath } from 'src/utils/path'
-import type ts from 'typescript'
 import { CssFile, File, JsFile } from './file'
-import { PackageJsonParser } from './package-json'
-import { ReplContext } from './repl-context'
+import { Runtime } from './runtime'
 
 export type FileSystemState = {
   sources: Record<string, string>
@@ -27,14 +24,9 @@ export class FileSystem {
    */
   alias: Record<string, string>
   /**
-   * Utility to parse package.json files for module management.
-   */
-  packageJsonParser = new PackageJsonParser()
-  /**
    * Store setter for aliases.
-   * @private
    */
-  private setAlias: SetStoreFunction<Record<string, string>>
+  setAlias: SetStoreFunction<Record<string, string>>
   /**
    * Stores file instances by path.
    * @private
@@ -54,9 +46,9 @@ export class FileSystem {
   /**
    * Constructs an instance of the FileSystem, setting up initial properties and configuration.
    *
-   * @param repl - The `ReplContext` instance.
+   * @param runtime - The `ReplContext` instance.
    */
-  constructor(public repl: ReplContext) {
+  constructor(public runtime: Runtime) {
     ;[this.alias, this.setAlias] = createStore<Record<string, string>>({})
     ;[this.files, this.setFiles] = createStore<Record<string, File>>()
 
@@ -96,7 +88,7 @@ export class FileSystem {
    * @returns The newly created file instance.
    */
   create(path: string) {
-    const file = path.endsWith('.css') ? new CssFile(path) : new JsFile(this.repl, path)
+    const file = path.endsWith('.css') ? new CssFile(path) : new JsFile(this.runtime, path)
     this.setFiles(path, file)
     return file
   }
@@ -130,66 +122,6 @@ export class FileSystem {
     Object.entries(files).forEach(([path, value]) => {
       this.create(path).set(value)
     })
-  }
-
-  /**
-   * Imports a package from a specified URL by parsing its package.json and loading its main script and types.
-   * This method handles resolving paths, fetching content, and transforming module declarations to maintain compatibility.
-   *
-   * @param url - The URL to the package.json of the package to import.
-   * @returns A promise that resolves when the package has been fully imported.
-   * @async
-   */
-  async importFromPackageJson(url: string) {
-    const getVirtualPath = (url: string) => (isUrl(url) ? new URL(url).pathname : url)
-
-    const { typesUrl, scriptUrl, packageName } = await this.packageJsonParser.parse(url)
-
-    const project: Record<string, string> = {}
-    const resolvePath = async (url: string) => {
-      const virtualPath = getVirtualPath(url)
-
-      const code = await fetch(url).then(response => {
-        if (response.status !== 200) {
-          throw new Error(`Error while loading ${url}: ${response.statusText}`)
-        }
-        return response.text()
-      })
-
-      const promises: Promise<void>[] = []
-
-      const transformedCode = this.repl.mapModuleDeclarations(virtualPath, code, node => {
-        const specifier = node.moduleSpecifier as ts.StringLiteral
-        const path = specifier.text
-        if (isRelativePath(path)) {
-          promises.push(resolvePath(relativeToAbsolutePath(url, path)))
-        }
-      })
-
-      if (!transformedCode) {
-        throw new Error(`Transform returned undefined for ${virtualPath}`)
-      }
-
-      await Promise.all(promises)
-
-      project[virtualPath] = transformedCode
-    }
-    await resolvePath(scriptUrl)
-
-    // TODO:  It feels a bit dirty having to wrap it all in a root
-    //        Maybe there is a more resource-y way of doing this.
-    createRoot(dispose => {
-      Object.entries(project).forEach(([path, value]) => {
-        this.create(`node_modules${path}`).set(value)
-      })
-      this.cleanups.push(dispose)
-    })
-
-    if (typesUrl) {
-      await this.repl.typeRegistry.importTypesFromUrl(typesUrl, packageName)
-    }
-
-    this.setAlias(packageName, `node_modules${getVirtualPath(scriptUrl)}`)
   }
 
   /**

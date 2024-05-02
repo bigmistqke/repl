@@ -1,8 +1,9 @@
-import { CssFile, useRepl } from '@bigmistqke/repl'
 import loader, { Monaco } from '@monaco-editor/loader'
 import { wireTmGrammars } from 'monaco-editor-textmate'
 import { Registry } from 'monaco-textmate'
 import { loadWASM } from 'onigasm'
+import { useRepl } from 'src'
+import { CssFile } from 'src/runtime'
 // @ts-expect-error
 import onigasm from 'onigasm/lib/onigasm.wasm?url'
 import {
@@ -25,7 +26,7 @@ const GRAMMARS = new Map([
 ])
 
 const monacoContext = createContext<Monaco>()
-export const useMonaco = () => {
+export const useMonaco = (): Monaco => {
   const context = useContext(monacoContext)
   if (!context) throw 'context should be used in descendant of MonacoProvider'
   return context
@@ -106,9 +107,15 @@ export function ReplMonacoProvider(props: ParentProps) {
         mapArray(
           () => Object.keys(repl.typeRegistry.sources),
           virtualPath => {
-            monaco.languages.typescript.typescriptDefaults.addExtraLib(
-              repl.typeRegistry.sources[virtualPath]!,
-              `file:///node_modules/${virtualPath}`,
+            createEffect(
+              whenever(
+                () => repl.typeRegistry.sources[virtualPath],
+                source =>
+                  monaco.languages.typescript.typescriptDefaults.addExtraLib(
+                    source,
+                    `file:///node_modules/${virtualPath}`,
+                  ),
+              ),
             )
           },
         ),
@@ -124,6 +131,7 @@ export function ReplMonacoProvider(props: ParentProps) {
             ...repl.typeRegistry.alias,
           },
         })
+
         monaco.languages.typescript.typescriptDefaults.setCompilerOptions(tsCompilerOptions)
         monaco.languages.typescript.javascriptDefaults.setCompilerOptions(tsCompilerOptions)
       })

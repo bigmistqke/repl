@@ -1,6 +1,6 @@
 import { Accessor, Setter, createSignal } from 'solid-js'
 import { CssModule, JsModule, Module } from './module'
-import { ReplContext } from './repl-context'
+import { Runtime } from './runtime'
 
 export abstract class File {
   abstract module: Module
@@ -44,11 +44,11 @@ export abstract class File {
 export class JsFile extends File {
   module: JsModule
   constructor(
-    public repl: ReplContext,
+    public runtime: Runtime,
     public path: string,
   ) {
     super(path)
-    this.module = new JsModule(repl, this)
+    this.module = new JsModule(runtime, this)
   }
 }
 

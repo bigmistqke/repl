@@ -1,8 +1,8 @@
 import clsx from 'clsx'
 import { ComponentProps, createEffect, createResource, onCleanup, splitProps } from 'solid-js'
-import { Frame } from 'src/run-time/frame-registry'
+import { Frame } from 'src/runtime'
 import { whenever } from 'src/utils/conditionals'
-import { html, javascript } from 'src/utils/module-literal'
+import { html, javascript } from 'src/utils/object-url-literal'
 import { useRepl } from '../use-repl'
 
 // @ts-expect-error
