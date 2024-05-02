@@ -13,9 +13,9 @@ import { every, when, whenever } from 'src/utils/conditionals'
 import { javascript } from 'src/utils/object-url-literal'
 import { isRelativePath, isUrl, relativeToAbsolutePath } from 'src/utils/path'
 import type ts from 'typescript'
+import { Frame } from '../frame-registry'
+import { Runtime } from '../runtime'
 import { CssFile, JsFile } from './file'
-import { Frame } from './frame-registry'
-import { Runtime } from './runtime'
 
 export type Model = ReturnType<Monaco['editor']['createModel']>
 
@@ -27,13 +27,12 @@ export abstract class Module {
    * @warning Cleanup the generated module-url with URL.revokeObjectURL() after usage to prevent memory leak.
    */
   abstract generate: Accessor<string | undefined>
-
   abstract url: string | undefined
 }
 
 /**
- * Represents a JavaScript executable within the run time, extending the generic Executable class.
- * This class handles the transpilation of a Javascript File of the virtual FileSystem.
+ * Represents an executable JavaScript module within the Runtime, extending the generic Module class.
+ * This class handles the transpilation of a Javascript File within the virtual FileSystem.
  */
 export class JsModule extends Module {
   generate: Accessor<string | undefined>
@@ -95,7 +94,7 @@ export class JsModule extends Module {
 
         try {
           return batch(() =>
-            runtime.utils.mapModuleDeclarations(file.path, value, node => {
+            runtime.transpiler.transformModuleDeclarations(value, node => {
               const specifier = node.moduleSpecifier as ts.StringLiteral
               let modulePath = specifier.text
 
@@ -203,8 +202,8 @@ export class JsModule extends Module {
 }
 
 /**
- * Represents a CSS file within the virtual file system, extending the generic File class.
- * Manages the editing and application of CSS within the IDE environment.
+ * Represents an executable CSS module within the Runtime, extending the generic Module class.
+ * This class handles the transpilation of a css-stylesheet into a Javascript executable module.
  */
 export class CssModule extends Module {
   generate: Accessor<string | undefined>

@@ -1,6 +1,7 @@
+import ts, { SourceFile } from 'typescript'
 import { Runtime } from './runtime'
 
-export class Utils {
+export class Transpiler {
   constructor(private runtime: Runtime) {}
   /**
    * Transforms module declarations (import/export) within a TypeScript code file, according to the provided callback function.
@@ -12,15 +13,14 @@ export class Utils {
    * @param callback - Callback function to apply on each import or export declaration node. This function can return `false` to signal the removal of the node from the code, or modify the node directly. The execution is stopped if the callback throws an error.
    * @returns - The transformed code as a string. Returns `undefined` if no transformations were made to the original code or if no changes are detected.
    */
-  mapModuleDeclarations(
-    path: string,
+  transformModuleDeclarations(
     code: string,
     //** Callback to modify module-declaration node. Return `false` to remove node from code. `Throw` to break execution. */
     callback: (node: ts.ImportDeclaration | ts.ExportDeclaration) => void | false,
   ) {
     const typescript = this.runtime.libs.typescript
     const sourceFile = typescript.createSourceFile(
-      path,
+      '',
       code,
       typescript.ScriptTarget.Latest,
       true,

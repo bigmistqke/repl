@@ -1,7 +1,7 @@
 import { onCleanup } from 'solid-js'
 import { SetStoreFunction, createStore } from 'solid-js/store'
+import { Runtime } from '../runtime'
 import { CssFile, File, JsFile } from './file'
-import { Runtime } from './runtime'
 
 export type FileSystemState = {
   sources: Record<string, string>
@@ -51,7 +51,6 @@ export class FileSystem {
   constructor(public runtime: Runtime) {
     ;[this.alias, this.setAlias] = createStore<Record<string, string>>({})
     ;[this.files, this.setFiles] = createStore<Record<string, File>>()
-
     onCleanup(() => this.cleanups.forEach(cleanup => cleanup()))
   }
 
@@ -79,6 +78,17 @@ export class FileSystem {
       ),
       alias: this.alias,
     }
+  }
+
+  /**
+   * Adds a project by importing multiple files into the file system.
+   *
+   * @param files - A record of file paths and their content to add to the file system.
+   */
+  addProject(files: Record<string, string>) {
+    Object.entries(files).forEach(([path, value]) => {
+      this.create(path).set(value)
+    })
   }
 
   /**
@@ -111,17 +121,6 @@ export class FileSystem {
    */
   get(path: string) {
     return this.files[path]
-  }
-
-  /**
-   * Adds a project by importing multiple files into the file system.
-   *
-   * @param files - A record of file paths and their content to add to the file system.
-   */
-  addProject(files: Record<string, string>) {
-    Object.entries(files).forEach(([path, value]) => {
-      this.create(path).set(value)
-    })
   }
 
   /**

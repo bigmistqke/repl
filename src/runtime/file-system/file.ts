@@ -1,6 +1,6 @@
 import { Accessor, Setter, createSignal } from 'solid-js'
+import { Runtime } from '../runtime'
 import { CssModule, JsModule, Module } from './module'
-import { Runtime } from './runtime'
 
 export abstract class File {
   abstract module: Module
