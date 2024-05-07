@@ -13,7 +13,7 @@ import { every, when, whenever } from 'src/utils/conditionals'
 import { javascript } from 'src/utils/object-url-literal'
 import { isRelativePath, isUrl, relativeToAbsolutePath } from 'src/utils/path'
 import type ts from 'typescript'
-import { Frame } from '../frame-registry'
+import { Frame } from '../frame-registry/frame'
 import { Runtime } from '../runtime'
 import { CssFile, JsFile } from './file'
 

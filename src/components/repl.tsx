@@ -7,27 +7,21 @@ import { ReplContextProvider } from '../use-repl'
 import { ReplDevTools } from './dev-tools'
 import { ReplMonacoEditor } from './editors/monaco-editor'
 import { ReplMonacoProvider } from './editors/monaco-provider'
+import { ReplShikiEditor } from './editors/shiki-editor'
 import { ReplFrame } from './frame'
 import { ReplTabBar } from './tab-bar'
-
 // @ts-expect-error
 import styles from './repl.module.css'
-
-const GRAMMARS = new Map([
-  ['typescript', 'source.tsx'],
-  ['javascript', 'source.tsx'],
-  ['css', 'source.css'],
-])
 
 export type ReplProps = ComponentProps<'div'> & RuntimeConfig
 
 /**
- * Initializes the Repl environment by dynamically loading required libraries (`Babel`, `TypeScript` and `monaco-editor`)
+ * Initializes the Repl environment by dynamically loading required libraries (`Babel` and `TypeScript`)
  * and any Babel presets/plugins defined in the props. Configures and instantiates `ReplContext`, which sets up `FileSystem`
  * and `TypeRegistry`. The component ensures no children are rendered until all dependencies are fully loaded and the optional
  * `onSetup`-callback has been completed.
  *
- * It provides access for its children to its internal `ReplContext` through the `useRepl`-hook.
+ * It provides access for its children to its internal `Runtime` through the `useRepl`-hook.
  *
  * @param props Configuration properties for the Repl
  * @returns A JSX element that renders the Repl environment, delaying rendering of child components until all dependencies are loaded.
@@ -120,7 +114,11 @@ export function Repl(props: ReplProps) {
     <Show when={repl()}>
       {repl => (
         <ReplContextProvider value={repl()}>
-          <div class={clsx(styles.repl, props.class)} {...rest}>
+          <div
+            data-dark-mode={props.mode || 'dark'}
+            class={clsx(styles.repl, props.class)}
+            {...rest}
+          >
             {props.children}
           </div>
         </ReplContextProvider>
@@ -177,3 +175,5 @@ Repl.TabBar = ReplTabBar
  * <Repl.DevTools name="exampleFrame" />
  */
 Repl.DevTools = ReplDevTools
+
+Repl.ShikiEditor = ReplShikiEditor

@@ -17,13 +17,13 @@ export class FrameRegistry {
    * A setter function to update the frames record.
    * @private
    */
-  private set: SetStoreFunction<Record<string, Frame>>
+  private setFrames: SetStoreFunction<Record<string, Frame>>
 
   /**
    * Initializes a new instance of FrameRegistry.
    */
   constructor() {
-    ;[this.frames, this.set] = createStore({})
+    ;[this.frames, this.setFrames] = createStore({})
   }
 
   /**
@@ -33,7 +33,7 @@ export class FrameRegistry {
    * @param window - The window object of the frame.
    */
   add(name: string, window: Window) {
-    this.set(name, new Frame(window))
+    this.setFrames(name, new Frame(window))
   }
 
   /**
@@ -42,7 +42,7 @@ export class FrameRegistry {
    * @param name - The name of the frame to delete.
    */
   delete(name: string) {
-    this.set(name, undefined!)
+    this.setFrames(name, undefined!)
   }
 
   /**

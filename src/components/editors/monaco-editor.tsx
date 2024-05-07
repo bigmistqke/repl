@@ -27,6 +27,7 @@ export type EditorProps = Omit<ComponentProps<'div'>, 'ref'> & {
    * @returns
    */
   onMount?: (editor: MonacoEditor) => void
+  editor: Parameters<Monaco['editor']['create']>[1]
 }
 
 export function ReplMonacoEditor(props: EditorProps) {
@@ -43,6 +44,7 @@ export function ReplMonacoEditor(props: EditorProps) {
       value: '',
       language: 'typescript',
       automaticLayout: true,
+      ...props.editor,
     })
   })
 

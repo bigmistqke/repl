@@ -2,7 +2,7 @@ import { Repl, useRepl } from '@bigmistqke/repl'
 import { solidReplPlugin } from '@bigmistqke/repl/plugins'
 import { JsFile } from '@bigmistqke/repl/runtime'
 import { Resizable } from 'corvu/resizable'
-import { createEffect, createSignal, mapArray, on, onCleanup, type Component } from 'solid-js'
+import { createEffect, createSignal, mapArray, onCleanup, type Component } from 'solid-js'
 
 import styles from './App.module.css'
 
@@ -133,42 +133,39 @@ render(() => <Counter />, document.body);
             createEffect(() => {
               // inject entry's module-url into frame's window
               frame.injectFile(entry)
-              onCleanup(() => entry.module.dispose(frame))
+              onCleanup(() => frame.dispose(entry))
             })
 
             createEffect(
               mapArray(entry.module.cssImports, css => {
                 createEffect(() => frame.injectFile(css))
-                onCleanup(() => css.module.dispose(frame))
+                onCleanup(() => frame.dispose(css))
               }),
             )
           }
         })
       }}
     >
-      <Repl.MonacoProvider>
-        <Resizable style={{ width: '100vw', height: '100vh', display: 'flex' }}>
-          <Resizable.Panel
-            style={{ overflow: 'hidden', display: 'flex', 'flex-direction': 'column' }}
-          >
-            <div style={{ display: 'flex' }}>
-              <Repl.TabBar style={{ flex: 1 }}>
-                {({ path }) => <button onClick={() => setCurrentFile(path)}>{path}</button>}
-              </Repl.TabBar>
-              <AddButton />
-            </div>
-            <Repl.MonacoEditor
-              style={{ flex: 1 }}
-              path={currentPath()}
-              onMount={editor => {
-                createEffect(on(currentPath, () => editor.focus()))
-              }}
-            />
-          </Resizable.Panel>
-          <Resizable.Handle class={styles.handle} />
-          <Frames />
-        </Resizable>
-      </Repl.MonacoProvider>
+      <Resizable style={{ width: '100vw', height: '100vh', display: 'flex' }}>
+        <Resizable.Panel
+          style={{ overflow: 'hidden', display: 'flex', 'flex-direction': 'column' }}
+        >
+          <div style={{ display: 'flex' }}>
+            <Repl.TabBar style={{ flex: 1 }}>
+              {({ path }) => <button onClick={() => setCurrentFile(path)}>{path}</button>}
+            </Repl.TabBar>
+            <AddButton />
+          </div>
+          <Repl.ShikiEditor
+            themes={{ dark: 'dark-plus' }}
+            style={{ flex: 1 }}
+            editorStyle={{ margin: '20px' }}
+            path={currentPath()}
+          />
+        </Resizable.Panel>
+        <Resizable.Handle class={styles.handle} />
+        <Frames />
+      </Resizable>
     </Repl>
   )
 }
