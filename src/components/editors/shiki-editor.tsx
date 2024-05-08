@@ -1,21 +1,29 @@
 import { createDeepSignal } from '@solid-primitives/resource'
 import clsx from 'clsx'
-import { BundledTheme, CodeOptionsSingleTheme, bundledThemesInfo, codeToHast } from 'shiki'
 import {
-  ComponentProps,
+  bundledThemesInfo,
+  codeToHast,
+  type BundledTheme,
+  type CodeOptionsSingleTheme,
+} from 'shiki'
+import {
   Index,
-  JSX,
   Show,
+  Suspense,
+  createEffect,
   createMemo,
   createResource,
   createSignal,
   onCleanup,
   splitProps,
+  useTransition,
+  type ComponentProps,
+  type JSX,
 } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { useRepl } from 'src/use-repl'
-// @ts-expect-error
 import { whenever } from 'src/utils/conditionals'
+// @ts-expect-error
 import styles from './shiki-editor.module.css'
 
 type Root = Awaited<ReturnType<typeof codeToHast>>
@@ -37,6 +45,9 @@ export function ReplShikiEditor(
   const themes = createMemo(() => ({ light: 'min-light', dark: 'min-dark', ...props.themes }))
   const currentTheme = () => themes()[repl.config.mode || 'dark']
   const repl = useRepl()
+  const [pending, start] = useTransition()
+
+  createEffect(() => console.log('pending', pending()))
 
   const [characterWidth, setCharacterWidth] = createSignal<number>(0)
 
@@ -79,7 +90,6 @@ export function ReplShikiEditor(
         ?.import()
         .then(module => {
           const colors = module.default.colors
-          console.log('color', colors)
           return {
             background: colors?.['editor.background'],
             'caret-color': colors?.['editor.foreground'],
@@ -87,6 +97,8 @@ export function ReplShikiEditor(
           }
         }),
   )
+
+  const updateSource = (value: string) => start(() => file().set(value))
 
   return (
     <div
@@ -96,13 +108,15 @@ export function ReplShikiEditor(
     >
       <div class={styles['inner-container']}>
         <div class={clsx(styles.output, props.editorClass)} style={props.editorStyle}>
-          <Show when={hast()}>
-            {hast => <Index each={hast().children}>{child => <HastNode node={child()} />}</Index>}
-          </Show>
+          <Suspense>
+            <Show when={hast()}>
+              {hast => <Index each={hast().children}>{child => <HastNode node={child()} />}</Index>}
+            </Show>
+          </Suspense>
         </div>
         <textarea
           class={clsx(styles.input, props.editorClass)}
-          onInput={e => file().set(e.currentTarget.value)}
+          onInput={e => updateSource(e.currentTarget.value)}
           spellcheck={false}
           style={{ ...props.editorStyle, 'min-width': lineSize() * characterWidth() + 'px' }}
           value={file().get()}
