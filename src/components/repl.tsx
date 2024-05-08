@@ -1,9 +1,9 @@
 import clsx from 'clsx'
-import { ComponentProps, Show, createResource, splitProps } from 'solid-js'
+import { ComponentProps, Show, createEffect, createResource, splitProps } from 'solid-js'
 import { Runtime, RuntimeConfig } from 'src/runtime'
-import { every, wrapNullableResource } from 'src/utils/conditionals'
+import { every, whenever, wrapNullableResource } from 'src/utils/conditionals'
 import { deepMerge } from 'src/utils/deep-merge'
-import { ReplContextProvider } from '../use-repl'
+import { RuntimeProvider } from '../use-repl'
 import { ReplDevTools } from './dev-tools'
 import { ReplMonacoEditor } from './editors/monaco-editor'
 import { ReplMonacoProvider } from './editors/monaco-provider'
@@ -87,7 +87,7 @@ export function Repl(props: ReplProps) {
   )
 
   // Once all resources are loaded, instantiate and initialize ReplContext
-  const [repl] = createResource(
+  const [runtime] = createResource(
     every(
       typescript,
       wrapNullableResource(babel),
@@ -105,15 +105,16 @@ export function Repl(props: ReplProps) {
         config,
       )
       await config.onSetup?.(repl)
-      repl.initialize()
       return repl
     },
   )
 
+  createEffect(whenever(runtime, runtime => runtime.initialize()))
+
   return (
-    <Show when={repl()}>
-      {repl => (
-        <ReplContextProvider value={repl()}>
+    <Show when={runtime()}>
+      {runtime => (
+        <RuntimeProvider value={runtime()}>
           <div
             data-dark-mode={props.mode || 'dark'}
             class={clsx(styles.repl, props.class)}
@@ -121,7 +122,7 @@ export function Repl(props: ReplProps) {
           >
             {props.children}
           </div>
-        </ReplContextProvider>
+        </RuntimeProvider>
       )}
     </Show>
   )
