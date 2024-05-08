@@ -1,25 +1,27 @@
-.outer-container {
+.editor {
   display: flex;
   position: relative;
+  overflow: auto;
+  font-size: 10pt;
 }
 
-.inner-container {
+.editor code {
+  display: block;
+  font-family: monospace;
+  white-space: pre;
+}
+
+.container {
   position: relative;
   flex: 1;
-  overflow: auto;
 }
 
-.input,
-.output {
+.input {
   position: absolute;
   top: 0px;
   right: 0px;
   bottom: 0px;
   left: 0px;
-  font-size: 10pt;
-}
-
-.input {
   z-index: 1;
   outline: none;
   border: none;
@@ -27,21 +29,15 @@
   padding: 0px;
   resize: none;
   color: transparent;
+  font-size: inherit;
+  font-family: monospace;
 }
 .input::selection {
   background: var(--selection-bg-color);
 }
 
-.output {
-  pointer-events: none;
-}
-
-.output pre {
-  margin: 0px;
-  padding: 0px;
-  height: 100%;
-}
-
 .character {
+  position: absolute;
   opacity: 0;
+  pointer-events: none;
 }
