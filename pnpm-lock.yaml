@@ -11,6 +11,9 @@ dependencies:
   '@monaco-editor/loader':
     specifier: ^1.4.0
     version: 1.4.0(monaco-editor@0.48.0)
+  '@solid-primitives/resource':
+    specifier: ^0.1.2
+    version: 0.1.2(solid-js@1.8.17)
   '@solid-primitives/scheduled':
     specifier: ^1.4.3
     version: 1.4.3(solid-js@1.8.17)
@@ -1070,6 +1073,14 @@ packages:
       '@solid-primitives/utils': 6.2.3(solid-js@1.8.17)
       solid-js: 1.8.17
     dev: true
+
+  /@solid-primitives/resource@0.1.2(solid-js@1.8.17):
+    resolution: {integrity: sha512-jeXWy1khbrCMRja4yxXPwmUxRrRUrm/U47lRh2qO2jSkvVPg9Vyf0Dx3flGzykqnTFgJ5pPVjFlQmYvjtnj0Zw==}
+    peerDependencies:
+      solid-js: ^1.6.0
+    dependencies:
+      solid-js: 1.8.17
+    dev: false
 
   /@solid-primitives/scheduled@1.4.3(solid-js@1.8.17):
     resolution: {integrity: sha512-HfWN5w7b7FEc6VPLBKnnE302h90jsLMuR28Fcf7neRGGf8jBj6wm6/UFQ00VlKexHFMR6KQ2u4VBh5a1ZcqM8g==}

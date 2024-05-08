@@ -57,7 +57,7 @@ export function every<
 
     for (let i = 0; i < accessors.length; i++) {
       const _value = typeof accessors[i] === 'function' ? (accessors[i] as () => T)() : accessors[i]
-      if (_value === undefined || _value === null || _value === false) return undefined
+      if (!_value) return undefined
       values[i] = _value
     }
 

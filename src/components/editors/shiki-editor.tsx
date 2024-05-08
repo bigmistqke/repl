@@ -1,22 +1,25 @@
-import { JsFile } from '@bigmistqke/repl/runtime'
+import { createDeepSignal } from '@solid-primitives/resource'
 import clsx from 'clsx'
-import { BundledTheme, CodeOptionsSingleTheme, bundledThemesInfo, codeToHtml } from 'shiki'
+import { BundledTheme, CodeOptionsSingleTheme, bundledThemesInfo, codeToHast } from 'shiki'
 import {
   ComponentProps,
+  Index,
   JSX,
-  createEffect,
+  Show,
   createMemo,
   createResource,
   createSignal,
-  mergeProps,
-  on,
   onCleanup,
-  onMount,
   splitProps,
 } from 'solid-js'
+import { Dynamic } from 'solid-js/web'
 import { useRepl } from 'src/use-repl'
 // @ts-expect-error
+import { whenever } from 'src/utils/conditionals'
 import styles from './shiki-editor.module.css'
+
+type Root = Awaited<ReturnType<typeof codeToHast>>
+type HastNode = Root['children'][number]
 
 export function ReplShikiEditor(
   props: Omit<ComponentProps<'div'>, 'style' | 'theme'> & {
@@ -31,65 +34,59 @@ export function ReplShikiEditor(
   },
 ) {
   const [, rest] = splitProps(props, ['style', 'themes', 'editorStyle', 'editorClass'])
-  const themes = () => mergeProps({ light: 'min-light', dark: 'min-dark' }, props.themes)
+  const themes = createMemo(() => ({ light: 'min-light', dark: 'min-dark', ...props.themes }))
+  const currentTheme = () => themes()[repl.config.mode || 'dark']
   const repl = useRepl()
 
-  const [html, setHtml] = createSignal('')
-  const [maxLineSize, setMaxLineSize] = createSignal<number>(0)
   const [characterWidth, setCharacterWidth] = createSignal<number>(0)
-
-  let char: HTMLElement
 
   // Get or create file
   const file = createMemo(
     () => repl.fileSystem.get(props.path) || repl.fileSystem.create(props.path),
   )
+  // Get source
+  const source = whenever(file, file => file.get())
 
-  const [themeStyles] = createResource(
-    () =>
-      bundledThemesInfo
-        .find(theme => theme.id === themes()[repl.config.mode || 'dark'])
-        ?.import()
-        .then(module => {
-          const colors = module.default.colors
-          console.log(colors, module.default)
-          return {
-            background: colors?.['editor.background'],
-            'caret-color': colors?.['editor.foreground'],
-          }
-        }),
+  // Transform source to hast (hypertext abstract syntax tree)
+  const [hast] = createResource(
+    source,
+    source => codeToHast(source, { lang: 'tsx', theme: currentTheme() }),
+    { storage: createDeepSignal },
   )
 
-  createEffect(() => {
-    codeToHtml(file().get(), {
-      lang: file() instanceof JsFile ? 'tsx' : 'css',
-      themes: themes(),
-    }).then(setHtml)
-  })
-
-  createEffect(
-    on(
-      () => file().get(),
+  // Find the longest line-size whenever source changes
+  const lineSize = createMemo(
+    whenever(
+      source,
       source => {
-        let max = -Infinity
+        let lineSize = -Infinity
         source.split('\n').forEach(line => {
-          if (line.length > max) {
-            max = line.length
+          if (line.length > lineSize) {
+            lineSize = line.length
           }
         })
-        setMaxLineSize(max)
+        return lineSize
       },
+      () => 0,
     ),
   )
 
-  onMount(() => {
-    const resizeObserver = new ResizeObserver(() => {
-      const { width } = char.getBoundingClientRect()
-      setCharacterWidth(width)
-    })
-    resizeObserver.observe(char)
-    onCleanup(() => resizeObserver.disconnect())
-  })
+  // Get styles from current theme
+  const [themeStyles] = createResource(
+    () =>
+      bundledThemesInfo
+        .find(theme => theme.id === currentTheme())
+        ?.import()
+        .then(module => {
+          const colors = module.default.colors
+          console.log('color', colors)
+          return {
+            background: colors?.['editor.background'],
+            'caret-color': colors?.['editor.foreground'],
+            '--selection-bg-color': colors?.['editor.selectionHighlightBackground'],
+          }
+        }),
+  )
 
   return (
     <div
@@ -98,20 +95,45 @@ export function ReplShikiEditor(
       {...rest}
     >
       <div class={styles['inner-container']}>
+        <div class={clsx(styles.output, props.editorClass)} style={props.editorStyle}>
+          <Show when={hast()}>
+            {hast => <Index each={hast().children}>{child => <HastNode node={child()} />}</Index>}
+          </Show>
+        </div>
         <textarea
           class={clsx(styles.input, props.editorClass)}
           onInput={e => file().set(e.currentTarget.value)}
           spellcheck={false}
-          style={{ ...props.editorStyle, 'min-width': maxLineSize() * characterWidth() + 'px' }}
+          style={{ ...props.editorStyle, 'min-width': lineSize() * characterWidth() + 'px' }}
           value={file().get()}
         />
-        <code ref={char!}>m</code>
-        <div
-          class={clsx(styles.output, props.editorClass)}
-          innerHTML={html()}
-          style={props.editorStyle}
-        />
+        <Character onResize={setCharacterWidth} />
       </div>
     </div>
+  )
+}
+
+function Character(props: { onResize: (width: number) => void }) {
+  const character = (<code class={styles.character} innerText="m" />) as HTMLElement
+
+  const resizeObserver = new ResizeObserver(() => {
+    const { width } = character.getBoundingClientRect()
+    props.onResize(width)
+  })
+  resizeObserver.observe(character)
+  onCleanup(() => resizeObserver.disconnect())
+
+  return character
+}
+
+function HastNode(props: { node: any }) {
+  return (
+    <Show when={props.node.type !== 'text' && props.node} fallback={props.node.value}>
+      {node => (
+        <Dynamic component={node().tagName || 'div'} {...node().properties}>
+          <Index each={node().children}>{child => <HastNode node={child()} />}</Index>
+        </Dynamic>
+      )}
+    </Show>
   )
 }

@@ -73,6 +73,7 @@
   "dependencies": {
     "@babel/standalone": "^7.24.4",
     "@monaco-editor/loader": "^1.4.0",
+    "@solid-primitives/resource": "^0.1.2",
     "@solid-primitives/scheduled": "^1.4.3",
     "clsx": "^2.1.0",
     "fflate": "^0.8.2",
