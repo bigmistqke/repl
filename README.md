@@ -4,7 +4,7 @@
 
 # @bigmistqke/repl
 
-`@bigmistqke/repl` provides unstyled building blocks to create TypeScript playgrounds utilizing the Monaco Editor. It supports a flexible file system for transpiling TypeScript into ECMAScript Modules (ESM), imports of external dependencies (including types), making it ideal for developers to create customizable, browser-based IDEs.
+`@bigmistqke/repl` provides unstyled building blocks to create TypeScript playgrounds directly in the browser, featuring adaptable editor integration. Currently, it supports both the feature-rich `Monaco Editor` and the lighter `Shiki Editor` It supports real-time transpilation of TypeScript into ECMAScript Modules (ESM) and facilitates seamless imports of external dependencies, including their type definitions, making it ideal for both quick prototyping and complex browser-based IDE development.
 
 https://github.com/bigmistqke/repl/assets/10504064/50195cb6-f3aa-4dea-a40a-d04f2d32479d
 
@@ -12,30 +12,33 @@ https://github.com/bigmistqke/repl/assets/10504064/50195cb6-f3aa-4dea-a40a-d04f2
 
 ## Features
 
-- **Monaco Editor Integration**: `vscode` like experience in-browser with Typescript support.
-- **Real-time Transpilation**: Direct transpilation of TypeScript code into ESM, allowing for immediate feedback.
-- **Automatic Imports of External Dependencies**: Streamline coding with automatic imports of external dependencies, including type definitions.
-- **Flexible API**: Direct access to the internals and to the generated ESM Modules. Application can scale from a minimal playground to a feature-complete IDE.
-- **Advanced File System Management**: Robust management of file states and operations within the editor.
-- **Configurable Build and Runtime Options**: Easily configurable TypeScript compiler settings and integration with Babel-plugins/presets.
+- **Modular Editor Integration**: Start with `Monaco Editor` for an IDE-like experience or `Shiki Editor` for simpler syntax highlighting. The architecture is designed to accommodate additional editors as needed.
+- **Real-time Transpilation**: Transpile TypeScript into ESM on-the-fly, enabling immediate feedback and iteration.
+- **Automatic Dependency Management**: Effortlessly manage imports of external libraries and their associated types, streamlining the development process.
+- **Configurable and Extensible**: Tailor the setup to your needs with configurable TypeScript compiler settings, and easily extend functionalities through a flexible API.
 
 # Table of Contents
 
 - [Installation](#installation)
 - [Components Documentation](#components-documentation)
   - [`Repl` Component](#repl-component)
-  - [`Repl.Editor` Component](#repleditor-component)
   - [`Repl.Frame` Component](#replframe-component)
   - [`Repl.TabBar` Component](#repltabbar-component)
+  - [`Repl.DevTools` Component](#repldevtools-component)
+  - [Editor Integrations](#editor-integrations)
+    - [`Repl.MonacoProvider` and `Repl.MonacoEditor` Component](#replmonaco-provider-and-replmonaco-editor)
+    - [`Repl.ShikiEditor` Component](#replshiki-editor)
 - [Hooks](#hooks)
   - [`useRuntime`](#useRuntime)
 - [Internal APIs Documentation](#internal-apis-documentation)
-  - [`ReplContext`](#replcontext)
+  - [`Runtime`](#runtime)
   - [`FileSystem`](#filesystem)
   - [`JsFile` and `CssFile`](#jsfile-and-cssfile)
   - [`FrameRegistry`](#frameregistry)
   - [`TypeRegistry`](#typeregistry)
-- [Example Overview](#example-overview)
+- [Examples](#examples)
+  - [Simple Example](#simple-example)
+  - [Advanced Example](#advanced-example)
 - [Acknowledgements](#acknowledgements)
 
 ## Installation
@@ -52,9 +55,9 @@ pnpm install `@bigmistqke/repl`
 
 ## `Repl` Component
 
-Initializes the Repl environment by dynamically loading the required libraries (`Babel`, `TypeScript` and `monaco-editor`) and any Babel presets/plugins defined in the props. Configures and instantiates [`ReplContext`](#replcontext), which sets up [`FileSystem`](#filesystem) and [`TypeRegistry`](#typeregistry). The component ensures no children are rendered until all dependencies are fully loaded and the optionally provided `onSetup`-prop has been resolved.
+Initializes the Repl environment by dynamically loading the required libraries (`Babel`, `TypeScript` and `monaco-editor`) and any Babel presets/plugins defined in the props. Configures and instantiates [`Runtime`](#runtime), which sets up [`FileSystem`](#filesystem), [`TypeRegistry`](#typeregistry) and [`FrameRegistry`](#frameregistry). The component ensures no children are rendered until all dependencies are fully loaded and the optionally provided `onSetup`-prop has been resolved.
 
-It provides access for its children to its internal [`ReplContext`](#replcontext) through the [`useRuntime`](#useRuntime)-hook.
+It provides access for its descendants to its internal [`Runtime`](#runtime) through the [`useRuntime`](#useRuntime)-hook.
 
 **Usage**
 
@@ -107,7 +110,7 @@ It provides access for its children to its internal [`ReplContext`](#replcontext
     - `alias`: Record of package-names and virtual path.
 - **mode**: Theme mode for the editor, either `light` or `dark`.
 - **onSetup**:
-  - A function that runs after the editor setup is complete. It allows access to the [`ReplContext`](#replcontext) for custom initialization scripts; for example pre-loading a local package.
+  - A function that runs after the editor setup is complete. It allows access to the [`Runtime`](#runtime) for custom initialization scripts; for example pre-loading a local package.
   - The initial file-system state will only be processed after this callback returns. **_This callback can be async._**
 - **typescript**: Configuration options for the TypeScript compiler, equal to `tsconfig.json`.
 
@@ -133,41 +136,11 @@ type ReplConfig = {
     }
   }
   mode: 'light' | 'dark'
-  onSetup: (replContext: ReplContext) => Promise<void> | void
+  onSetup: (replContext: Runtime) => Promise<void> | void
   typescript: TypescriptConfig
   actions?: {
     saveRepl?: boolean
   }
-}
-```
-
-## `Repl.Editor` Component
-
-`Repl.Editor` embeds a `monaco-editor` instance for editing files. It dynamically creates a [`File`](#file) instance in the virtual [`FileSystem`](#filesystem) based on the provided `path`-prop.
-
-**Usage**
-
-```tsx
-<Repl.Editor
-  style={{ flex: 1 }}
-  path={currentPath()}
-  onMount={editor => {
-    createEffect(on(currentPath, () => editor.focus()))
-  }}
-/>
-```
-
-**Props**
-
-- **path**: The file path in the virtual file system to bind the editor to.
-- **onMount**: Callback function that executes when the editor is mounted, with the current `monaco-editor` as argument.
-
-**Type**
-
-```tsx
-type EditorProps = ComponentProps<'div'> & {
-  path: string
-  onMount?: (editor: MonacoEditor) => void
 }
 ```
 
@@ -263,11 +236,73 @@ type TabBarProps = ComponentProps<'div'> & {
 }
 ```
 
+## Editor Integrations
+
+### `Repl.MonacoProvider` and `Repl.MonacoEditor` Component
+
+`Repl.MonacoEditor` embeds a `monaco-editor` instance for editing files. It has integrated type-support: with auto-completions and type-checking.
+
+`Repl.MonacoProvider` initializes `Monaco` and provides it to its descendates through context. This allows multiple monaco-editors to share a single `Monaco`-instance. All `Repl.MonacoEditor` should be descendants of `Repl.MonacoProvider`.
+
+**Usage**
+
+```tsx
+<Repl.MonacoProvider>
+  <Repl.MonacoEditor
+    style={{ flex: 1 }}
+    path={currentPath()}
+    onMount={editor => {
+      createEffect(on(currentPath, () => editor.focus()))
+    }}
+  />
+</Repl.MonacoProvider>
+```
+
+**Props**
+
+- **path**: The file path in the virtual file system to bind the editor to.
+- **onMount**: Callback function that executes when the editor is mounted, with the current `monaco-editor` as argument.
+
+**Type**
+
+```tsx
+type EditorProps = ComponentProps<'div'> & {
+  path: string
+  onMount?: (editor: MonacoEditor) => void
+}
+```
+
+### `Repl.ShikiEditor` Component
+
+`Repl.ShikiEditor` is a small editor powered by [`shiki`](https://github.com/shikijs/shiki), a syntax highlighting library based on [`TextMate`](https://github.com/microsoft/vscode-textmate) grammar.
+
+Unlike [`Repl.MonacoEditor`](#replmonacoprovider-and-replmonacoeditor-component), `Repl.ShikiEditor` does not provide type-checking or any type-information. It is therefore less suited for a playground, but can be useful for more minimal experiences (articles, documentation, ...).
+
+**Usage**
+
+```tsx
+<Repl.ShikiEditor style={{ flex: 1 }} path={currentPath()} />
+```
+
+**Props**
+
+- **path**: The file path in the virtual file system to bind the editor to.
+- **themes**: A light/dark shiki-theme
+
+**Type**
+
+```tsx
+type EditorProps = ComponentProps<'div'> & {
+  path: string
+  onMount?: (editor: MonacoEditor) => void
+}
+```
+
 # Hooks
 
 ## `useRuntime`
 
-Hook to interact with the internal api of `@bigmistqke/repl` through the [`ReplContext`](#replcontext). This class contains the virtual [`FileSystem`](#filesystem), [`TypeRegistry`](#typeregistry) and [`FrameRegistry`](#frameregistry).
+Hook to interact with the internal [`Runtime`](#runtime) of `@bigmistqke/repl`. This class contains the virtual [`FileSystem`](#filesystem), [`TypeRegistry`](#typeregistry) and [`FrameRegistry`](#frameregistry).
 
 This hook should be used in a descendant of [`Repl`](#repl-component), otherwise it will throw.
 
@@ -285,51 +320,125 @@ frame?.injectFile(entry)
 **Type**
 
 ```ts
-type useRuntime = (): ReplContext
+type useRuntime = (): Runtime
 ```
 
 # Internal APIs Documentation
 
-## `ReplContext`
+## Runtime
 
-The `ReplContext` class orchestrates the Repl environment, integrating libraries (`babel`, `typescript` and `monaco-editor`) and managing both the virtual [`FileSystem`](#filesystem) and type declarations through the [`TypeRegistry`](#typeregistry).
+### Overview
 
-It is accessible from userland through the [`useRuntime`](#useRuntime)-hook.
+The `Runtime` class serves as the central coordination point of the `Repl` environment, integrating essential libraries and configurations necessary for its operation. It orchestrates interactions between various subsystems, including the file system, frame registry, type management, and code transpilation. This setup ensures a cohesive and efficient development environment within the browser.
 
 **Key Methods and Properties**
 
-- **initialize()**: Prepares the [`FileSystem`](#filesystem) and [`TypeRegistry`](#typeregistry) based on the initial configuration, handling the setup of files and types.
-- **toJSON()**: Serializes the current state of the Repl into JSON format for storage or further manipulation.
-- **download(name: string)**: Allows the downloading of the Repl's current state as a JSON file, facilitating easy sharing and persistence.
-- **mapModuleDeclarations(path: string, code: string, callback: Function)**: Applies transformations to module declarations (imports/exports) within files based on the provided callback function.
+- **config**: Configurations for the runtime environment that ensure mandatory settings like 'cdn' are always included. The 'cdn' is crucial for loading external libraries such as TypeScript.
+- **fileSystem**: Manages file operations within the virtual file system. It is responsible for creating, retrieving, managing, and manipulating files and directories. See [`FileSystem`](#file-system).
+- **frameRegistry**: Handles the registration and management of iframe containers for isolated code execution. This is crucial for maintaining security and stability by sandboxing different parts of code execution. See [`FrameRegistry`](#frame-registry).
+- **typeRegistry**: Manages TypeScript type definitions within the system. This component is essential for providing accurate type information, enhancing code quality and IntelliSense in the editor. See [`TypeRegistry`](#type-registry).
+- **import**: Manages the import of modules and dependencies from URLs or package names, streamlining the integration of external libraries and frameworks. see [`Import`](#importutils).
+- **transpiler**: Utilizes Babel and Typescript to transform code according to specified typescript-config, babel-presets and -plugins.
+- **toJSON(): RuntimeState**: Serializes the current state of the REPL into a JSON format. This method is useful for saving the state of the environment for later restoration or sharing.
+- **initialize(state: RuntimeState)**: Sets up the initial state of the file system and type registry based on provided configurations. This method ensures that all necessary files and types are preloaded and ready for use.
+- **download(name = 'repl.config.json')**: Allows users to download the current state of the REPL as a JSON file. This functionality is helpful for backing up configurations or sharing them with others. The default filename is `repl.config.json`, but it can be customized.
 
 **Type**
 
 ```ts
-class ReplContext {
+class Runtime {
   constructor(
     public libs: {
-      monaco: Monaco,
       typescript: Ts,
       babel: Babel,
       babelPresets: any[],
       babelPlugins: Babel.PluginItem[]
     },
-    config: Partial<ReplConfig>,
+    config: ReplConfig,
   )
 
-  // Cdn defaults to `esm.sh`
   config: Mandatory<ReplConfig, 'cdn'>
   fileSystem: FileSystem
   frameRegistry: FrameRegistry
   typeRegistry: TypeRegistry
+  import: Import
+  transpiler: Transpiler
 
   initialize(): void
   toJSON(): ReplState
-  download(name = 'repl.config.json'): void
+  download(name: string = 'repl.config.json'): void
   mapModuleDeclarations(path: string, code: string, callback: Function): string | undefined
 }
 ```
+
+### Import
+
+The `Import` utility-class facilitates the importation of external packages into the REPL environment by managing the fetching and parsing of a `package.json` file. This utility class enables importing dependencies that are not uploaded to an esm-friendly cdn like [`esm.sh`](www.esm.sh). This class is available from `Runtime.import`
+
+#### Key Properties and Methods
+
+- **fromPackageJson(url: string)**: Asynchronously imports a package by parsing its `package.json` from the specified URL. This method oversees the entire process from fetching the `package.json`, parsing it, resolving paths, loading scripts, and integrating type definitions, ensuring all components are properly configured within the REPL environment.
+
+#### Usage Example
+
+```tsx
+const runtime = useRuntime()
+runtime.import.fromPackageJson('https://example.com/package.json')
+```
+
+This method is particularly useful for dynamically loading packages that are not pre-bundled with the application, allowing for a more flexible and expandable development environment.
+
+#### Types
+
+```typescript
+class Import {
+  packageJsonParser: PackageJsonParser
+
+  constructor(public runtime: Runtime) {}
+
+  async fromPackageJson(url: string): Promise<void> {
+    // Implementation details...
+  }
+}
+```
+
+### Transpiler
+
+The `Transpiler` utility-class within the REPL environment is designed to manipulate and transform TypeScript module declarations within the provided code. It is used internally to modify import-paths and . This class is available from `Runtime.transpiler`
+
+#### Key Properties and Methods
+
+- **transformModuleDeclarations(code: string, callback: Function)**: Transforms module declarations within a TypeScript file based on a provided callback function. This method allows for significant flexibility in modifying, adding, or removing parts of the code dynamically.
+
+#### Usage Example
+
+```tsx
+const runtime = useRuntime()
+const updatedCode = runtime.transpiler.transformModuleDeclarations(originalCode, node => {
+  if (node.moduleSpecifier.text.includes('old-path')) {
+    node.moduleSpecifier.text = 'new-path'
+  }
+})
+```
+
+#### Types
+
+```typescript
+class Transpiler {
+  constructor(private runtime: Runtime) {}
+
+  transformModuleDeclarations(
+    code: string,
+    callback: (node: ts.ImportDeclaration | ts.ExportDeclaration) => void | false,
+  ): string | undefined {
+    // Transformation logic...
+  }
+}
+```
+
+The `transformModuleDeclarations` method actively scans and modifies import/export declarations based on the criteria defined in the callback. The callback can directly modify the nodes by returning updated nodes, or it can remove nodes by returning `false`. If an exception is thrown within the callback, it halts further execution, providing a fail-safe mechanism to prevent runtime errors from propagating.
+
+The `fromPackageJson` method actively resolves paths, fetches content, and transforms module declarations to ensure that the imported modules are fully compatible and integrated into the REPL environment.
 
 ## `FileSystem`
 
@@ -349,7 +458,7 @@ The `FileSystem` API manages a virtual file system, allowing for the creation, r
 ```ts
 class FileSystem {
   constructor(
-    public repl: ReplContext,
+    public repl: Runtime,
   )
 
   alias: Record<string, string>
@@ -378,39 +487,88 @@ class FileSystem {
 }
 ```
 
-## `JsFile` and `CssFile`
+## File and Module Management in @bigmistqke/repl
 
-These classes represent JavaScript and CSS files within the virtual file system, respectively. Both extend from the abstract [`File`](#jsfile-and-cssfile) class, which provides basic file operations and model management.
+`@bigmistqke/repl` efficiently handles JavaScript and CSS files with a sophisticated module system, integrating seamlessly into the browser's execution environment.
 
-**Key Methods and Properties**
+### JsFile
 
-- **cachedModuleUrl**: A memoized URL for an ES Module, created from the file's source code.
-- **dispose(frame: Frame)**: Runs a cleanup-function to remove any side-effects from the given [`Frame`](#frame).
-  - `CssFile`: Removes stylesheet generated by the `CssFile` esm-module.
-  - `JsFile`: Executes the cleanup function attached to `window.dispose` in the provided frame. `window.dispose` is either explicitly mentioned in the code, or it is added through a babel-transformation (see `solid-repl-plugin` of `@bigmistqke/repl/plugins`).
-- **generateModuleUrl**: Generates a new URL for an ES Module based on the current source code of the file.
-- **get()**: Retrieves the content of the file.
-- **set(value: string)**: Sets the content of the file.
-- **model**: The Monaco editor model associated with the file.
-- **toJSON()**: Serializes the file's content.
+`JsFile` extends the abstract `File` class and associates with a `JsModule`, managing JavaScript files within the virtual file system.
 
-**Types**
+**Key Methods and Properties:**
 
-```ts
-abstract class File {
-  abstract model: Model
+- **module**: Linked to a `JsModule` for handling JavaScript execution specifics.
+- **get()**: Retrieves the current source code.
+- **set(value: string)**: Updates the source code.
+- **toJSON()**: Serializes the source code to a JSON-compatible string.
 
-  abstract cachedModuleUrl(): string | undefined
-  abstract generateModuleUrl(): string | undefined
-  abstract get(): string
-  abstract set(value: string): void
-  abstract toJSON(): string
-}
+**Type:**
+
+```typescript
 class JsFile extends File {
-  // Accessor to the CssFiles that are imported in the current JsFile
-  cssImports: Accessor<CssFile[]>
+  module: JsModule
+  constructor(runtime: Runtime, path: string) {}
 }
-class CssFile extends File {}
+```
+
+### CssFile
+
+`CssFile` extends from `File` and is linked to a `CssModule`, specializing in CSS file management.
+
+**Key Methods and Properties:**
+
+- **module**: Associated with a `CssModule` for CSS management.
+- **get()**: Retrieves the current CSS content.
+- **set(value: string)**: Updates the CSS content.
+- **toJSON()**: Returns the CSS content as a JSON-compatible string.
+
+**Type:**
+
+```typescript
+class CssFile extends File {
+  module: CssModule
+  constructor(path: string) {}
+}
+```
+
+### JsModule
+
+`JsModule` represents a JavaScript module within the runtime, extending the generic `Module` class. It is responsible for transpilation and execution of JavaScript code, managing dependencies, and handling CSS imports.
+
+**Key Methods and Properties:**
+
+- **generate()**: Generates a new URL for an ES Module based on current source code.
+- **url**: Retrieves the currently active module URL.
+- **dispose(frame: Frame)**: Cleans up module-specific artifacts or bindings from the provided frame.
+
+**Type:**
+
+```typescript
+class JsModule extends Module {
+  generate: Accessor<string | undefined>
+  url: string | undefined
+  constructor(runtime: Runtime, file: JsFile) {}
+}
+```
+
+### CssModule
+
+`CssModule` manages CSS content, transpiling stylesheets into executable JavaScript modules that dynamically apply styles within the document.
+
+**Key Methods and Properties:**
+
+- **generate()**: Generates executable JavaScript to apply styles dynamically.
+- **url**: Retrieves the currently active stylesheet URL.
+- **dispose(frame: Frame)**: Removes the style element from the document.
+
+**Type:**
+
+```typescript
+class CssModule extends Module {
+  generate: Accessor<string | undefined>
+  url: string | undefined
+  constructor(file: CssFile) {}
+}
 ```
 
 ## `FrameRegistry`
@@ -445,49 +603,96 @@ Represents an individual `<iframe/>` within the application. It offers method to
 class Frame {
   constructor(public window: Window)
   injectFile(file: File): HTMLScriptElement | undefined
+  dispose(file: File): void
 }
 ```
 
-## `TypeRegistry`
+## Type Registry
 
-Manages the registry of TypeScript types across the application, facilitating type definition management. It provides utilities for importing recursively TypeScript definitions from either a package-name or a url.
+The `TypeRegistry` class manages TypeScript type definitions across the application, enhancing the editor's IntelliSense by maintaining accurate type information and resolving type definitions from various sources.
 
-This is used internally to auto-import the type-definitions of external dependencies.
+### Key Methods and Properties
 
-**Key Methods and Properties**
+- **initialize(initialState: Partial<TypeRegistryState>)**: Initializes the registry with predefined types and aliases.
+- **toJSON()**: Converts the current state of the registry into a JSON object for serialization.
+- **aliasPath(packageName: string, virtualPath: string)**: Maps a package name to an aliased path.
+- **set(path: string, value: string)**: Adds or updates a type definition in the registry.
+- **has(path: string)**: Checks if a type definition is already registered.
 
-- **importTypesFromUrl(url: string, packageName?: string)**: Imports types from a specified URL, optionally associating them with a package name.
-- **importTypesFromPackageName(packageName: string)**: Imports types based on a package name, resolving to CDN paths and managing version conflicts.
-- **toJSON()**: Serializes the current state of the type registry.
+### Types
 
-**Types**
-
-```ts
-export class TypeRegistry {
-  constructor(public repl: ReplContext)
-
-  importTypesFromUrl(url: string, packageName?: string): Promise<Void>
-  importTypesFromPackageName(packageName: string): Promise<void>
-  toJSON(): {
-    sources: Record<string, string>,
-    types: Record<string, [string]>,
-  }
+```typescript
+type TypeRegistryState = {
+  alias: Record<string, string[]>
+  sources: Record<string, string>
 }
 
+class TypeRegistry {
+  sources: Record<string, string>
+  alias: Record<string, string[]>
+  import: TypeImport
+
+  constructor(runtime: Runtime) {}
+}
 ```
 
-# Example Overview
+## Type Import Utilities
+
+`TypeImport` assists the `TypeRegistry` by importing type definitions from URLs or package names, ensuring that types are only fetched and cached as needed to avoid unnecessary network requests.
+
+### Key Methods and Properties
+
+- **fromUrl(url: string, packageName?: string)**: Imports type definitions from a URL if they are not already cached.
+- **fromPackageName(packageName: string)**: Imports type definitions based on a package name by resolving it to a CDN path.
+- **initialize(initialState: Partial<TypeRegistryState>)**: Caches the initial state of type sources and aliases to prevent re-fetching.
+
+### Types
+
+```typescript
+class TypeImport {
+  private cachedUrls: Set<string>
+  private cachedPackageNames: Set<string>
+
+  constructor(runtime: Runtime, typeRegistry: TypeRegistry) {}
+
+  async fromUrl(url: string, packageName?: string): Promise<void>
+  async fromPackageName(packageName: string): Promise<void>
+}
+```
+
+# Examples
+
+## Simple Example
+
+This basic example illustrates the core functionality of setting up a TypeScript playground using @bigmistqke/repl. It demonstrates how to initialize the REPL environment, load a simple TypeScript file, and execute a function from it within the browser. This example is ideal for those new to @bigmistqke/repl, showcasing how straightforward it is to get started with creating browser-based development environments. For a more interactive experience, check out the live demo.
+
+```tsx
+<Repl
+  // Initialize repl-state
+  initialState={{
+    files: {
+      'src/index.ts': 'export const greet = (): string => "Hello, world!";',
+    },
+  }}
+  onSetup={({ fileSystem }) => {
+    // Get file from file-system
+    const file = fileSystem.get('src/index.ts')
+    // Get esm-url from file
+    const moduleUrl = file?.module.url()
+    // Import module and call its function
+    import(moduleUrl).then(module => console.log(module.greet()))
+  }}
+/>
+```
+
+## Advanced Example
 
 This application demonstrates complex interactions between various components and hooks, designed to facilitate an interactive and intuitive coding environment directly in the browser. Click [here](https://bigmistqke.github.io/repl/) for a live-demo.
 
-### Detailed Code Explanation
-
 ```tsx
-import { Repl, useRuntime } from '@bigmistqke/repl'
-import { solidReplPlugin } from '@bigmistqke/repl/plugins/solid-repl'
-import { Resizable } from 'corvu/resizable'
+import { Repl, useRuntime, JsFile } from '@bigmistqke/repl'
+import { solidReplPlugin } from '@bigmistqke/repl/plugins'
 import { createEffect, createSignal, mapArray, on, onCleanup } from 'solid-js'
-import { JsFile } from 'src/logic/file'
 import { JsxEmit } from 'typescript'
 
 // Main component defining the application structure
@@ -495,66 +700,51 @@ const App = () => {
   // State management for the current file path, initialized to 'src/index.tsx'
   const [currentPath, setCurrentPath] = createSignal('src/index.tsx')
 
-  // Button component for adding new files dynamically to the Repl environment
-  const AddButton = () => {
-    const repl = useRuntime() // Access the Repl context for filesystem operations
-
-    return (
-      <button
-        onClick={() => {
-          let index = 1
-          let path = `src/index.tsx`
-          // Check for existing files and increment index to avoid naming collisions
-          while (repl.fileSystem.has(path)) {
-            path = `src/index${index}.tsx`
-            index++
-          }
-          // Create a new file in the file system and set it as the current file
-          repl.fileSystem.create(path)
-          setCurrentPath(path)
-        }}
-      >
-        add file
-      </button>
-    )
-  }
-
   // Setting up the editor with configurations for Babel and TypeScript
   return (
     <Repl
       babel={{
-        presets: ['babel-preset-solid'], // Babel preset for SolidJS
-        plugins: [solidReplPlugin], // Plugin to enhance SolidJS support in Babel
+        // Babel preset for SolidJS
+        presets: ['babel-preset-solid'],
+        // Plugin to enhance SolidJS support in Babel
+        plugins: [solidReplPlugin],
       }}
       typescript={{
-        resolveJsonModule: true,
-        esModuleInterop: true,
-        noEmit: true, // Avoid emitting files during compilation
-        isolatedModules: true, // Ensures each file can be transpiled independently
-        skipLibCheck: true, // Skip type checking of all declaration files (*.d.ts)
-        allowSyntheticDefaultImports: true,
-        forceConsistentCasingInFileNames: true,
-        noUncheckedIndexedAccess: true,
-        paths: {}, // Additional paths for module resolution
-        jsx: JsxEmit.Preserve, // Preserve JSX to be handled by another transformer (e.g., Babel)
-        jsxImportSource: 'solid-js', // Specify the JSX factory functions import source
-        strict: true, // Enable all strict type-checking options
+        // Preserve JSX to be handled by another transformer (e.g., Babel)
+        jsx: JsxEmit.Preserve,
+        // Specify the JSX factory functions import source
+        jsxImportSource: 'solid-js',
+        // Enable all strict type-checking options
+        strict: true,
       }}
+      // Initialize repl's state
       initialState={{
         files: {
-          'src/index.css': `body { background: blue; }`, // Initial CSS content
-          'src/index.tsx': `...JSX code...`, // Initial JS/JSX content
+          'src/index.css': `body { background: blue; }`,
+          'src/index.tsx': `import { render } from "solid-js/web";
+            import "./index.css"
+            const Counter = () => {
+              const [count, setCount] = createSignal(0)
+              const increment = () => setCount(count => count + 1)
+              return <button onClick={increment}>{count()}</button>
+            }
+            render(Counter, document.body)`,
         },
       }}
-      class={styles.repl} // CSS class for styling the Repl component
+      // CSS class for styling the Repl container-component
+      class={styles.repl}
+      // Event called when all dependencies are loaded
       onSetup={async ({ fileSystem, frameRegistry }) => {
         createEffect(() => {
-          const frame = frameRegistry.get('default') // Access the default frame
+          // Access the default frame
+          const frame = frameRegistry.get('default')
           if (!frame) return
 
-          const entry = fs.get(currentPath()) // Get the current main file
+          // Get the current main file
+          const entry = fs.get(currentPath())
           if (entry instanceof JsFile) {
-            frame.injectFile(entry) // Inject the JS file into the iframe for execution
+            // Inject the JS file into the iframe for execution
+            frame.injectFile(entry)
 
             // Cleanup action to remove injected scripts on component unmount
             onCleanup(() => frame.window.dispose?.())
@@ -565,35 +755,18 @@ const App = () => {
             )
           }
         })
-        // Optional: Load external packages dynamically
-        /* await fs.importFromPackageJson('./solid-three/package.json') */
       }}
     >
-      <Resizable style={{ width: '100vw', height: '100vh', display: 'flex' }}>
-        <Resizable.Panel style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex' }}>
-            <Repl.TabBar style={{ flex: 1 }}>
-              {({ path }) => <button onClick={() => setCurrentPath(path)}>{path}</button>}
-            </Repl.TabBar>
-            <AddButton />
-          </div>
-          <Repl.Editor
-            style={{ flex: 1 }}
-            path={currentPath()}
-            onMount={editor => {
-              // Focus the editor on mount and whenever the current file path changes
-              createEffect(on(currentPath, () => editor.focus()))
-            }}
-          />
-        </Resizable.Panel>
-        <Resizable.Handle />
-        <Resizable.Panel style={{ display: 'flex' }}>
-          <Repl.Frame
-            style={{ flex: 1 }}
-            bodyStyle={{ padding: '0px', margin: '0px' }} // Style for the iframe body
-          />
-        </Resizable.Panel>
-      </Resizable>
+      <div style={{ overflow: 'hidden', display: 'flex', 'flex-direction': 'column' }}>
+        <Repl.TabBar class={{ display: 'flex' }}>
+          {({ path }) => <button onClick={() => setCurrentPath(path)}>{path}</button>}
+        </Repl.TabBar>
+        <Repl.Editor style={{ flex: 1 }} path={currentPath()} />
+      </div>
+      <Repl.Frame
+        style={{ flex: 1 }}
+        bodyStyle={{ padding: '0px', margin: '0px' }} // Style for the iframe body
+      />
     </Repl>
   )
 }

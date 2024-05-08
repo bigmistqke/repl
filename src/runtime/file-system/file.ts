@@ -2,7 +2,12 @@ import { Accessor, Setter, createSignal } from 'solid-js'
 import { Runtime } from '../runtime'
 import { CssModule, JsModule, Module } from './module'
 
+/**
+ * Represents a generic file within the virtual file system, providing methods to manipulate and access the file's source code.
+ * This is an abstract class and should be extended to handle specific types of files.
+ */
 export abstract class File {
+  /** Represents a module associated with the file, must be defined by subclasses. */
   abstract module: Module
   /** Source code of the file as a reactive state. */
   private source: Accessor<string>
@@ -41,7 +46,11 @@ export abstract class File {
   }
 }
 
+/**
+ * Represents a JavaScript file within the system. Extends the generic File class.
+ */
 export class JsFile extends File {
+  /** Module associated with the JavaScript file, handling specific JavaScript interactions and execution. */
   module: JsModule
   constructor(
     public runtime: Runtime,
@@ -52,8 +61,13 @@ export class JsFile extends File {
   }
 }
 
+/**
+ * Represents a CSS file within the system. Extends the generic File class.
+ */
 export class CssFile extends File {
+  /** Module associated with the CSS file, handling CSS-specific interactions and styling applications. */
   module: CssModule
+
   constructor(public path: string) {
     super(path)
     this.module = new CssModule(this)

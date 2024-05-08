@@ -50,19 +50,19 @@ const App: Component = () => {
   const [currentPath, setCurrentFile] = createSignal('src/index.tsx')
 
   const AddButton = () => {
-    const repl = useRuntime()
+    const runtime = useRuntime()
 
     return (
       <button
         onClick={() => {
           let index = 1
           let path = `src/index.tsx`
-          while (repl.fileSystem.has(path)) {
+          while (runtime.fileSystem.has(path)) {
             path = `src/index${index}.tsx`
             index++
           }
-          console.log('path is ', path, repl.fileSystem.has(path))
-          repl.fileSystem.create(path)
+          console.log('path is ', path, runtime.fileSystem.has(path))
+          runtime.fileSystem.create(path)
           setCurrentFile(path)
         }}
       >

@@ -19,20 +19,24 @@ import { CssFile, JsFile } from './file'
 
 export type Model = ReturnType<Monaco['editor']['createModel']>
 
+/**
+ * Abstract class representing a module that can generate and manage URLs for ES Modules based on source code.
+ */
 export abstract class Module {
   /**
-   * `generate`: () => string | undefined
-   * This function generates a new URL for an ES Module every time it is invoked, based on the current source code of the file.
-   * It does not cache the URL. Use this if you need a new reference to the File's source, for example to re-execute the module's body.
-   * @warning Cleanup the generated module-url with URL.revokeObjectURL() after usage to prevent memory leak.
+   * Generates a new URL for an ES Module based on the current source code. This URL is not cached,
+   * ensuring that each call provides a fresh module.
+   * @returns A string representing the URL, or undefined if it cannot be generated.
    */
   abstract generate: Accessor<string | undefined>
+  /**
+   * The current URL of the loaded module, if available.
+   */
   abstract url: string | undefined
 }
 
 /**
- * Represents an executable JavaScript module within the Runtime, extending the generic Module class.
- * This class handles the transpilation of a Javascript File within the virtual FileSystem.
+ * Represents a JavaScript module capable of transpilation and dynamic import handling within the system.
  */
 export class JsModule extends Module {
   generate: Accessor<string | undefined>
@@ -42,7 +46,7 @@ export class JsModule extends Module {
   /** Setter for the cssImports state. */
   private setCssImports: Setter<CssFile[]>
   /**
-   * Constructs an instance of a Javascript file
+   * Creates a JavaScript module associated with a specific JavaScript file.
    * @param runtime - Reference to the ReplContext
    * @param path - Path in virtual file system
    */
@@ -178,6 +182,10 @@ export class JsModule extends Module {
     )
   }
 
+  /**
+   * Retrieves the URL of the currently active module.
+   * @returns The URL as a string, or undefined if not available.
+   */
   get url() {
     return this.get()
   }
@@ -202,17 +210,16 @@ export class JsModule extends Module {
 }
 
 /**
- * Represents an executable CSS module within the Runtime, extending the generic Module class.
- * This class handles the transpilation of a css-stylesheet into a Javascript executable module.
+ * Represents a CSS module capable of handling style sheets within the `Runtime`. It extends the generic `Module` class
+ * and provides mechanisms to apply styles dynamically to the document.
  */
 export class CssModule extends Module {
   generate: Accessor<string | undefined>
   private get: Accessor<string | undefined>
 
   /**
-   * Constructs an instance of a CSS file.
-   * @param repl - Reference to the repl instance.
-   * @param path - Path to the CSS file within the file system.
+   * Constructs an instance of a CSS module associated with a specific CSS file.
+   * @param file The CSS file managed by this module.
    */
   constructor(private file: CssFile) {
     super()
@@ -237,15 +244,17 @@ export class CssModule extends Module {
     })
   }
 
+  /**
+   * Retrieves the URL of the currently active CSS esm-module.
+   * @returns The URL as a string, or undefined if not available.
+   */
   get url() {
     return this.get()
   }
 
   /**
-   * Removes the style element associated with this instance from the specified document frame.
-   *
-   * @param frame - The window object of the frame from which the style is to be removed.
-   *                Typically this is the window of an iframe or the main document window.
+   * Removes the style element associated with this module from the specified `Frame`.
+   * @param frame The `Frame` from which the style element is to be removed.
    */
   dispose(frame: Frame) {
     frame.contentWindow.document.getElementById(`bigmistqke-repl-${this.file.path}`)?.remove()

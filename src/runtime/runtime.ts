@@ -46,22 +46,30 @@ export type RuntimeConfig = Partial<{
 }>
 
 /**
- * Provides a centralized context for managing the REPL runtime environment.
- * This class is responsible for handling and integrating the core libraries and configurations necessary for the REPL's operation.
- * It maintains references to the file system and frame management systems, along with essential development libraries.
+ * Provides a centralized context for managing the `Repl` runtime environment.
+ * This class is responsible for handling and integrating the core libraries and configurations necessary for the `Repl`'s operation.
+ * It maintains references to the file system, frame management systems, and essential development libraries.
  */
 export class Runtime {
   /**
-   * Configuration for the file system, requiring 'cdn' as a mandatory setting.
+   * Configurations for the runtime environment. Ensures mandatory settings like 'cdn' are always included.
    */
   config: Mandatory<RuntimeConfig, 'cdn'>
+  /**
+   * Manages file operations within the virtual file system.
+   */
   fileSystem: FileSystem
+  /**
+   * Handles the registration and management of iframe containers for isolated code execution.
+   */
   frameRegistry: FrameRegistry
   /**
    * Manages TypeScript declaration-files.
    */
   typeRegistry: TypeRegistry
-
+  /**
+   * Manages TypeScript declaration files and other type-related functionality.
+   */
   transpiler: Transpiler
   import: ImportUtils
 
