@@ -2,7 +2,7 @@ import loader, { Monaco } from '@monaco-editor/loader'
 import { wireTmGrammars } from 'monaco-editor-textmate'
 import { Registry } from 'monaco-textmate'
 import { loadWASM } from 'onigasm'
-import { useRepl } from 'src'
+import { useRuntime } from 'src'
 import { CssFile } from 'src/runtime'
 // @ts-expect-error
 import onigasm from 'onigasm/lib/onigasm.wasm?url'
@@ -33,7 +33,7 @@ export const useMonaco = (): Monaco => {
 }
 
 export function ReplMonacoProvider(props: ParentProps) {
-  const repl = useRepl()
+  const runtime = useRuntime()
   // Load monaco and import all of the repl's resources
   const [resources] = createResource(() =>
     Promise.all([
@@ -90,11 +90,11 @@ export function ReplMonacoProvider(props: ParentProps) {
 
       // Set light/dark-mode of monaco-editor
       createEffect(() =>
-        monaco.editor.setTheme(repl.config.mode === 'light' ? 'vs-light-plus' : 'vs-dark-plus'),
+        monaco.editor.setTheme(runtime.config.mode === 'light' ? 'vs-light-plus' : 'vs-dark-plus'),
       )
 
       // Initialize models for all Files in FileSystem
-      Object.entries(repl.fileSystem.all()).forEach(([path, value]) => {
+      Object.entries(runtime.fileSystem.all()).forEach(([path, value]) => {
         const uri = monaco.Uri.parse(`file:///${path}`)
         if (!monaco.editor.getModel(uri)) {
           const type = value instanceof CssFile ? 'css' : 'typescript'
@@ -105,11 +105,11 @@ export function ReplMonacoProvider(props: ParentProps) {
       // Sync monaco-editor's virtual file-system with type-registry's sources
       createEffect(
         mapArray(
-          () => Object.keys(repl.typeRegistry.sources),
+          () => Object.keys(runtime.typeRegistry.sources),
           virtualPath => {
             createEffect(
               whenever(
-                () => repl.typeRegistry.sources[virtualPath],
+                () => runtime.typeRegistry.sources[virtualPath],
                 source =>
                   monaco.languages.typescript.typescriptDefaults.addExtraLib(
                     source,
@@ -125,10 +125,10 @@ export function ReplMonacoProvider(props: ParentProps) {
       createEffect(() => {
         // add virtual path to monaco's tsconfig's `path`-property
         const tsCompilerOptions = unwrap({
-          ...repl.config.typescript,
+          ...runtime.config.typescript,
           paths: {
-            ...repl.config.typescript?.paths,
-            ...repl.typeRegistry.alias,
+            ...runtime.config.typescript?.paths,
+            ...runtime.typeRegistry.alias,
           },
         })
 

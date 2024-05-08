@@ -3,7 +3,7 @@ import { ComponentProps, Show, createEffect, createResource, splitProps } from '
 import { Runtime, RuntimeConfig } from 'src/runtime'
 import { every, whenever, wrapNullableResource } from 'src/utils/conditionals'
 import { deepMerge } from 'src/utils/deep-merge'
-import { RuntimeProvider } from '../use-repl'
+import { RuntimeProvider } from '../use-runtime'
 import { ReplDevTools } from './dev-tools'
 import { ReplMonacoEditor } from './editors/monaco-editor'
 import { ReplMonacoProvider } from './editors/monaco-provider'
@@ -21,7 +21,7 @@ export type ReplProps = ComponentProps<'div'> & RuntimeConfig
  * and `TypeRegistry`. The component ensures no children are rendered until all dependencies are fully loaded and the optional
  * `onSetup`-callback has been completed.
  *
- * It provides access for its children to its internal `Runtime` through the `useRepl`-hook.
+ * It provides access for its children to its internal `Runtime` through the `useRuntime`-hook.
  *
  * @param props Configuration properties for the Repl
  * @returns A JSX element that renders the Repl environment, delaying rendering of child components until all dependencies are loaded.

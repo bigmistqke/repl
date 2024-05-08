@@ -11,11 +11,11 @@ export const RuntimeProvider = replContext.Provider
  * @throws {Error} Throws an error if the hook is used outside of a component that is a descendant of the <Repl/> component.
  *
  * @example
- * const { fs, frames } = useRepl();
+ * const { fs, frames } = useRuntime();
  * // You can now interact with the file system or frame registry.
  */
-export const useRepl = (): Runtime => {
+export const useRuntime = (): Runtime => {
   const context = useContext(replContext)
-  if (!context) throw 'useRepl should be used inside <Repl/>'
+  if (!context) throw 'useRuntime should be used inside <Repl/>'
   return context
 }

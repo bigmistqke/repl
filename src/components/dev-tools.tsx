@@ -3,7 +3,7 @@ import { ComponentProps, createEffect, createResource, onCleanup, splitProps } f
 import { Frame } from 'src/runtime'
 import { whenever } from 'src/utils/conditionals'
 import { html, javascript } from 'src/utils/object-url-literal'
-import { useRepl } from '../use-repl'
+import { useRuntime } from '../use-runtime'
 
 // @ts-expect-error
 import styles from './repl.module.css'
@@ -12,7 +12,7 @@ export type DevToolsProps = ComponentProps<'iframe'> & { name: string }
 
 export function ReplDevTools(props: DevToolsProps) {
   const [, rest] = splitProps(props, ['class'])
-  const repl = useRepl()
+  const runtime = useRuntime()
 
   const moduleUrl = html`<!doctype html>
     <html lang="en">
@@ -43,7 +43,7 @@ export function ReplDevTools(props: DevToolsProps) {
   ) as HTMLIFrameElement
 
   const [targetFrame] = createResource(
-    () => repl.frameRegistry.get(props.name),
+    () => runtime.frameRegistry.get(props.name),
     frame => {
       if (frame.contentWindow.document.readyState === 'interactive') return frame
       return new Promise<Frame>(resolve => {

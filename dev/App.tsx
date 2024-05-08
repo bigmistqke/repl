@@ -1,4 +1,4 @@
-import { Repl, useRepl } from '@bigmistqke/repl'
+import { Repl, useRuntime } from '@bigmistqke/repl'
 import { solidReplPlugin } from '@bigmistqke/repl/plugins'
 import { JsFile } from '@bigmistqke/repl/runtime'
 import { Resizable } from 'corvu/resizable'
@@ -32,7 +32,7 @@ const Frames = () => {
         onDragEnd={() => setIsDragging(false)}
         class={styles.handle}
       />
-      <Resizable.Panel
+      {/* <Resizable.Panel
         as={Repl.DevTools}
         minSize={0}
         name={'default'}
@@ -41,7 +41,7 @@ const Frames = () => {
           'pointer-events': isDragging() ? 'none' : undefined,
           overflow: 'hidden',
         }}
-      />
+      /> */}
     </Resizable.Panel>
   )
 }
@@ -50,7 +50,7 @@ const App: Component = () => {
   const [currentPath, setCurrentFile] = createSignal('src/index.tsx')
 
   const AddButton = () => {
-    const repl = useRepl()
+    const repl = useRuntime()
 
     return (
       <button
@@ -90,6 +90,7 @@ const App: Component = () => {
         jsx: /* JsxEmit.Preserve */ 1,
         jsxImportSource: 'solid-js',
         strict: true,
+        /* autoImport: false, */
       }}
       initialState={{
         files: {
@@ -158,8 +159,7 @@ render(() => <Counter />, document.body);
           </div>
           <Repl.ShikiEditor
             themes={{ dark: 'dark-plus' }}
-            style={{ flex: 1 }}
-            editorStyle={{ margin: '20px' }}
+            style={{ flex: 1, padding: '20px' }}
             path={currentPath()}
           />
         </Resizable.Panel>

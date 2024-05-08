@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { ComponentProps, For, JSXElement, splitProps } from 'solid-js'
 import { File } from 'src/runtime'
-import { useRepl } from 'src/use-repl'
+import { useRuntime } from 'src/use-runtime'
 
 // @ts-expect-error
 import styles from './repl.module.css'
@@ -21,10 +21,10 @@ export type TabBarProps = Omit<ComponentProps<'div'>, 'children'> & {
 
 export function ReplTabBar(props: TabBarProps) {
   const [, rest] = splitProps(props, ['class', 'paths', 'children'])
-  const repl = useRepl()
+  const runtime = useRuntime()
 
   const entries = () => {
-    const files = repl.fileSystem.all()
+    const files = runtime.fileSystem.all()
     if (props.paths) {
       return props.paths.map(path => [path, files[path]] as const)
     }

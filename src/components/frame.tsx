@@ -8,7 +8,7 @@ import {
   splitProps,
   type JSX,
 } from 'solid-js'
-import { useRepl } from 'src/use-repl'
+import { useRuntime } from 'src/use-runtime'
 import { html } from 'src/utils/object-url-literal'
 
 // @ts-expect-error
@@ -29,7 +29,7 @@ export type FrameProps = ComponentProps<'iframe'> & {
 export function ReplFrame(props: FrameProps) {
   const [, rest] = splitProps(props, ['class', 'bodyStyle', 'name'])
   const config = mergeProps({ name: 'default' }, props)
-  const repl = useRepl()
+  const runtime = useRuntime()
 
   const iframe = (
     <iframe
@@ -53,11 +53,11 @@ export function ReplFrame(props: FrameProps) {
     }
 
     const onReady = () => {
-      if (repl.frameRegistry.has(config.name)) {
+      if (runtime.frameRegistry.has(config.name)) {
         console.warn(`A frame with the same name already exist: ${config.name}`)
         return
       }
-      repl.frameRegistry.add(config.name, iframe.contentWindow!)
+      runtime.frameRegistry.add(config.name, iframe.contentWindow!)
       iframe.contentWindow?.removeEventListener('DOMContentLoaded', onReady)
     }
 
@@ -65,7 +65,7 @@ export function ReplFrame(props: FrameProps) {
 
     onCleanup(() => {
       console.log('cleanup!')
-      repl.frameRegistry.delete(config.name)
+      runtime.frameRegistry.delete(config.name)
     })
 
     createEffect(() => {

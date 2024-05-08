@@ -10,7 +10,6 @@ import {
   Index,
   Show,
   Suspense,
-  createEffect,
   createMemo,
   createResource,
   createSignal,
@@ -21,7 +20,7 @@ import {
   type JSX,
 } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
-import { useRepl } from 'src/use-repl'
+import { useRuntime } from 'src/use-runtime'
 import { whenever } from 'src/utils/conditionals'
 // @ts-expect-error
 import styles from './shiki-editor.module.css'
@@ -42,20 +41,18 @@ export function ReplShikiEditor(
   },
 ) {
   const [, rest] = splitProps(props, ['style', 'themes', 'editorStyle', 'editorClass'])
+  const startTransition = useTransition()[1]
+  const runtime = useRuntime()
+
   const themes = createMemo(() => ({ light: 'min-light', dark: 'min-dark', ...props.themes }))
-  const currentTheme = () => themes()[repl.config.mode || 'dark']
-  const repl = useRepl()
-  const [pending, start] = useTransition()
-
-  createEffect(() => console.log('pending', pending()))
-
-  const [characterWidth, setCharacterWidth] = createSignal<number>(0)
+  const currentTheme = () => themes()[runtime.config.mode || 'dark']
 
   // Get or create file
   const file = createMemo(
-    () => repl.fileSystem.get(props.path) || repl.fileSystem.create(props.path),
+    () => runtime.fileSystem.get(props.path) || runtime.fileSystem.create(props.path),
   )
-  // Get source
+
+  // Get source of file
   const source = whenever(file, file => file.get())
 
   // Transform source to hast (hypertext abstract syntax tree)
@@ -65,7 +62,10 @@ export function ReplShikiEditor(
     { storage: createDeepSignal },
   )
 
-  // Find the longest line-size whenever source changes
+  // Signal referring to the width of a single character
+  const [characterWidth, setCharacterWidth] = createSignal<number>(0)
+
+  // Get the longest line-size whenever source changes
   const lineSize = createMemo(
     whenever(
       source,
@@ -98,7 +98,7 @@ export function ReplShikiEditor(
         }),
   )
 
-  const updateSource = (value: string) => start(() => file().set(value))
+  const updateSource = (value: string) => startTransition(() => file().set(value))
 
   return (
     <div
@@ -107,13 +107,11 @@ export function ReplShikiEditor(
       {...rest}
     >
       <div class={styles['inner-container']}>
-        <div class={clsx(styles.output, props.editorClass)} style={props.editorStyle}>
-          <Suspense>
-            <Show when={hast()}>
-              {hast => <Index each={hast().children}>{child => <HastNode node={child()} />}</Index>}
-            </Show>
-          </Suspense>
-        </div>
+        <Suspense>
+          <div class={clsx(styles.output, props.editorClass)} style={props.editorStyle}>
+            <Index each={hast()?.children}>{child => <HastNode node={child()} />}</Index>
+          </div>
+        </Suspense>
         <textarea
           class={clsx(styles.input, props.editorClass)}
           onInput={e => updateSource(e.currentTarget.value)}

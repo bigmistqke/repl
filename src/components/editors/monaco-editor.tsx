@@ -9,7 +9,7 @@ import {
   untrack,
 } from 'solid-js'
 import { CssFile } from 'src/runtime'
-import { useRepl } from 'src/use-repl'
+import { useRuntime } from 'src/use-runtime'
 import { whenever } from 'src/utils/conditionals'
 import { useMonaco } from './monaco-provider'
 
@@ -32,7 +32,7 @@ export type EditorProps = Omit<ComponentProps<'div'>, 'ref'> & {
 
 export function ReplMonacoEditor(props: EditorProps) {
   const [, rest] = splitProps(props, ['class'])
-  const repl = useRepl()
+  const runtime = useRuntime()
   const monaco = useMonaco()
 
   // Initialize html-element of monaco-editor
@@ -50,7 +50,7 @@ export function ReplMonacoEditor(props: EditorProps) {
 
   // Get or create file
   const file = createMemo(
-    () => repl.fileSystem.get(props.path) || repl.fileSystem.create(props.path),
+    () => runtime.fileSystem.get(props.path) || runtime.fileSystem.create(props.path),
   )
 
   const model = createMemo(
@@ -81,7 +81,7 @@ export function ReplMonacoEditor(props: EditorProps) {
 
       // Add action to context-menu of monaco-editor
       createEffect(() => {
-        if (repl.config.actions?.saveRepl === false) return
+        if (runtime.config.actions?.saveRepl === false) return
         const { dispose } = editor.addAction({
           id: 'save-repl',
           label: 'Save Repl',
@@ -89,7 +89,7 @@ export function ReplMonacoEditor(props: EditorProps) {
           precondition: undefined,
           keybindingContext: undefined,
           contextMenuGroupId: 'repl',
-          run: () => repl.download(),
+          run: () => runtime.download(),
         })
         onCleanup(() => dispose())
       })

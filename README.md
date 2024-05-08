@@ -28,7 +28,7 @@ https://github.com/bigmistqke/repl/assets/10504064/50195cb6-f3aa-4dea-a40a-d04f2
   - [`Repl.Frame` Component](#replframe-component)
   - [`Repl.TabBar` Component](#repltabbar-component)
 - [Hooks](#hooks)
-  - [`useRepl`](#userepl)
+  - [`useRuntime`](#useRuntime)
 - [Internal APIs Documentation](#internal-apis-documentation)
   - [`ReplContext`](#replcontext)
   - [`FileSystem`](#filesystem)
@@ -54,7 +54,7 @@ pnpm install `@bigmistqke/repl`
 
 Initializes the Repl environment by dynamically loading the required libraries (`Babel`, `TypeScript` and `monaco-editor`) and any Babel presets/plugins defined in the props. Configures and instantiates [`ReplContext`](#replcontext), which sets up [`FileSystem`](#filesystem) and [`TypeRegistry`](#typeregistry). The component ensures no children are rendered until all dependencies are fully loaded and the optionally provided `onSetup`-prop has been resolved.
 
-It provides access for its children to its internal [`ReplContext`](#replcontext) through the [`useRepl`](#userepl)-hook.
+It provides access for its children to its internal [`ReplContext`](#replcontext) through the [`useRuntime`](#useRuntime)-hook.
 
 **Usage**
 
@@ -265,7 +265,7 @@ type TabBarProps = ComponentProps<'div'> & {
 
 # Hooks
 
-## `useRepl`
+## `useRuntime`
 
 Hook to interact with the internal api of `@bigmistqke/repl` through the [`ReplContext`](#replcontext). This class contains the virtual [`FileSystem`](#filesystem), [`TypeRegistry`](#typeregistry) and [`FrameRegistry`](#frameregistry).
 
@@ -274,7 +274,7 @@ This hook should be used in a descendant of [`Repl`](#repl-component), otherwise
 **Usage**
 
 ```ts
-const { frameRegistry, fileSystem } = useRepl()
+const { frameRegistry, fileSystem } = useRuntime()
 
 const frame = frameRegistry.get('default')
 const entry = fileSystem.get('src/index.ts')
@@ -285,7 +285,7 @@ frame?.injectFile(entry)
 **Type**
 
 ```ts
-type useRepl = (): ReplContext
+type useRuntime = (): ReplContext
 ```
 
 # Internal APIs Documentation
@@ -294,7 +294,7 @@ type useRepl = (): ReplContext
 
 The `ReplContext` class orchestrates the Repl environment, integrating libraries (`babel`, `typescript` and `monaco-editor`) and managing both the virtual [`FileSystem`](#filesystem) and type declarations through the [`TypeRegistry`](#typeregistry).
 
-It is accessible from userland through the [`useRepl`](#userepl)-hook.
+It is accessible from userland through the [`useRuntime`](#useRuntime)-hook.
 
 **Key Methods and Properties**
 
@@ -483,7 +483,7 @@ This application demonstrates complex interactions between various components an
 ### Detailed Code Explanation
 
 ```tsx
-import { Repl, useRepl } from '@bigmistqke/repl'
+import { Repl, useRuntime } from '@bigmistqke/repl'
 import { solidReplPlugin } from '@bigmistqke/repl/plugins/solid-repl'
 import { Resizable } from 'corvu/resizable'
 import { createEffect, createSignal, mapArray, on, onCleanup } from 'solid-js'
@@ -497,7 +497,7 @@ const App = () => {
 
   // Button component for adding new files dynamically to the Repl environment
   const AddButton = () => {
-    const repl = useRepl() // Access the Repl context for filesystem operations
+    const repl = useRuntime() // Access the Repl context for filesystem operations
 
     return (
       <button
