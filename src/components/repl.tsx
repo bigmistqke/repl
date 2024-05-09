@@ -71,7 +71,7 @@ export function Repl(props: ReplProps) {
             async preset => (await import(`${config.cdn}/${preset}`)).default,
           ),
         )
-      : undefined,
+      : [],
   )
   const [babelPlugins] = createResource(() =>
     config.babel?.plugins
@@ -83,18 +83,13 @@ export function Repl(props: ReplProps) {
             return plugin
           }),
         )
-      : undefined,
+      : [],
   )
 
   // Once all resources are loaded, instantiate and initialize ReplContext
   const [runtime] = createResource(
-    every(
-      typescript,
-      wrapNullableResource(babel),
-      wrapNullableResource(babelPlugins),
-      wrapNullableResource(babelPresets),
-    ),
-    async ([typescript, [babel], [babelPlugins], [babelPresets]]) => {
+    every(typescript, wrapNullableResource(babel), babelPlugins, babelPresets),
+    async ([typescript, [babel], babelPlugins, babelPresets]) => {
       const repl = new Runtime(
         {
           typescript,

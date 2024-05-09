@@ -64,13 +64,16 @@ export class Runtime {
    */
   frameRegistry: FrameRegistry
   /**
-   * Manages TypeScript declaration-files.
+   * Manages TypeScript declaration files and other type-related functionality.
    */
   typeRegistry: TypeRegistry
   /**
-   * Manages TypeScript declaration files and other type-related functionality.
+   * Utility class for transpiling code with configured Babel presets and plugins.
    */
   transpiler: Transpiler
+  /**
+   * Utility class for handling imports from URLS pointing to non-esm packages.
+   */
   import: ImportUtils
 
   constructor(
@@ -81,9 +84,9 @@ export class Runtime {
       /** The Babel library used for JavaScript code transformation. */
       babel: typeof Babel | undefined
       /** Babel presets used for transpiling files. */
-      babelPresets: any[] | undefined
+      babelPresets: any[]
       /** Babel plugins used for transpiling files. */
-      babelPlugins: babel.PluginItem[] | undefined
+      babelPlugins: babel.PluginItem[]
     },
     /** Configuration settings for the file system within the REPL runtime, used to initialize the FileSystem instance. */
     config: RuntimeConfig,

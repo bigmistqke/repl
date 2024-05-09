@@ -21,7 +21,7 @@ import {
 } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { useRuntime } from 'src/use-runtime'
-import { whenever } from 'src/utils/conditionals'
+import { when, whenever } from 'src/utils/conditionals'
 // @ts-expect-error
 import styles from './shiki-editor.module.css'
 
@@ -103,7 +103,7 @@ export function ReplShikiEditor(props: {
     <Suspense>
       <div class={clsx(styles.editor, props.class)} style={{ ...themeStyles(), ...props.style }}>
         <div class={styles.container}>
-          <Show when={hast()?.children}>
+          <Show when={when(hast, hast => 'children' in hast && hast.children)}>
             {children => <Index each={children()}>{child => <HastNode node={child()} />}</Index>}
           </Show>
           <textarea
