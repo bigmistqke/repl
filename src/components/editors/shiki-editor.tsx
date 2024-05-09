@@ -7,6 +7,7 @@ import {
   type CodeOptionsSingleTheme,
 } from 'shiki'
 import {
+  ComponentProps,
   Index,
   Show,
   Suspense,
@@ -15,6 +16,7 @@ import {
   createResource,
   createSignal,
   onCleanup,
+  splitProps,
   untrack,
   useTransition,
   type JSX,
@@ -28,15 +30,17 @@ import styles from './shiki-editor.module.css'
 type Root = Awaited<ReturnType<typeof codeToHast>>
 type HastNode = Root['children'][number]
 
-export function ReplShikiEditor(props: {
-  class?: string
-  path: string
-  style?: JSX.CSSProperties
-  themes?: {
-    light?: CodeOptionsSingleTheme<BundledTheme>['theme']
-    dark?: CodeOptionsSingleTheme<BundledTheme>['theme']
-  }
-}) {
+export function ReplShikiEditor(
+  props: Omit<ComponentProps<'div'>, 'style'> & {
+    path: string
+    style?: JSX.CSSProperties
+    themes?: {
+      light?: CodeOptionsSingleTheme<BundledTheme>['theme']
+      dark?: CodeOptionsSingleTheme<BundledTheme>['theme']
+    }
+  },
+) {
+  const [, rest] = splitProps(props, ['path', 'themes', 'class', 'style'])
   const startTransition = useTransition()[1]
   const runtime = useRuntime()
 
@@ -101,7 +105,11 @@ export function ReplShikiEditor(props: {
 
   return (
     <Suspense>
-      <div class={clsx(styles.editor, props.class)} style={{ ...themeStyles(), ...props.style }}>
+      <div
+        class={clsx(styles.editor, props.class)}
+        style={{ ...themeStyles(), ...props.style }}
+        {...rest}
+      >
         <div class={styles.container}>
           <Show when={when(hast, hast => 'children' in hast && hast.children)}>
             {children => <Index each={children()}>{child => <HastNode node={child()} />}</Index>}
@@ -110,7 +118,7 @@ export function ReplShikiEditor(props: {
             class={styles.input}
             onInput={onUpdate}
             spellcheck={false}
-            style={{ width: lineSize() * characterWidth() + 'px' }}
+            style={{ 'min-width': lineSize() * characterWidth() + 'px' }}
             value={file().get()}
           />
           <Character onResize={setCharacterWidth} />
