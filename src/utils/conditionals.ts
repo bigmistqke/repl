@@ -20,7 +20,7 @@ export function when<
 >(
   accessor: TAccessor,
   callback: (value: TValues) => TResult,
-  fallback: () => TFallbackResult,
+  fallback?: () => TFallbackResult,
 ): TResult | TFallbackResult
 
 export function when<

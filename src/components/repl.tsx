@@ -68,7 +68,7 @@ export function Repl(props: ReplProps) {
     config.babel?.presets
       ? Promise.all(
           config.babel.presets.map(
-            async preset => (await import(`${config.cdn}/${preset}`)).default,
+            async preset => (await import(/* @vite-ignore */ `${config.cdn}/${preset}`)).default,
           ),
         )
       : [],
@@ -78,7 +78,7 @@ export function Repl(props: ReplProps) {
       ? Promise.all(
           config.babel.plugins.map(async plugin => {
             if (typeof plugin === 'string') {
-              return (await import(`${config.cdn}/${plugin}`)).default
+              return (await import(/* @vite-ignore */ `${config.cdn}/${plugin}`)).default
             }
             return plugin
           }),
