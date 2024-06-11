@@ -1,8 +1,11 @@
 {
   "compilerOptions": {
+    "rootDir": "src",
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
     "esModuleInterop": true,
+    "declaration": true,
+    "emitDeclarationOnly": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "jsx": "preserve",
@@ -10,17 +13,15 @@
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "module": "ESNext",
     "moduleResolution": "node",
-    "noEmit": true,
     "noUncheckedIndexedAccess": true,
+    "outDir": "dist",
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "sourceMap": true,
     "strict": true,
     "target": "ESNext",
     "paths": {
-      "@bigmistqke/repl": ["./src"],
-      "@bigmistqke/repl/plugins": ["./src/plugins"],
-      "@bigmistqke/repl/runtime": ["./src/runtime"]
+      "@bigmistqke/repl": ["./src"]
     }
   },
   "exclude": ["node_modules", "dev/public/distdist", "./dev"]

@@ -19,47 +19,13 @@
   "private": false,
   "sideEffects": false,
   "type": "module",
-  "main": "./dist/index/index.js",
-  "module": "./dist/index/index.js",
-  "types": "./dist/index/index.d.ts",
-  "browser": {},
-  "exports": {
-    ".": {
-      "development": {
-        "import": {
-          "types": "./dist/index/index.d.ts",
-          "default": "./dist/index/dev.js"
-        }
-      },
-      "import": {
-        "types": "./dist/index/index.d.ts",
-        "default": "./dist/index/index.js"
-      }
-    },
-    "./plugins": {
-      "development": {
-        "import": {
-          "types": "./dist/plugins/index.d.ts",
-          "default": "./dist/plugins/dev.js"
-        }
-      },
-      "import": {
-        "types": "./dist/plugins/index.d.ts",
-        "default": "./dist/plugins/index.js"
-      }
-    }
-  },
-  "typesVersions": {
-    "*": {
-      "plugins": [
-        "./dist/plugins/index.d.ts"
-      ]
-    }
-  },
+  "main": "./dist/index.cjs.js",
+  "module": "./dist/index.es.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "dev": "vite serve dev",
     "build:dev": "vite build dev",
-    "build": "tsup",
+    "build": "vite build .",
     "test": "concurrently pnpm:test:*",
     "test:client": "vitest",
     "test:ssr": "pnpm run test:client --mode ssr",
@@ -71,40 +37,43 @@
     "update-deps": "pnpm up -Li"
   },
   "dependencies": {
+    "@types/babel__standalone": "^7.1.7",
     "@babel/standalone": "^7.24.4",
     "@monaco-editor/loader": "^1.4.0",
+    "@solid-primitives/list": "^0.0.100",
     "@solid-primitives/resource": "^0.1.2",
     "@solid-primitives/scheduled": "^1.4.3",
     "clsx": "^2.1.0",
-    "fflate": "^0.8.2",
+    "colord": "^2.9.3",
     "monaco-editor-textmate": "^4.0.0",
     "monaco-textmate": "^3.0.1",
     "onigasm": "^2.2.5",
-    "shiki": "^1.4.0",
     "typescript": "^5.1.6"
   },
   "peerDependencies": {
+    "shiki": "^1.4.0",
     "solid-js": "^1.6.0"
   },
   "devDependencies": {
     "@babel/plugin-syntax-import-attributes": "^7.24.1",
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
-    "@types/babel__standalone": "^7.1.7",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-wasm": "^6.2.2",
     "@typescript-eslint/eslint-plugin": "^6.1.0",
     "@typescript-eslint/parser": "^6.1.0",
     "concurrently": "^8.2.0",
     "corvu": "^0.5.1",
-    "esbuild": "^0.18.15",
-    "esbuild-plugin-solid": "^0.5.0",
     "eslint": "^8.45.0",
     "eslint-plugin-eslint-comments": "^3.2.0",
     "eslint-plugin-no-only-tests": "^3.1.0",
     "jsdom": "^22.1.0",
     "prettier": "3.0.0",
-    "tsup": "^7.1.0",
-    "tsup-preset-solid": "^2.0.1",
+    "rollup-plugin-dts": "^6.1.1",
+    "style-loader": "^4.0.0",
     "typescript": "^5.1.6",
     "vite": "^4.4.6",
+    "vite-plugin-dts-bundle-generator": "^2.0.4",
+    "vite-plugin-lib-inject-css": "^2.1.1",
     "vite-plugin-solid": "^2.7.0",
     "vite-tsconfig-paths": "^4.3.2",
     "vitest": "^0.33.0"
@@ -116,9 +85,20 @@
     "typescript",
     "monaco"
   ],
-  "packageManager": "pnpm@8.6.0",
   "engines": {
     "node": ">=18",
     "pnpm": ">=8.6.0"
+  },
+  "browser": {},
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.es.js"
+      }
+    }
+  },
+  "typesVersions": {
+    "*": {}
   }
 }
