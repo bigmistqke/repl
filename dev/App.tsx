@@ -1,6 +1,4 @@
-import { Repl, useRuntime } from '@bigmistqke/repl'
-import { solidReplPlugin } from '@bigmistqke/repl/plugins'
-import { JsFile } from '@bigmistqke/repl/runtime'
+import { JsFile, Repl, solidReplPlugin, useRuntime } from '@bigmistqke/repl'
 import { Resizable } from 'corvu/resizable'
 import { createEffect, createSignal, mapArray, onCleanup, type Component } from 'solid-js'
 
