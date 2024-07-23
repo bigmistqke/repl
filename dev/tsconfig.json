@@ -1,7 +1,12 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "paths": {
+      "@bigmistqke/repl": ["./src"],
+      "@bigmistqke/repl/plugins": ["./src/plugins"],
+      "@bigmistqke/repl/service-worker": ["./src/service-worker"]
+    }
   },
   "exclude": ["node_modules", "dist"]
 }

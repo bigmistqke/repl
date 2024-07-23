@@ -9,16 +9,18 @@ export default defineConfig({
   plugins: [
     tsconfigPaths(),
     solid(),
+    libInjectCss(),
     dtsBundleGenerator(
       {
         fileName: name => `${name}.d.ts`,
+        libraries: {
+          importedLibraries: ['shiki', 'solid-js'],
+        },
       },
       {
-        // compilation options
         preferredConfigPath: './tsconfig.json',
       },
     ),
-    libInjectCss(),
   ],
   server: { port: 3000 },
   build: {
@@ -36,6 +38,7 @@ export default defineConfig({
       output: {
         globals: {
           'solid-js': 'SolidJS',
+          shiki: 'shiki',
         },
       },
     },
