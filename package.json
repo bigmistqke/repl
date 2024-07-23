@@ -27,6 +27,7 @@
     "serve:dev": "vite preview dev",
     "build:dev": "vite build dev",
     "build": "vite build .",
+    "optimize": "vite optimize",
     "test": "concurrently pnpm:test:*",
     "test:client": "vitest",
     "test:ssr": "pnpm run test:client --mode ssr",
@@ -49,6 +50,7 @@
     "monaco-editor-textmate": "^4.0.0",
     "monaco-textmate": "^3.0.1",
     "onigasm": "^2.2.5",
+    "register-service-worker": "^1.7.2",
     "solid-shiki-textarea": "^0.1.5",
     "typescript": "^5.1.6"
   },
@@ -107,6 +109,16 @@
       "require": {
         "types": "./dist/plugins.d.ts",
         "default": "./dist/plugins.cjs.js"
+      }
+    },
+    "./service-worker": {
+      "import": {
+        "types": "./dist/service-worker.d.ts",
+        "default": "./dist/service-worker.js"
+      },
+      "require": {
+        "types": "./dist/service-worker.d.ts",
+        "default": "./dist/service-worker.cjs.js"
       }
     }
   },

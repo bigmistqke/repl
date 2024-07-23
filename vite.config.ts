@@ -37,7 +37,7 @@ export default defineConfig({
       external: ['solid-js', 'shiki'],
       output: {
         globals: {
-          'solid-js': 'SolidJS',
+          'solid-js': 'solidjs',
           shiki: 'shiki',
         },
       },

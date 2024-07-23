@@ -149,7 +149,9 @@ export class JsModule extends Module {
               else if (!isUrl(modulePath)) {
                 // We transform this package-name to a cdn-url.
                 specifier.text = `${runtime.config.cdn}/${modulePath}`
-                runtime.typeRegistry.import.fromPackageName(modulePath)
+                if (runtime.config.importExternalTypes) {
+                  runtime.typeRegistry.import.fromPackageName(modulePath)
+                }
               }
             }),
           )

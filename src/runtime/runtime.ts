@@ -25,6 +25,8 @@ export type TypescriptConfig = Parameters<
 
 export type BabelConfig = Partial<{ presets: string[]; plugins: (string | babel.PluginItem)[] }>
 export type RuntimeConfig = Partial<{
+  /** Import external types from the cdn. */
+  importExternalTypes?: boolean
   /** Configuration options for Babel, used for code transformation. */
   babel: BabelConfig
   /** The CDN URL used to load TypeScript and other external libraries. */

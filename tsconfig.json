@@ -22,7 +22,9 @@
     "strict": true,
     "target": "ESNext",
     "paths": {
-      "src": ["./src"]
+      "src": ["./src"],
+      "@bigmistqke/repl": ["./src"],
+      "@bigmistqke/repl/plugins": ["./src/plugins"]
     }
   },
   "include": ["src"]
