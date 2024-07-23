@@ -22,12 +22,12 @@ https://github.com/bigmistqke/repl/assets/10504064/50195cb6-f3aa-4dea-a40a-d04f2
 - [Installation](#installation)
 - [Components Documentation](#components-documentation)
   - [`Repl` Component](#repl-component)
-  - [`Repl.Frame` Component](#replframe-component)
-  - [`Repl.TabBar` Component](#repltabbar-component)
-  - [`Repl.DevTools` Component](#repldevtools-component)
+  - [`Frame` Component](#replframe-component)
+  - [`TabBar` Component](#repltabbar-component)
+  - [`DevTools` Component](#repldevtools-component)
   - [Editor Integrations](#editor-integrations)
-    - [`Repl.MonacoProvider` and `Repl.MonacoEditor` Component](#replmonacoprovider-and-replmonacoeditor-component)
-    - [`Repl.ShikiEditor` Component](#replshikieditor-component)
+    - [`MonacoProvider` and `MonacoEditor` Component](#replmonacoprovider-and-replmonacoeditor-component)
+    - [`ShikiEditor` Component](#replshikieditor-component)
 - [Hooks](#hooks)
   - [`useRuntime`](#useRuntime)
 - [Internal APIs Documentation](#internal-apis-documentation)
@@ -153,14 +153,14 @@ type ReplConfig = {
 }
 ```
 
-## `Repl.Frame` Component
+## `Frame` Component
 
 Manages individual `<iframe/>` containers for isolated execution environments.
 
 **Usage**
 
 ```tsx
-<Repl.Frame
+<Frame
   style={{ flex: 1 }}
   name="frame-2"
   bodyStyle={{
@@ -185,23 +185,23 @@ type FrameProps = ComponentProps<'iframe'> &
   }>
 ```
 
-## `Repl.DevTools` Component
+## `DevTools` Component
 
-`Repl.DevTools` embeds an iframe to provide a custom Chrome DevTools interface for debugging purposes, provided by [`chii`](https://github.com/liriliri/chii) and [`chobitus`](https://github.com/liriliri/chobitsu).
+`DevTools` embeds an iframe to provide a custom Chrome DevTools interface for debugging purposes, provided by [`chii`](https://github.com/liriliri/chii) and [`chobitus`](https://github.com/liriliri/chobitsu).
 
-This component connects to a [`Repl.Frame`](#replframe-component) with the same `name` prop to display and interact with the frame's runtime environment, including console outputs, DOM inspections, and network activities. If no `name` is provided it will default to `default`.
+This component connects to a [`Frame`](#replframe-component) with the same `name` prop to display and interact with the frame's runtime environment, including console outputs, DOM inspections, and network activities. If no `name` is provided it will default to `default`.
 
 **Usage**
 
 ```tsx
 // To debug a frame named 'example':
-<Repl.Frame name="example" />
-<Repl.DevTools name="example" />
+<Frame name="example" />
+<DevTools name="example" />
 ```
 
 **Props**
 
-- **props**: Props include standard iframe attributes and a unique `name` used to link the DevTools with a specific `Repl.Frame`.
+- **props**: Props include standard iframe attributes and a unique `name` used to link the DevTools with a specific `Frame`.
 
 **Type**
 
@@ -211,26 +211,26 @@ type ReplDevToolsProps = ComponentProps<'iframe'> & { name: string }
 
 **Returns**
 
-- Returns the iframe element that hosts the embedded Chrome DevTools, connected to the specified `Repl.Frame`.
+- Returns the iframe element that hosts the embedded Chrome DevTools, connected to the specified `Frame`.
 
 **Example**
 
 ```tsx
 // Example usage to integrate the DevTools with a named frame:
-<Repl.Frame name="exampleFrame" />
-<Repl.DevTools name="exampleFrame" />
+<Frame name="exampleFrame" />
+<DevTools name="exampleFrame" />
 ```
 
-## `Repl.TabBar` Component
+## `TabBar` Component
 
 A minimal wrapper around `<For/>` to assist with navigating between different files opened in the editor.
 
 **Usage**
 
 ```tsx
-<Repl.TabBar style={{ flex: 1 }}>
+<TabBar style={{ flex: 1 }}>
   {({ path }) => <button onClick={() => setCurrentPath(path)}>{path}</button>}
-</Repl.TabBar>
+</TabBar>
 ```
 
 **Props**
@@ -249,24 +249,24 @@ type TabBarProps = ComponentProps<'div'> & {
 
 ## Editor Integrations
 
-### `Repl.MonacoProvider` and `Repl.MonacoEditor` Component
+### `MonacoProvider` and `MonacoEditor` Component
 
-`Repl.MonacoEditor` embeds a [`monaco-editor`](https://microsoft.github.io/monaco-editor/) instance for editing files. This editor supports integrated typing assistance, including auto-completions and type-checking, and offers the standard keybindings expected in code editors.
+`MonacoEditor` embeds a [`monaco-editor`](https://microsoft.github.io/monaco-editor/) instance for editing files. This editor supports integrated typing assistance, including auto-completions and type-checking, and offers the standard keybindings expected in code editors.
 
-The `Repl.MonacoProvider` component is responsible for initializing Monaco and making it available to descendant components via context. This setup enables multiple instances of monaco-editor to utilize a single Monaco instance. It is essential that all `Repl.MonacoEditor` components are nested within a `Repl.MonacoProvider`.
+The `MonacoProvider` component is responsible for initializing Monaco and making it available to descendant components via context. This setup enables multiple instances of monaco-editor to utilize a single Monaco instance. It is essential that all `MonacoEditor` components are nested within a `MonacoProvider`.
 
 **Usage**
 
 ```tsx
-<Repl.MonacoProvider>
-  <Repl.MonacoEditor
+<MonacoProvider>
+  <MonacoEditor
     style={{ flex: 1 }}
     path={currentPath()}
     onMount={editor => {
       createEffect(on(currentPath, () => editor.focus()))
     }}
   />
-</Repl.MonacoProvider>
+</MonacoProvider>
 ```
 
 **Props**
@@ -283,16 +283,16 @@ type EditorProps = ComponentProps<'div'> & {
 }
 ```
 
-### `Repl.ShikiEditor` Component
+### `ShikiEditor` Component
 
-`Repl.ShikiEditor` is a tiny, minimal text editor built on the [`shiki`](https://github.com/shikijs/shiki) syntax highlighting library, which utilizes [`TextMate`](https://github.com/microsoft/vscode-textmate) grammar. Internally, it is composed of a standard `<textarea/>` with syntax-highlighted HTML rendered underneath.
+`ShikiEditor` is a tiny, minimal text editor built on the [`shiki`](https://github.com/shikijs/shiki) syntax highlighting library, which utilizes [`TextMate`](https://github.com/microsoft/vscode-textmate) grammar. Internally, it is composed of a standard `<textarea/>` with syntax-highlighted HTML rendered underneath.
 
-In contrast to the [`Repl.MonacoEditor`](#replmonacoprovider-and-replmonacoeditor-component), `Repl.ShikiEditor` lacks type-checking and type-information capabilities, and it does not modify any existing key-bindings. As such, it is not ideal for full featured playgrounds, but is well-suited for simpler applications such as articles and documentation.
+In contrast to the [`MonacoEditor`](#replmonacoprovider-and-replmonacoeditor-component), `ShikiEditor` lacks type-checking and type-information capabilities, and it does not modify any existing key-bindings. As such, it is not ideal for full featured playgrounds, but is well-suited for simpler applications such as articles and documentation.
 
 **Usage**
 
 ```tsx
-<Repl.ShikiEditor style={{ flex: 1 }} path={currentPath()} />
+<ShikiEditor style={{ flex: 1 }} path={currentPath()} />
 ```
 
 **Props**
@@ -605,7 +605,7 @@ class FrameRegistry {
 
 ### `Frame`
 
-Represents an individual `<iframe/>` within the application. It offers method to inject and execute [`JsFile`](#jsfile) and [`CssFile`](#cssfile) into its `Window`. Creation of `Frame` is done internally by the [`Repl.Frame`](#replframe-component) component.
+Represents an individual `<iframe/>` within the application. It offers method to inject and execute [`JsFile`](#jsfile) and [`CssFile`](#cssfile) into its `Window`. Creation of `Frame` is done internally by the [`Frame`](#replframe-component) component.
 
 **Key Methods and Properties**
 
@@ -770,12 +770,12 @@ const App = () => {
       }}
     >
       <div style={{ overflow: 'hidden', display: 'flex', 'flex-direction': 'column' }}>
-        <Repl.TabBar class={{ display: 'flex' }}>
+        <TabBar class={{ display: 'flex' }}>
           {({ path }) => <button onClick={() => setCurrentPath(path)}>{path}</button>}
-        </Repl.TabBar>
-        <Repl.Editor style={{ flex: 1 }} path={currentPath()} />
+        </TabBar>
+        <Editor style={{ flex: 1 }} path={currentPath()} />
       </div>
-      <Repl.Frame
+      <Frame
         style={{ flex: 1 }}
         bodyStyle={{ padding: '0px', margin: '0px' }} // Style for the iframe body
       />

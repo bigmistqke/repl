@@ -1,15 +1,9 @@
 import clsx from 'clsx'
-import { ComponentProps, Show, createEffect, createResource, splitProps } from 'solid-js'
+import { ComponentProps, Show, createEffect, createResource, on, splitProps } from 'solid-js'
 import { Runtime, RuntimeConfig } from 'src/runtime'
 import { every, whenever, wrapNullableResource } from 'src/utils/conditionals'
 import { deepMerge } from 'src/utils/deep-merge'
-import { RuntimeProvider } from '../use-runtime'
-import { ReplDevTools } from './dev-tools'
-import { ReplMonacoEditor } from './editors/monaco-editor'
-import { ReplMonacoProvider } from './editors/monaco-provider'
-import { ReplShikiEditor } from './editors/shiki-editor'
-import { ReplFrame } from './frame'
-import { ReplTabBar } from './tab-bar'
+import { runtimeContext } from '../use-runtime'
 // @ts-expect-error
 import styles from './repl.module.css'
 
@@ -106,10 +100,14 @@ export function Repl(props: ReplProps) {
 
   createEffect(whenever(runtime, runtime => runtime.initialize()))
 
+  createEffect(on(babelPresets, babelPresets => console.log('babel presets loaded', babelPresets)))
+  createEffect(on(babelPlugins, babelPlugins => console.log('babel plugins loaded', babelPlugins)))
+  createEffect(on(runtime, runtime => console.log('runtime loaded', runtime)))
+
   return (
     <Show when={runtime()}>
       {runtime => (
-        <RuntimeProvider value={runtime()}>
+        <runtimeContext.Provider value={runtime()}>
           <div
             data-dark-mode={props.mode || 'dark'}
             class={clsx(styles.repl, props.class)}
@@ -117,59 +115,8 @@ export function Repl(props: ReplProps) {
           >
             {props.children}
           </div>
-        </RuntimeProvider>
+        </runtimeContext.Provider>
       )}
     </Show>
   )
 }
-
-/**
- * `Repl.Editor` embeds a `monaco-editor` instance for editing files.
- * It dynamically creates and binds a `monaco`-model and `File`
- * in the virtual `FileSystem` based on the provided `path`-prop.
- *
- * @param  props - The properties passed to the editor component.
- * @returns The container div element that hosts the Monaco editor.
- */
-Repl.MonacoEditor = ReplMonacoEditor
-Repl.MonacoProvider = ReplMonacoProvider
-/**
- * `Repl.Frame` encapsulates an iframe element to provide an isolated execution
- * environment within the application. It is used to inject and execute CSS or JS module separately
- * from the main document flow.
- *
- * @param props - The props for configuring the iframe.
- * @returns The iframe element configured according to the specified props.
- *
- * @example
- * // To create an iframe with specific styles and a unique name:
- * <ReplFrame name="myCustomFrame" bodyStyle={{ backgroundColor: 'red' }} />
- */
-Repl.Frame = ReplFrame
-/**
- * `Repl.TabBar` is a utility-component to filter and sort `Files` of the virtual `FileSystem`.
- * This can be used to create a tab-bar to navigate between different files. It accepts an optional
- * prop of paths to sort and filter the files. If not provided it will display all existing files,
- * excluding files in the `node_modules` directory: This directory contains packages imported with
- * `FileSystem.importFromPackageJson()` and auto-imported types of external dependencies.
- *
- * @param props - The properties passed to the tab bar component.
- * @returns  The container div element that hosts the tabs for each file.
- */
-Repl.TabBar = ReplTabBar
-/**
- * `Repl.DevTools` embeds an iframe to provide a custom Chrome DevTools interface for debugging purposes.
- * It connects to a `Repl.Frame` with the same `name` prop to display and interact with the frame's runtime environment,
- * including console outputs, DOM inspections, and network activities.
- *
- * @param props - Props include standard iframe attributes and a unique `name` used to link the DevTools
- *                with a specific `Repl.Frame`.
- * @returns The iframe element that hosts the embedded Chrome DevTools, connected to the specified `Repl.Frame`.
- * @example
- * // To debug a frame named 'exampleFrame':
- * <Repl.Frame name="exampleFrame" />
- * <Repl.DevTools name="exampleFrame" />
- */
-Repl.DevTools = ReplDevTools
-
-Repl.ShikiEditor = ReplShikiEditor

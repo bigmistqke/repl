@@ -11,10 +11,11 @@ export default defineConfig({
     solid(),
     dtsBundleGenerator(
       {
-        fileName: 'index.d.ts',
+        fileName: name => `${name}.d.ts`,
       },
       {
         // compilation options
+        preferredConfigPath: './tsconfig.json',
       },
     ),
     libInjectCss(),
@@ -22,10 +23,13 @@ export default defineConfig({
   server: { port: 3000 },
   build: {
     lib: {
-      entry: path.resolve(__dirname, 'src/index.ts'),
+      entry: {
+        index: path.resolve(__dirname, 'src/index.ts'),
+        plugins: path.resolve(__dirname, 'src/plugins/index.ts'),
+      },
       name: 'repl',
-      fileName: format => `index.${format}.js`,
-      formats: ['es', 'cjs'],
+      fileName: (format, name) => `${name}.js`,
+      formats: ['es'],
     },
     rollupOptions: {
       external: ['solid-js', 'shiki'],

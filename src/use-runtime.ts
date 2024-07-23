@@ -1,8 +1,7 @@
 import { createContext, useContext } from 'solid-js'
 import { Runtime } from 'src/runtime/runtime'
 
-const replContext = createContext<Runtime>()
-export const RuntimeProvider = replContext.Provider
+export const runtimeContext = createContext<Runtime>()
 
 /**
  * This hook facilitates the retrieval of the Repl-runtime, which includes the `FileSystem` and `FrameRegistry`.
@@ -15,7 +14,7 @@ export const RuntimeProvider = replContext.Provider
  * // You can now interact with the file system or frame registry.
  */
 export const useRuntime = (): Runtime => {
-  const context = useContext(replContext)
+  const context = useContext(runtimeContext)
   if (!context) throw 'useRuntime should be used inside <Repl/>'
   return context
 }

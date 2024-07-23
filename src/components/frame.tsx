@@ -14,7 +14,7 @@ import { html } from 'src/utils/object-url-literal'
 // @ts-expect-error
 import styles from './repl.module.css'
 
-export type FrameProps = ComponentProps<'iframe'> & {
+export interface FrameProps extends ComponentProps<'iframe'> {
   /**
    * The unique identifier for the iframe, which is used to manage its presence in the global frame registry.
    * If not specified, 'default' is used as a fallback.
@@ -26,7 +26,19 @@ export type FrameProps = ComponentProps<'iframe'> & {
   bodyStyle?: JSX.CSSProperties | string | undefined
 }
 
-export function ReplFrame(props: FrameProps) {
+/**
+ * `Frame` encapsulates an iframe element to provide an isolated execution
+ * environment within the application. It is used to inject and execute CSS or JS module separately
+ * from the main document flow.
+ *
+ * @param props - The props for configuring the iframe.
+ * @returns The iframe element configured according to the specified props.
+ *
+ * @example
+ * // To create an iframe with specific styles and a unique name:
+ * <ReplFrame name="myCustomFrame" bodyStyle={{ backgroundColor: 'red' }} />
+ */
+export function Frame(props: FrameProps) {
   const [, rest] = splitProps(props, ['class', 'bodyStyle', 'name'])
   const config = mergeProps({ name: 'default' }, props)
   const runtime = useRuntime()
@@ -64,7 +76,6 @@ export function ReplFrame(props: FrameProps) {
     iframe.contentWindow.addEventListener('DOMContentLoaded', onReady)
 
     onCleanup(() => {
-      console.log('cleanup!')
       runtime.frameRegistry.delete(config.name)
     })
 

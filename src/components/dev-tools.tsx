@@ -17,7 +17,20 @@ import styles from './repl.module.css'
 
 export type DevToolsProps = ComponentProps<'iframe'> & { name?: string }
 
-export function ReplDevTools(props: DevToolsProps) {
+/**
+ * `DevTools` embeds an iframe to provide a custom Chrome DevTools interface for debugging purposes.
+ * It connects to a `Frame` with the same `name` prop to display and interact with the frame's runtime environment,
+ * including console outputs, DOM inspections, and network activities.
+ *
+ * @param props - Props include standard iframe attributes and a unique `name` used to link the DevTools
+ *                with a specific `Frame`.
+ * @returns The iframe element that hosts the embedded Chrome DevTools, connected to the specified `Frame`.
+ * @example
+ * // To debug a frame named 'exampleFrame':
+ * <Frame name="exampleFrame" />
+ * <DevTools name="exampleFrame" />
+ */
+export function DevTools(props: DevToolsProps) {
   const config = mergeProps({ name: 'default' }, props)
   const [, rest] = splitProps(config, ['class'])
   const runtime = useRuntime()

@@ -27,7 +27,7 @@ export class FrameRegistry {
   }
 
   /**
-   * Adds a new frame to the registry with the given name and window object. Used internally by `Repl.Frame`
+   * Adds a new frame to the registry with the given name and window object. Used internally by `Frame`
    *
    * @param name - The name to associate with the frame.
    * @param window - The window object of the frame.
@@ -37,7 +37,7 @@ export class FrameRegistry {
   }
 
   /**
-   * Deletes a frame from the registry by its name. Used internally by `Repl.Frame`.
+   * Deletes a frame from the registry by its name. Used internally by `Frame`.
    *
    * @param name - The name of the frame to delete.
    */

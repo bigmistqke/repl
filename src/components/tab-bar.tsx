@@ -6,7 +6,7 @@ import { useRuntime } from 'src/use-runtime'
 // @ts-expect-error
 import styles from './repl.module.css'
 
-export type TabBarProps = Omit<ComponentProps<'div'>, 'children'> & {
+export interface TabBarProps extends Omit<ComponentProps<'div'>, 'children'> {
   /**
    * A render prop function that receives an object with the current path and file object.
    * It should return a `JSX.Element` to render for each tab.
@@ -19,7 +19,17 @@ export type TabBarProps = Omit<ComponentProps<'div'>, 'children'> & {
   paths?: string[]
 }
 
-export function ReplTabBar(props: TabBarProps) {
+/**
+ * `TabBar` is a utility-component to filter and sort `Files` of the virtual `FileSystem`.
+ * This can be used to create a tab-bar to navigate between different files. It accepts an optional
+ * prop of paths to sort and filter the files. If not provided it will display all existing files,
+ * excluding files in the `node_modules` directory: This directory contains packages imported with
+ * `FileSystem.importFromPackageJson()` and auto-imported types of external dependencies.
+ *
+ * @param props - The properties passed to the tab bar component.
+ * @returns  The container div element that hosts the tabs for each file.
+ */
+export function TabBar(props: TabBarProps) {
   const [, rest] = splitProps(props, ['class', 'paths', 'children'])
   const runtime = useRuntime()
 

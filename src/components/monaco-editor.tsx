@@ -15,7 +15,7 @@ import { useMonaco } from './monaco-provider'
 
 type MonacoEditor = ReturnType<Monaco['editor']['create']>
 
-export type EditorProps = Omit<ComponentProps<'div'>, 'ref'> & {
+export interface MonacoEditorProps extends Omit<ComponentProps<'div'>, 'ref'> {
   /**
    * The path to the file that the editor should open and display.
    * This is used to retrieve or create the file in the virtual file system.
@@ -30,7 +30,15 @@ export type EditorProps = Omit<ComponentProps<'div'>, 'ref'> & {
   editor: Parameters<Monaco['editor']['create']>[1]
 }
 
-export function ReplMonacoEditor(props: EditorProps) {
+/**
+ * `Editor` embeds a `monaco-editor` instance for editing files.
+ * It dynamically creates and binds a `monaco`-model and `File`
+ * in the virtual `FileSystem` based on the provided `path`-prop.
+ *
+ * @param  props - The properties passed to the editor component.
+ * @returns The container div element that hosts the Monaco editor.
+ */
+export function MonacoEditor(props: MonacoEditorProps) {
   const [, rest] = splitProps(props, ['class'])
   const runtime = useRuntime()
   const monaco = useMonaco()

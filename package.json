@@ -24,6 +24,7 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "dev": "vite serve dev",
+    "serve:dev": "vite preview dev",
     "build:dev": "vite build dev",
     "build": "vite build .",
     "test": "concurrently pnpm:test:*",
@@ -37,17 +38,18 @@
     "update-deps": "pnpm up -Li"
   },
   "dependencies": {
-    "@types/babel__standalone": "^7.1.7",
     "@babel/standalone": "^7.24.4",
     "@monaco-editor/loader": "^1.4.0",
     "@solid-primitives/list": "^0.0.100",
     "@solid-primitives/resource": "^0.1.2",
     "@solid-primitives/scheduled": "^1.4.3",
+    "@types/babel__standalone": "^7.1.7",
     "clsx": "^2.1.0",
     "colord": "^2.9.3",
     "monaco-editor-textmate": "^4.0.0",
     "monaco-textmate": "^3.0.1",
     "onigasm": "^2.2.5",
+    "solid-shiki-textarea": "^0.1.5",
     "typescript": "^5.1.6"
   },
   "peerDependencies": {
@@ -94,11 +96,25 @@
     ".": {
       "import": {
         "types": "./dist/index.d.ts",
-        "default": "./dist/index.es.js"
+        "default": "./dist/index.js"
+      }
+    },
+    "./plugins": {
+      "import": {
+        "types": "./dist/plugins.d.ts",
+        "default": "./dist/plugins.js"
+      },
+      "require": {
+        "types": "./dist/plugins.d.ts",
+        "default": "./dist/plugins.cjs.js"
       }
     }
   },
   "typesVersions": {
-    "*": {}
+    "*": {
+      "plugins": [
+        "./dist/plugins.d.ts"
+      ]
+    }
   }
 }

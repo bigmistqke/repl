@@ -32,7 +32,7 @@ export const useMonaco = (): Monaco => {
   return context
 }
 
-export function ReplMonacoProvider(props: ParentProps) {
+export function MonacoProvider(props: ParentProps) {
   const runtime = useRuntime()
   // Load monaco and import all of the repl's resources
   const [resources] = createResource(() =>

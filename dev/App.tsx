@@ -1,7 +1,9 @@
-import { JsFile, Repl, solidReplPlugin, useRuntime } from '@bigmistqke/repl'
+import { DevTools, Frame, JsFile, Repl, ShikiEditor, TabBar, useRuntime } from '@bigmistqke/repl'
+import { solidReplPlugin } from '@bigmistqke/repl/plugins'
 import { Resizable } from 'corvu/resizable'
+import tsx from 'shiki/langs/tsx.mjs'
+import darkPlus from 'shiki/themes/dark-plus.mjs'
 import { createEffect, createSignal, mapArray, onCleanup, type Component } from 'solid-js'
-
 import styles from './App.module.css'
 
 const Frames = () => {
@@ -13,7 +15,7 @@ const Frames = () => {
       orientation="vertical"
     >
       <Resizable.Panel
-        as={Repl.Frame}
+        as={Frame}
         style={{
           'min-height': 0,
           'pointer-events': isDragging() ? 'none' : undefined,
@@ -30,8 +32,8 @@ const Frames = () => {
         onDragEnd={() => setIsDragging(false)}
         class={styles.handle}
       />
-      {/* <Resizable.Panel
-        as={Repl.DevTools}
+      <Resizable.Panel
+        as={DevTools}
         minSize={0}
         name={'default'}
         style={{
@@ -39,7 +41,7 @@ const Frames = () => {
           'pointer-events': isDragging() ? 'none' : undefined,
           overflow: 'hidden',
         }}
-      /> */}
+      />
     </Resizable.Panel>
   )
 }
@@ -59,7 +61,6 @@ const App: Component = () => {
             path = `src/index${index}.tsx`
             index++
           }
-          console.log('path is ', path, runtime.fileSystem.has(path))
           runtime.fileSystem.create(path)
           setCurrentFile(path)
         }}
@@ -150,13 +151,14 @@ render(() => <Counter />, document.body);
           style={{ overflow: 'hidden', display: 'flex', 'flex-direction': 'column' }}
         >
           <div style={{ display: 'flex' }}>
-            <Repl.TabBar style={{ flex: 1 }}>
+            <TabBar style={{ flex: 1 }}>
               {({ path }) => <button onClick={() => setCurrentFile(path)}>{path}</button>}
-            </Repl.TabBar>
+            </TabBar>
             <AddButton />
           </div>
-          <Repl.ShikiEditor
-            themes={{ dark: 'dark-plus' }}
+          <ShikiEditor
+            theme={darkPlus}
+            lang={tsx}
             style={{ flex: 1, padding: '20px' }}
             path={currentPath()}
           />
