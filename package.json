@@ -39,7 +39,6 @@
     "update-deps": "pnpm up -Li"
   },
   "dependencies": {
-    "@babel/standalone": "^7.24.4",
     "@monaco-editor/loader": "^1.4.0",
     "@solid-primitives/list": "^0.0.100",
     "@solid-primitives/resource": "^0.1.2",
@@ -51,8 +50,7 @@
     "monaco-textmate": "^3.0.1",
     "onigasm": "^2.2.5",
     "register-service-worker": "^1.7.2",
-    "solid-shiki-textarea": "^0.1.5",
-    "typescript": "^5.1.6"
+    "solid-shiki-textarea": "^0.1.5"
   },
   "peerDependencies": {
     "shiki": "^1.4.0",
@@ -60,6 +58,7 @@
   },
   "devDependencies": {
     "@babel/plugin-syntax-import-attributes": "^7.24.1",
+    "@babel/standalone": "^7.24.4",
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-wasm": "^6.2.2",
@@ -67,19 +66,19 @@
     "@typescript-eslint/parser": "^6.1.0",
     "concurrently": "^8.2.0",
     "corvu": "^0.5.1",
-    "eslint": "^8.45.0",
     "eslint-plugin-eslint-comments": "^3.2.0",
     "eslint-plugin-no-only-tests": "^3.1.0",
+    "eslint": "^8.45.0",
     "jsdom": "^22.1.0",
     "prettier": "3.0.0",
     "rollup-plugin-dts": "^6.1.1",
     "style-loader": "^4.0.0",
     "typescript": "^5.1.6",
-    "vite": "^4.4.6",
     "vite-plugin-dts-bundle-generator": "^2.0.4",
     "vite-plugin-lib-inject-css": "^2.1.1",
     "vite-plugin-solid": "^2.7.0",
     "vite-tsconfig-paths": "^4.3.2",
+    "vite": "^4.4.6",
     "vitest": "^0.33.0"
   },
   "keywords": [

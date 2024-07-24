@@ -74,8 +74,13 @@ export class JsModule extends Module {
         try {
           let value: string = source
           if (isTypescript) {
-            const result = runtime.libs.typescript.transpile(value, runtime.config.typescript)
-            if (result) value = result
+            if (!runtime.libs.typescript) {
+              console.error(
+                `It is necessary to provide a typescript-library, see ReplProps.typescript.library, when transpiling ${extension}.`,
+              )
+            } else {
+              value = runtime.libs.typescript.transpile(value, runtime.config.typescript?.config)
+            }
           }
           if (runtime.libs.babel) {
             value = runtime.libs.babel.transform(value, { presets, plugins }).code!

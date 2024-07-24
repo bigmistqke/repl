@@ -19,6 +19,7 @@ export class Transpiler {
     callback: (node: ts.ImportDeclaration | ts.ExportDeclaration) => void | false,
   ) {
     const typescript = this.runtime.libs.typescript
+    if (!typescript) return code
     const sourceFile = typescript.createSourceFile(
       '',
       code,

@@ -1,5 +1,4 @@
 import * as Babel from '@babel/standalone'
-import type { Monaco } from '@monaco-editor/loader'
 import { mergeProps } from 'solid-js'
 import type { Mandatory } from 'src/utils/type'
 import type ts from 'typescript'
@@ -19,11 +18,16 @@ export type InitialState = Partial<{
   types: Partial<TypeRegistryState>
 }>
 
-export type TypescriptConfig = Parameters<
-  Monaco['languages']['typescript']['typescriptDefaults']['setCompilerOptions']
->[0]
+export type TypescriptConfig = {
+  library: typeof ts | Promise<typeof ts>
+  config: ts.CompilerOptions
+}
 
-export type BabelConfig = Partial<{ presets: string[]; plugins: (string | babel.PluginItem)[] }>
+export type BabelConfig = {
+  library: typeof Babel | Promise<typeof Babel>
+  presets?: string[]
+  plugins?: (string | babel.PluginItem)[]
+}
 export type RuntimeConfig = Partial<{
   /** Import external types from the cdn. */
   importExternalTypes?: boolean
@@ -82,7 +86,7 @@ export class Runtime {
     /** An object containing references to external libraries utilized by the REPL runtime. */
     public libs: {
       /**  The TypeScript library used for TypeScript code operations and transformations. */
-      typescript: typeof ts
+      typescript: typeof ts | undefined
       /** The Babel library used for JavaScript code transformation. */
       babel: typeof Babel | undefined
       /** Babel presets used for transpiling files. */

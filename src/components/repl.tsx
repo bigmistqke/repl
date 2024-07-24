@@ -1,9 +1,9 @@
 import clsx from 'clsx'
-import { ComponentProps, Show, createEffect, createResource, on, splitProps } from 'solid-js'
-import { Runtime, RuntimeConfig } from 'src/runtime'
-import { every, whenever, wrapNullableResource } from 'src/utils/conditionals'
-import { deepMerge } from 'src/utils/deep-merge'
+import { ComponentProps, Show, createEffect, createResource, splitProps } from 'solid-js'
+import { Runtime, RuntimeConfig } from '../runtime'
 import { runtimeContext } from '../use-runtime'
+import { every, whenever, wrapNullableResource } from '../utils/conditionals'
+import { deepMerge } from '../utils/deep-merge'
 // @ts-expect-error
 import styles from './repl.module.css'
 
@@ -52,12 +52,10 @@ export function Repl(props: ReplProps) {
     propsWithoutChildren,
   )
 
-  const [typescript] = createResource(() => import('typescript'))
+  const [typescript] = createResource(() => config.typescript.library)
   // We return undefined and prevent Babel from being imported in-browser,
   // If no babel-preset nor babel-plugin is present in the config.
-  const [babel] = createResource(async () =>
-    config.babel?.presets || config.babel?.plugins ? await import('@babel/standalone') : undefined,
-  )
+  const [babel] = createResource(() => config.babel?.library)
   const [babelPresets] = createResource(() =>
     config.babel?.presets
       ? Promise.all(
@@ -99,10 +97,6 @@ export function Repl(props: ReplProps) {
   )
 
   createEffect(whenever(runtime, runtime => runtime.initialize()))
-
-  createEffect(on(babelPresets, babelPresets => console.log('babel presets loaded', babelPresets)))
-  createEffect(on(babelPlugins, babelPlugins => console.log('babel plugins loaded', babelPlugins)))
-  createEffect(on(runtime, runtime => console.log('runtime loaded', runtime)))
 
   return (
     <Show when={runtime()}>

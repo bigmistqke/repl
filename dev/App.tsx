@@ -72,24 +72,29 @@ const App: Component = () => {
 
   return (
     <Repl
+      importExternalTypes
       babel={{
+        library: import('https://esm.sh/@babel/standalone' as string),
         presets: ['babel-preset-solid'],
         plugins: [solidReplPlugin],
       }}
       typescript={{
-        resolveJsonModule: true,
-        esModuleInterop: true,
-        noEmit: true,
-        isolatedModules: true,
-        skipLibCheck: true,
-        allowSyntheticDefaultImports: true,
-        forceConsistentCasingInFileNames: true,
-        noUncheckedIndexedAccess: true,
-        paths: {},
-        jsx: /* JsxEmit.Preserve */ 1,
-        jsxImportSource: 'solid-js',
-        strict: true,
-        /* autoImport: false, */
+        library: import('https://esm.sh/typescript' as string),
+        config: {
+          resolveJsonModule: true,
+          esModuleInterop: true,
+          noEmit: true,
+          isolatedModules: true,
+          skipLibCheck: true,
+          allowSyntheticDefaultImports: true,
+          forceConsistentCasingInFileNames: true,
+          noUncheckedIndexedAccess: true,
+          paths: {},
+          jsx: /* JsxEmit.Preserve */ 1,
+          jsxImportSource: 'solid-js',
+          strict: true,
+          /* autoImport: false, */
+        },
       }}
       initialState={{
         files: {
