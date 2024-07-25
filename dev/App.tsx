@@ -1,8 +1,6 @@
-import { DevTools, Frame, JsFile, Repl, ShikiEditor, TabBar, useRuntime } from '@bigmistqke/repl'
+import { DevTools, Frame, JsFile, MonacoEditor, Repl, TabBar, useRuntime } from '@bigmistqke/repl'
 import { solidReplPlugin } from '@bigmistqke/repl/plugins'
 import { Resizable } from 'corvu/resizable'
-import tsx from 'shiki/langs/tsx.mjs'
-import darkPlus from 'shiki/themes/dark-plus.mjs'
 import { createEffect, createSignal, mapArray, onCleanup, type Component } from 'solid-js'
 import styles from './App.module.css'
 
@@ -72,6 +70,7 @@ const App: Component = () => {
 
   return (
     <Repl
+      debug
       importExternalTypes
       babel={{
         library: import('https://esm.sh/@babel/standalone' as string),
@@ -80,20 +79,20 @@ const App: Component = () => {
       }}
       typescript={{
         library: import('https://esm.sh/typescript' as string),
-        config: {
-          resolveJsonModule: true,
-          esModuleInterop: true,
-          noEmit: true,
-          isolatedModules: true,
-          skipLibCheck: true,
-          allowSyntheticDefaultImports: true,
-          forceConsistentCasingInFileNames: true,
-          noUncheckedIndexedAccess: true,
-          paths: {},
-          jsx: /* JsxEmit.Preserve */ 1,
-          jsxImportSource: 'solid-js',
-          strict: true,
-          /* autoImport: false, */
+        compilerOptions: {
+          target: /* ScriptTarget.ES2015  */ 2, // Output ES6 compatible code
+          module: /* ModuleKind.ES2015 */ 5, // Use ES6 modules
+          jsx: /* JsxEmit.Preserve */ 1, // Preserve JSX syntax for further processing with Babel
+          jsxImportSource: 'solid-js', // Use solid-js for JSX
+          esModuleInterop: true, // Enables emit interoperability between CommonJS and ES Modules
+          allowSyntheticDefaultImports: true, // Allow default imports from modules with no default export
+          forceConsistentCasingInFileNames: true, // Ensure consistent casing in file names
+          isolatedModules: true, // Ensure each file is treated as a separate module
+          resolveJsonModule: true, // Include JSON modules in TypeScript files
+          skipLibCheck: true, // Skip type checking of declaration files
+          strict: true, // Enable all strict type-checking options
+          noEmit: false, // Allow TypeScript to emit output files
+          outDir: './dist', // Specify output directory for compiled files
         },
       }}
       initialState={{
@@ -161,12 +160,13 @@ render(() => <Counter />, document.body);
             </TabBar>
             <AddButton />
           </div>
-          <ShikiEditor
+          {/* <ShikiEditor
             theme={darkPlus}
             lang={tsx}
             style={{ flex: 1, padding: '20px' }}
             path={currentPath()}
-          />
+          /> */}
+          <MonacoEditor editor={{}} style={{ flex: 1 }} path={currentPath()} />
         </Resizable.Panel>
         <Resizable.Handle class={styles.handle} />
         <Frames />

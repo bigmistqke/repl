@@ -1,4 +1,5 @@
 import { when } from 'src/utils/conditionals'
+import { formatError } from 'src/utils/format-log'
 import {
   isRelativePath,
   isUrl,
@@ -150,7 +151,7 @@ export class TypeImportUtils {
       })
 
     if (!typeUrl) {
-      console.error('no type url was found for package', packageName)
+      console.error(...formatError('no type url was found for package', packageName))
       return
     }
 

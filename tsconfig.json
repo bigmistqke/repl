@@ -6,7 +6,6 @@
     "baseUrl": ".",
     "esModuleInterop": true,
     "declaration": true,
-    "emitDeclarationOnly": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "jsx": "preserve",
@@ -21,6 +20,7 @@
     "sourceMap": true,
     "strict": true,
     "target": "ESNext",
+    "types": ["vite/client"],
     "paths": {
       "src": ["./src"],
       "@bigmistqke/repl": ["./src"],

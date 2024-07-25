@@ -9,9 +9,8 @@ import {
   type JSX,
 } from 'solid-js'
 import { useRuntime } from 'src/use-runtime'
+import { formatError } from 'src/utils/format-log'
 import { html } from 'src/utils/object-url-literal'
-
-// @ts-expect-error
 import styles from './repl.module.css'
 
 export interface FrameProps extends ComponentProps<'iframe'> {
@@ -60,7 +59,7 @@ export function Frame(props: FrameProps) {
 
   onMount(() => {
     if (!iframe.contentWindow) {
-      console.error('contentWindow is not defined on iframe:', iframe)
+      console.error(...formatError('contentWindow is not defined on iframe:', iframe))
       return
     }
 
@@ -82,7 +81,7 @@ export function Frame(props: FrameProps) {
     createEffect(() => {
       if (!props.bodyStyle) return
       if (!iframe.contentWindow) {
-        console.error('contentWindow is not defined on iframe:', iframe)
+        console.error(...formatError('contentWindow is not defined on iframe:', iframe))
         return
       }
       const bodyStyle =

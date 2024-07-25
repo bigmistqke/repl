@@ -20,7 +20,7 @@ export type InitialState = Partial<{
 
 export type TypescriptConfig = {
   library: typeof ts | Promise<typeof ts>
-  config: ts.CompilerOptions
+  compilerOptions: ts.CompilerOptions
 }
 
 export type BabelConfig = {
@@ -29,8 +29,10 @@ export type BabelConfig = {
   plugins?: (string | babel.PluginItem)[]
 }
 export type RuntimeConfig = Partial<{
-  /** Import external types from the cdn. */
-  importExternalTypes?: boolean
+  /** Optional actions like saving the current state of the REPL. */
+  actions?: {
+    saveRepl?: boolean
+  }
   /** Configuration options for Babel, used for code transformation. */
   babel: BabelConfig
   /** The CDN URL used to load TypeScript and other external libraries. */
@@ -39,16 +41,16 @@ export type RuntimeConfig = Partial<{
   class: string
   /** Initial state of the virtual file system to preload files. */
   initialState: InitialState
+  /** Import external types from the cdn. */
+  importExternalTypes?: boolean
+  /** Log internal events. */
+  debug: boolean
   /** Theme setting for the Monaco editor. */
   mode: 'light' | 'dark'
   /** Callback function that runs after initializing the editor and file system. */
   onSetup: (runtime: Runtime) => Promise<void> | void
   /** TypeScript compiler options for the Monaco editor. */
   typescript: TypescriptConfig
-  /** Optional actions like saving the current state of the REPL. */
-  actions?: {
-    saveRepl?: boolean
-  }
 }>
 
 /**
@@ -82,11 +84,13 @@ export class Runtime {
    */
   import: ImportUtils
 
+  initialized = false
+
   constructor(
     /** An object containing references to external libraries utilized by the REPL runtime. */
     public libs: {
       /**  The TypeScript library used for TypeScript code operations and transformations. */
-      typescript: typeof ts | undefined
+      typescript: typeof ts
       /** The Babel library used for JavaScript code transformation. */
       babel: typeof Babel | undefined
       /** Babel presets used for transpiling files. */
@@ -130,6 +134,7 @@ export class Runtime {
         this.fileSystem.initialize(initialState.files)
       }
     }
+    this.initialized = true
   }
 
   /**

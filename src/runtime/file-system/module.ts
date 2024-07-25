@@ -10,6 +10,7 @@ import {
   untrack,
 } from 'solid-js'
 import { every, when, whenever } from 'src/utils/conditionals'
+import { getExtensionFromPath } from 'src/utils/get-extension-from-path'
 import { javascript } from 'src/utils/object-url-literal'
 import { isRelativePath, isUrl, relativeToAbsolutePath } from 'src/utils/path'
 import type ts from 'typescript'
@@ -53,7 +54,7 @@ export class JsModule extends Module {
   constructor(runtime: Runtime, file: JsFile) {
     super()
 
-    const extension = file.path.split('/').pop()?.split('.')[1]
+    const extension = getExtensionFromPath(file.path)
     const isTypescript = extension === 'ts' || extension === 'tsx'
 
     ;[this.cssImports, this.setCssImports] = createSignal<CssFile[]>([])
@@ -74,13 +75,10 @@ export class JsModule extends Module {
         try {
           let value: string = source
           if (isTypescript) {
-            if (!runtime.libs.typescript) {
-              console.error(
-                `It is necessary to provide a typescript-library, see ReplProps.typescript.library, when transpiling ${extension}.`,
-              )
-            } else {
-              value = runtime.libs.typescript.transpile(value, runtime.config.typescript?.config)
-            }
+            value = runtime.libs.typescript.transpile(
+              value,
+              runtime.config.typescript?.compilerOptions,
+            )
           }
           if (runtime.libs.babel) {
             value = runtime.libs.babel.transform(value, { presets, plugins }).code!

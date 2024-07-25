@@ -49,7 +49,6 @@
     "monaco-editor-textmate": "^4.0.0",
     "monaco-textmate": "^3.0.1",
     "onigasm": "^2.2.5",
-    "register-service-worker": "^1.7.2",
     "solid-shiki-textarea": "^0.1.5"
   },
   "peerDependencies": {

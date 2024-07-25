@@ -10,7 +10,7 @@ import {
 } from 'solid-js'
 import { CssFile } from 'src/runtime'
 import { useRuntime } from 'src/use-runtime'
-import { whenever } from 'src/utils/conditionals'
+import { every, whenever } from 'src/utils/conditionals'
 import { useMonaco } from './monaco-provider'
 
 type MonacoEditor = ReturnType<Monaco['editor']['create']>
@@ -62,7 +62,7 @@ export function MonacoEditor(props: MonacoEditorProps) {
   )
 
   const model = createMemo(
-    whenever(file, file => {
+    whenever(every(monaco, file), ([monaco, file]) => {
       const uri = monaco.Uri.parse(`file:///${file.path}`)
       const source = untrack(() => file.get())
       const type = file instanceof CssFile ? 'css' : 'typescript'
@@ -71,7 +71,7 @@ export function MonacoEditor(props: MonacoEditorProps) {
   )
 
   createEffect(
-    whenever(editor, editor => {
+    whenever(every(monaco, editor), ([monaco, editor]) => {
       // Call onMount-prop
       props.onMount?.(editor)
 

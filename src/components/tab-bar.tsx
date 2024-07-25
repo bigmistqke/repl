@@ -2,8 +2,6 @@ import clsx from 'clsx'
 import { ComponentProps, For, JSXElement, splitProps } from 'solid-js'
 import { File } from 'src/runtime'
 import { useRuntime } from 'src/use-runtime'
-
-// @ts-expect-error
 import styles from './repl.module.css'
 
 export interface TabBarProps extends Omit<ComponentProps<'div'>, 'children'> {

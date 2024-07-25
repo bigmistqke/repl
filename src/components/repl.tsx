@@ -1,10 +1,16 @@
 import clsx from 'clsx'
-import { ComponentProps, Show, createEffect, createResource, splitProps } from 'solid-js'
+import {
+  ComponentProps,
+  Show,
+  createEffect,
+  createMemo,
+  createResource,
+  mergeProps,
+  splitProps,
+} from 'solid-js'
+import { formatInfo } from 'src/utils/format-log'
 import { Runtime, RuntimeConfig } from '../runtime'
 import { runtimeContext } from '../use-runtime'
-import { every, whenever, wrapNullableResource } from '../utils/conditionals'
-import { deepMerge } from '../utils/deep-merge'
-// @ts-expect-error
 import styles from './repl.module.css'
 
 export type ReplProps = ComponentProps<'div'> & RuntimeConfig
@@ -33,70 +39,71 @@ export function Repl(props: ReplProps) {
     'onSetup',
     'typescript',
   ])
-  const config = deepMerge(
+  const config = mergeProps(
     {
       cdn: 'https://esm.sh',
-      typescript: {
-        allowJs: true,
-        allowNonTsExtensions: true,
-        esModuleInterop: true,
-        allowUmdGlobalAccess: true,
-        // enums inlined
-        jsx: /* JsxEmit.Preserve as */ 1,
-        module: /* ModuleKind.ESNext as */ 99,
-        moduleResolution: /* ModuleResolutionKind.Node10 as */ 2,
-        target: /* ScriptTarget.ESNext as */ 99,
-        paths: {},
-      },
     },
     propsWithoutChildren,
   )
 
-  const [typescript] = createResource(() => config.typescript.library)
-  // We return undefined and prevent Babel from being imported in-browser,
-  // If no babel-preset nor babel-plugin is present in the config.
+  const [typescript] = createResource(() => config.typescript?.library)
   const [babel] = createResource(() => config.babel?.library)
   const [babelPresets] = createResource(() =>
-    config.babel?.presets
-      ? Promise.all(
-          config.babel.presets.map(
-            async preset => (await import(/* @vite-ignore */ `${config.cdn}/${preset}`)).default,
-          ),
-        )
-      : [],
+    Promise.all(
+      config.babel?.presets?.map(
+        async preset => (await import(/* @vite-ignore */ `${config.cdn}/${preset}`)).default,
+      ) || [],
+    ),
   )
   const [babelPlugins] = createResource(() =>
-    config.babel?.plugins
-      ? Promise.all(
-          config.babel.plugins.map(async plugin => {
-            if (typeof plugin === 'string') {
-              return (await import(/* @vite-ignore */ `${config.cdn}/${plugin}`)).default
-            }
-            return plugin
-          }),
-        )
-      : [],
+    Promise.all(
+      config.babel?.plugins?.map(async plugin => {
+        if (typeof plugin === 'string') {
+          return (await import(/* @vite-ignore */ `${config.cdn}/${plugin}`)).default
+        }
+        return plugin
+      }) || [],
+    ),
   )
 
-  // Once all resources are loaded, instantiate and initialize ReplContext
-  const [runtime] = createResource(
-    every(typescript, wrapNullableResource(babel), babelPlugins, babelPresets),
-    async ([typescript, [babel], babelPlugins, babelPresets]) => {
-      const repl = new Runtime(
-        {
-          typescript,
-          babel,
-          babelPlugins,
-          babelPresets,
+  const dependenciesLoaded = createMemo(previous => {
+    if (previous) return true
+    if (!typescript()) return false
+    if (config.babel && !(babel() && babelPlugins() && babelPresets())) return false
+    return true
+  }, false)
+
+  const [runtime] = createResource(dependenciesLoaded, async () => {
+    const runtime = new Runtime(
+      {
+        get typescript() {
+          return typescript() || typescript.latest!
         },
-        config,
-      )
-      await config.onSetup?.(repl)
-      return repl
-    },
-  )
+        get babel() {
+          return babel() || babel.latest
+        },
+        get babelPlugins() {
+          return babelPlugins() || babelPlugins.latest || []
+        },
+        get babelPresets() {
+          return babelPresets() || babelPresets.latest || []
+        },
+      },
+      config,
+    )
+    await props.onSetup?.(runtime)
+    runtime.initialize()
+    return runtime
+  })
 
-  createEffect(whenever(runtime, runtime => runtime.initialize()))
+  createEffect(() => {
+    if (!config.debug) return
+    createEffect(() => console.info(...formatInfo('typescript', typescript())))
+    createEffect(() => console.info(...formatInfo('babel', babel())))
+    createEffect(() => console.info(...formatInfo('babel-plugins', babelPlugins())))
+    createEffect(() => console.info(...formatInfo('babel-presets', babelPresets())))
+    createEffect(() => runtime() && console.info(...formatInfo('runtime initialized')))
+  })
 
   return (
     <Show when={runtime()}>
