@@ -3,7 +3,7 @@ import { wireTmGrammars } from 'monaco-editor-textmate'
 import { Registry } from 'monaco-textmate'
 import { loadWASM } from 'onigasm'
 import onigasm from 'onigasm/lib/onigasm.wasm?url'
-import { Resource, createEffect, createResource, mapArray } from 'solid-js'
+import { Accessor, Resource, createEffect, createResource, mapArray } from 'solid-js'
 import { unwrap } from 'solid-js/store'
 import { CssFile } from 'src/runtime'
 import { useRuntime } from 'src/use-runtime'
@@ -16,54 +16,56 @@ const GRAMMARS = new Map([
   ['css', 'source.css'],
 ])
 
-export function createMonaco(): Resource<Monaco> {
+export type MonacoTheme = Parameters<Monaco['editor']['defineTheme']>[1]
+
+export function createMonaco(
+  config: Accessor<MonacoTheme | Promise<MonacoTheme>>,
+): Resource<Monaco> {
   const runtime = useRuntime()
   const [monaco] = createResource(() => loader.init())
   // Load monaco and import all of the repl's resources
   const [resources] = createResource(() =>
     Promise.all([
-      import('./themes/vs_dark_good.json'),
-      import('./themes/vs_light_good.json'),
       import('./text-mate/TypeScriptReact.tmLanguage.json'),
       import('./text-mate/css.tmLanguage.json'),
     ]),
   )
+  const [theme] = createResource(config)
+
+  createEffect(
+    whenever(every(monaco, theme), ([monaco, theme]) => {
+      monaco.editor.defineTheme('current-theme', theme)
+      monaco.editor.setTheme('current-theme')
+    }),
+  )
 
   // Initialise syntax highlighting
   createEffect(
-    whenever(
-      every(monaco, resources),
-      async ([monaco, [vsDarkTheme, vsLightTheme, tsTextMate, cssTextMate]]) => {
-        // Monaco's built-in themes aren't powereful enough to handle text-mate tokens
-        // https://github.com/Nishkalkashyap/monaco-vscode-textmate-theme-converter#monaco-vscode-textmate-theme-converter
-        monaco.editor.defineTheme('vs-dark-plus', vsDarkTheme as any)
-        monaco.editor.defineTheme('vs-light-plus', vsLightTheme as any)
+    whenever(every(monaco, resources), async ([monaco, [tsTextMate, cssTextMate]]) => {
+      // Initialise text-mate registry
+      const registry = new Registry({
+        async getGrammarDefinition(scopeName) {
+          return {
+            format: 'json',
+            content: scopeName === 'source.tsx' ? tsTextMate.default : cssTextMate.default,
+          }
+        },
+      })
 
-        // Initialise text-mate registry
-        const registry = new Registry({
-          async getGrammarDefinition(scopeName) {
-            return {
-              format: 'json',
-              content: scopeName === 'source.tsx' ? tsTextMate.default : cssTextMate.default,
-            }
-          },
-        })
-
-        // Load text-mate grammars
-        let hasLoadedOnigasm: boolean | Promise<void> = false
-        const setLanguageConfiguration = monaco.languages.setLanguageConfiguration
-        monaco.languages.setLanguageConfiguration = (languageId, configuration) => {
-          initialiseGrammars()
-          return setLanguageConfiguration(languageId, configuration)
-        }
-        async function initialiseGrammars(): Promise<void> {
-          if (!hasLoadedOnigasm) hasLoadedOnigasm = loadWASM(onigasm)
-          if (hasLoadedOnigasm instanceof Promise) await hasLoadedOnigasm
-          hasLoadedOnigasm = true
-          await wireTmGrammars(monaco, registry, GRAMMARS)
-        }
-      },
-    ),
+      // Load text-mate grammars
+      let hasLoadedOnigasm: boolean | Promise<void> = false
+      const setLanguageConfiguration = monaco.languages.setLanguageConfiguration
+      monaco.languages.setLanguageConfiguration = (languageId, configuration) => {
+        initialiseGrammars()
+        return setLanguageConfiguration(languageId, configuration)
+      }
+      async function initialiseGrammars(): Promise<void> {
+        if (!hasLoadedOnigasm) hasLoadedOnigasm = loadWASM(onigasm)
+        if (hasLoadedOnigasm instanceof Promise) await hasLoadedOnigasm
+        hasLoadedOnigasm = true
+        await wireTmGrammars(monaco, registry, GRAMMARS)
+      }
+    }),
   )
 
   createEffect(
@@ -74,11 +76,6 @@ export function createMonaco(): Resource<Monaco> {
           language: 'typescript',
         })
         .dispose()
-
-      // Set light/dark-mode of monaco-editor
-      createEffect(() =>
-        monaco.editor.setTheme(runtime.config.mode === 'light' ? 'vs-light-plus' : 'vs-dark-plus'),
-      )
 
       // Initialize models for all Files in FileSystem
       Object.entries(runtime.fileSystem.all()).forEach(([path, value]) => {

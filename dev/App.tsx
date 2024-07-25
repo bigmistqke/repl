@@ -1,7 +1,18 @@
-import { DevTools, Frame, JsFile, MonacoEditor, Repl, TabBar, useRuntime } from '@bigmistqke/repl'
+import {
+  DevTools,
+  Frame,
+  JsFile,
+  MonacoEditor,
+  MonacoProvider,
+  Repl,
+  TabBar,
+  useRuntime,
+} from '@bigmistqke/repl'
+import vs_dark from '@bigmistqke/repl/monaco-themes/vs_dark_good.json'
 import { solidReplPlugin } from '@bigmistqke/repl/plugins'
 import { Resizable } from 'corvu/resizable'
 import { createEffect, createSignal, mapArray, onCleanup, type Component } from 'solid-js'
+import { MonacoTheme } from 'src/components/monaco/create-monaco'
 import styles from './App.module.css'
 
 const Frames = () => {
@@ -166,7 +177,9 @@ render(() => <Counter />, document.body);
             style={{ flex: 1, padding: '20px' }}
             path={currentPath()}
           /> */}
-          <MonacoEditor editor={{}} style={{ flex: 1 }} path={currentPath()} />
+          <MonacoProvider theme={vs_dark as MonacoTheme}>
+            <MonacoEditor style={{ flex: 1 }} path={currentPath()} />
+          </MonacoProvider>
         </Resizable.Panel>
         <Resizable.Handle class={styles.handle} />
         <Frames />

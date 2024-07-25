@@ -3,6 +3,7 @@ import { defineConfig } from 'vite'
 import dtsBundleGenerator from 'vite-plugin-dts-bundle-generator'
 import { libInjectCss } from 'vite-plugin-lib-inject-css'
 import solid from 'vite-plugin-solid'
+import { viteStaticCopy } from 'vite-plugin-static-copy'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineConfig({
@@ -21,6 +22,14 @@ export default defineConfig({
         preferredConfigPath: './tsconfig.json',
       },
     ),
+    viteStaticCopy({
+      targets: [
+        {
+          src: 'src/components/monaco/themes/*.json',
+          dest: 'monaco-themes',
+        },
+      ],
+    }),
   ],
   server: { port: 3000 },
   build: {

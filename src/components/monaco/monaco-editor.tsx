@@ -11,11 +11,14 @@ import {
 import { CssFile } from 'src/runtime'
 import { useRuntime } from 'src/use-runtime'
 import { every, whenever } from 'src/utils/conditionals'
+import { MonacoTheme } from './create-monaco'
 import { useMonaco } from './monaco-provider'
 
 type MonacoEditor = ReturnType<Monaco['editor']['create']>
+type MonacoEditorConfig = Parameters<Monaco['editor']['create']>[1]
 
 export interface MonacoEditorProps extends Omit<ComponentProps<'div'>, 'ref'> {
+  theme?: MonacoTheme | Promise<MonacoTheme>
   /**
    * The path to the file that the editor should open and display.
    * This is used to retrieve or create the file in the virtual file system.
@@ -27,7 +30,7 @@ export interface MonacoEditorProps extends Omit<ComponentProps<'div'>, 'ref'> {
    * @returns
    */
   onMount?: (editor: MonacoEditor) => void
-  editor: Parameters<Monaco['editor']['create']>[1]
+  editor?: MonacoEditorConfig
 }
 
 /**
@@ -41,7 +44,7 @@ export interface MonacoEditorProps extends Omit<ComponentProps<'div'>, 'ref'> {
 export function MonacoEditor(props: MonacoEditorProps) {
   const [, rest] = splitProps(props, ['class'])
   const runtime = useRuntime()
-  const monaco = useMonaco()
+  const monaco = useMonaco(() => props.theme)
 
   // Initialize html-element of monaco-editor
   const container = (<div class={props.class} {...rest} />) as HTMLDivElement
