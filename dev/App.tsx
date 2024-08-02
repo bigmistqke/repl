@@ -94,7 +94,9 @@ const App: Component = () => {
     <Repl
       debug
       importExternalTypes
-      transformModulePaths={typescriptTransformModulePaths(import('https://esm.sh/typescript'))}
+      transformModulePaths={typescriptTransformModulePaths({
+        typescript: import('https://esm.sh/typescript'),
+      })}
       transform={babelTransform({
         babel: import('https://esm.sh/@babel/standalone'),
         presets: ['babel-preset-solid'],

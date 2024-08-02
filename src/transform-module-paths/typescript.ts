@@ -1,7 +1,9 @@
 import type TS from 'typescript'
 
-export async function typescriptTransformModulePaths(typescript: Promise<typeof TS> | typeof TS) {
-  const ts = await typescript
+export async function typescriptTransformModulePaths(config: {
+  typescript: Promise<typeof TS> | typeof TS
+}) {
+  const ts = await config.typescript
   return function (
     code: string,
     //** Callback to modify module-declaration node. Return `false` to remove node from code. `Throw` to break execution. */

@@ -20,41 +20,44 @@ https://github.com/bigmistqke/repl/assets/10504064/50195cb6-f3aa-4dea-a40a-d04f2
 # Table of Contents
 
 - [Installation](#installation)
-- [@bigmistqke/repl](#bigmistqkerepl)
+- [Entries](#entries)
+- [___@bigmistqke/repl___](#bigmistqkerepl)
   - [Repl Component](#repl-component)
   - [Frame Component](#frame-component)
   - [TabBar Component](#tabbar-component)
   - [DevTools Component](#devtools-component)
   - [useRuntime Hook](#useruntime-hook)
 - [Editors](#editors)
-  - [@bigmistqke/repl/editor/monaco](#bigmistqkerepleditormonaco)
-  - [@bigmistqke/repl/editor/shiki](#bigmistqkerepleditorshiki)
-- [@bigmistqke/repl/runtime](#bigmistqkereplruntime)
+  - [___@bigmistqke/repl/editor/monaco___](#bigmistqkerepleditormonaco)
+  - [___@bigmistqke/repl/editor/shiki___](#bigmistqkerepleditorshiki)
+- [___@bigmistqke/repl/runtime___](#bigmistqkereplruntime)
   - [Exports](#exports)
-  - [Runtime](#runtime-class)
-  - [File](#file-class)
-    - [JsFile](#jsfile-class)
-    - [CssFile](#cssfile-class)
-  - [Module](#module-class)
-    - [JsModule](#jsmodule-class)
-    - [CssModule](#cssmodule-class)
-  - [FrameRegistry](#frameregistry-class)
-  - [Frame](#frame-class)
-  - [PackageJsonParser](#packagejsonparser-class)
-  - [TypeRegistry](#typeregistry-class)
-  - [TypeImportUtils](#typeimportutils-class)
+  - [Runtime Class](#runtime-class)
+  - [File Abstract Class](#file-abstract-class)
+    - [JsFile Class](#jsfile-class)
+    - [CssFile Class](#cssfile-class)
+  - [Module Abstract Class](#module-class)
+    - [JsModule Class](#jsmodule-class)
+    - [CssModule Class](#cssmodule-class)
+  - [FrameRegistry Class](#frameregistry-class)
+  - [Frame Class](#frame-class)
+  - [PackageJsonParser Class](#packagejsonparser-class)
+  - [TypeRegistry Class](#typeregistry-class)
+  - [TypeImportUtils Class](#typeimportutils-class)
 - [Plugins](#plugins)
-  - [@bigmistqke/repl/plugins/rollup-service-worker](#bigmistqkereplpluginsrollup-service-worker)
-  - [@bigmistqke/repl/plugins/babel-solid-repl](#bigmistqkereplpluginsbabel-solid-repl)
+  - [___@bigmistqke/repl/plugins/rollup-service-worker___](#bigmistqkereplpluginsrollup-service-worker)
+  - [___@bigmistqke/repl/plugins/babel-solid-repl___](#bigmistqkereplpluginsbabel-solid-repl)
 - [Transform Utilities](#transform-utilities)
-  - [@bigmistqke/repl/transform/babel](#bigmistqkerepltransformbabel)
-  - [@bigmistqke/repl/transform/typescript](#bigmistqkerepltransformtypescript)
+  - [___@bigmistqke/repl/transform/babel___](#bigmistqkerepltransformbabel)
+  - [___@bigmistqke/repl/transform/typescript___](#bigmistqkerepltransformtypescript)
 - [Transform Module Paths Utilities](#transform-module-path-utilities)
-  - [@bigmistqke/repl/transform-module-paths/typescript](#bigmistqkerepltransform-module-pathstypescript)
-- [Example](#example)
+  - [___@bigmistqke/repl/transform-module-paths/typescript___](#bigmistqkerepltransform-module-pathstypescript)
+- [Examples](#examples)
+  - [Simple Example](#simple-example)
+  - [Advanced Example](#advanced-example)
 - [Acknowledgements](#acknowledgements)
 
-## Installation
+# Installation
 
 Import package from package manager.
 
@@ -63,6 +66,21 @@ npm install `@bigmistqke/repl`
 yarn add `@bigmistqke/repl`
 pnpm install `@bigmistqke/repl`
 ```
+
+# Entries
+
+The `@bigmistqke/repl` library is designed to be modular, allowing users to import only the parts they need for their project from a CDN if they would like to. Below is a list of all available modules within the `@bigmistqke/repl` ecosystem:
+
+- **[@bigmistqke/repl](#bigmistqkerepl)**: The main entry point that includes the primary repl component and foundational utilities.
+- **[@bigmistqke/repl/editor/monaco](#bigmistqkerepleditormonaco)**: Integrates the Monaco editor, providing a rich coding environment.
+- **[@bigmistqke/repl/editor/shiki](#bigmistqkerepleditorshiki)**: Adds syntax highlighting through the Shiki library.
+- **[@bigmistqke/repl/runtime](#bigmistqkereplruntime)**: Contains core runtime functionalities necessary for creating and managing the virtual environment within the repl.
+- **[@bigmistqke/repl/plugins/rollup-service-worker](#bigmistqkereplpluginsrollup-service-worker)**: Enhances the repl with service worker capabilities to efficiently manage caching.
+- **[@bigmistqke/repl/plugins/babel-solid-repl](#bigmistqkereplpluginsbabel-solid-repl)**: Provides plugins for Babel that are optimized for SolidJS applications.
+- **[@bigmistqke/repl/transform/babel](#bigmistqkerepltransformbabel)**: Supports the integration of Babel for dynamic JavaScript code transformation.
+- **[@bigmistqke/repl/transform/typescript](#bigmistqkerepltransformtypescript)**: Allows for the inclusion and use of the TypeScript compiler for code transformation.
+- **[@bigmistqke/repl/transform-module-paths/typescript](#bigmistqkerepltransform-module-pathstypescript)**: Offers utilities for managing and transforming module paths in TypeScript files, crucial for resolving imports and integrating external modules.
+
 
 # @bigmistqke/repl
 
@@ -82,7 +100,7 @@ It provides access for its children to its internal `Runtime` through the `useRu
 
 ```typescript
 type ReplPropsBase = ComponentProps<'div'> & Omit<RuntimeConfig, 'transform' | 'transformModulePaths'>
-export interface ReplProps extends ReplPropsBase {
+interface ReplProps extends ReplPropsBase {
     /** Required module path transformer, such as `@bigmistqke/transform-module-path/typescript`, to resolve external modules and relative imports. */
     transformModulePaths: TransformModulePaths | Promise<TransformModulePaths>
     /** Required code transformer, such as `@bigmistqke/transform/babel`, for transpiling TypeScript to JavaScript. */
@@ -98,7 +116,7 @@ import { typescriptTransformModulePaths } from '@bigmistqke/repl/transform-modul
 import { babelTransform } from '@bigmistqke/repl/transform/babel'
 import { babelSolidReplPlugin } from '@bigmistqke/repl/plugins/babel-solid-repl'
 
-<Repl
+const repl = <Repl
   transformModulePaths={typescriptTransformModulePaths(import('https://esm.sh/typescript'))}
   transform={babelTransform({
     babel: import('https://esm.sh/@babel/standalone'),
@@ -130,15 +148,20 @@ interface FrameProps extends ComponentProps<'iframe'> {
 ### Usage
 
 ```tsx
-import { Frame } from '@bigmistqke/repl'
-<Frame
-  style={{ flex: 1 }}
-  name="frame-2"
-  bodyStyle={{
-    padding: '0px',
-    margin: '0px',
-  }}
-/>
+import { Frame, Repl } from '@bigmistqke/repl'
+
+const repl = (
+  <Repl>
+    <Frame
+      style={{ flex: 1 }}
+      name="frame-2"
+      bodyStyle={{
+        padding: '0px',
+        margin: '0px',
+      }}
+    />
+  </Repl>
+)
 ```
 
 ## DevTools Component
@@ -158,11 +181,15 @@ interface DevToolsProps extends ComponentProps<'iframe'> {
 ### Usage
 
 ```tsx
-import { DevTools } from '@bigmistqke/repl'
+import { DevTools, Repl } from '@bigmistqke/repl'
 
-// To debug a frame named 'example':
-<Frame name="example" />
-<DevTools name="example" />
+// To debug a frame named 'example'
+const repl = (
+  <Repl>
+    <Frame name="example" />
+    <DevTools name="example" />
+  </Repl>
+)
 ```
 
 ## TabBar Component
@@ -182,10 +209,15 @@ interface TabBarProps extends ComponentProps<'div'> {
 ### Usage
 
 ```tsx
-import { TabBar } from '@bigmistqke/repl'
-<TabBar style={{ flex: 1 }}>
-  {({ path }) => <button onClick={() => setCurrentPath(path)}>{path}</button>}
-</TabBar>
+import { TabBar, Repl } from '@bigmistqke/repl'
+
+const repl = (
+  <Repl>
+    <TabBar style={{ flex: 1 }}>
+      {({ path }) => <button onClick={() => ...}>{path}</button>}
+    </TabBar>
+  </Repl>
+)
 ```
 
 ## useRuntime Hook
@@ -233,7 +265,7 @@ For `MonacoEditor`, providing `monaco` and `theme` is optional because it can fu
 **Note: if you want to automatically import types of external packages you have to enable the `importExternalTypes`-prop of [`Repl`](#repl-component).** 
 
 ```ts
-export interface MonacoProviderProps {
+interface MonacoProviderProps {
   /** Required static or dynamic import of `MonacoTheme`. Theme needs to be optimized to make use of TextMate. */
   theme: MonacoTheme | Promise<MonacoTheme>
   /** Required static or dynamic import of `Monaco` */
@@ -244,7 +276,7 @@ export interface MonacoProviderProps {
 
 type MonacoEditorPropsBase = ComponentProps<'div'> & MonacoProviderProps
 
-export interface MonacoEditorProps extends MonacoEditorPropsBase {
+interface MonacoEditorProps extends MonacoEditorPropsBase {
   /** Required path of the file in the virtual filesystem */
   path: string
   /** Optional callback that is executed when the editor is fully mounted */
@@ -261,19 +293,24 @@ export interface MonacoEditorProps extends MonacoEditorPropsBase {
 When using `MonacoProvider`, multiple `MonacoEditor` components can share the same Monaco instance. This setup is more efficient when you have multiple editors, as it reduces the overhead of initializing multiple instances of Monaco.
 
 ```tsx
+import { Repl } from '@bigmistqke/repl'
 import { MonacoProvider, MonacoEditor } from '@bigmistqke/repl/editor/monaco'
 import loader from '@monaco-editor/loader'
 import vs_dark from '@bigmistqke/repl/editor/monaco/themes/vs_dark_good.json'
 import { createSignal } from 'solid-js'
 
-<MonacoProvider 
-  monaco={loader.init()} 
-  theme={vs_dark} 
-  tsconfig={tsconfig}
->
-  <MonacoEditor path="src/index.tsx" />
-  <MonacoEditor path="src/another.tsx" />
-</MonacoProvider>
+const repl = (
+  <Repl>
+    <MonacoProvider 
+      monaco={loader.init()} 
+      theme={vs_dark} 
+      tsconfig={tsconfig}
+    >
+      <MonacoEditor path="src/index.tsx" />
+      <MonacoEditor path="src/another.tsx" />
+    </MonacoProvider>
+  </Repl>
+)
 ```
 
 #### Using `MonacoEditor` without `MonacoProvider`
@@ -281,16 +318,21 @@ import { createSignal } from 'solid-js'
 If you use `MonacoEditor` outside of a `MonacoProvider`, it will instantiate its own Monaco instance. This can be useful for simple applications with only one editor, or when you need isolated Monaco instances.
 
 ```tsx
+import { Repl } from '@bigmistqke/repl'
 import { MonacoEditor } from '@bigmistqke/repl/editor/monaco'
 import loader from '@monaco-editor/loader'
 import vs_dark from '@bigmistqke/repl/editor/monaco/themes/vs_dark_good.json'
 import { createSignal } from 'solid-js'
 
-<MonacoEditor 
-  path="src/index.tsx" 
-  monaco={loader.init()} 
-  theme={vs_dark} 
-/>
+const repl = (
+  <Repl>
+    <MonacoEditor 
+      path="src/index.tsx" 
+      monaco={loader.init()} 
+      theme={vs_dark} 
+    />
+  </Repl>
+)
 ```
 
 ## @bigmistqke/repl/editor/shiki
@@ -322,11 +364,21 @@ interface ShikiEditorProps extends ComponentProps<'div'> {
 ### Usage
 
 ```tsx
+import { Repl } from '@bigmistqke/repl'
 import { ShikiEditor } from '@bigmistqke/repl/editor/shiki'
 import andromeeda from "shiki/themes/andromeeda.mjs"
 import tsx from "shiki/langs/tsx.mjs"
 
-<ShikiEditor style={{ flex: 1 }} path={currentPath()} lang={tsx} theme={andromeeda} />
+const repl = (
+  <Repl>
+    <ShikiEditor 
+      style={{ flex: 1 }} 
+      path={currentPath()} 
+      lang={tsx} 
+      theme={andromeeda} 
+    />
+  </Repl>
+)
 ```
 
 # @bigmistqke/repl/runtime
@@ -350,10 +402,10 @@ This module provides a separate export for the runtime of @bigmistqke/repl. Whil
 
 ## Runtime Class
 
-The `Runtime` class serves as the central coordination point of the `Repl` environment, integrating essential libraries and configurations necessary for its operation. It orchestrates interactions between various subsystems, including the file system, frame registry, type management, and module transformation. This setup ensures a cohesive and efficient development environment within the browser.
+The `Runtime` class serves as the central coordination point of the repl environment, integrating essential libraries and configurations necessary for its operation. It orchestrates interactions between various subsystems, including the file system, frame registry, type management, and module transformation. This setup ensures a cohesive and efficient development environment within the browser.
 
 ```typescript
-export class Runtime {
+class Runtime {
   constructor(config: RuntimeConfig)
 
   /** Configurations for the runtime environment. */
@@ -370,22 +422,22 @@ export class Runtime {
   /** Initializes the file system based on provided initial configuration. */
   initialize(): void
   /**
-   * Serializes the current state of the REPL into JSON format.
-   * @returns JSON representation of the REPL state.
+   * Serializes the current state of the repl into JSON format.
+   * @returns JSON representation of the repl state.
    */
   toJSON(): RuntimeState
   /**
-   * Triggers a download of the current REPL state as a JSON file.
+   * Triggers a download of the current repl state as a JSON file.
    * @param [name='repl.config.json'] - Name of the file to download.
    */
   download(name?: string): void
 }
 
-/** Configuration settings for the REPL runtime. */
-export type RuntimeConfig = {
+/** Configuration settings for the repl runtime. */
+interface RuntimeConfig {
   /** The CDN URL used to load TypeScript and other external libraries. Defaults to `esm.sh` */
   cdn?: string
-  /** CSS class for styling the root REPL component. */
+  /** CSS class for styling the root repl component. */
   class?: string
   /** Log internal events. Defaults to `false`. */
   debug?: boolean
@@ -435,7 +487,7 @@ runtime.initialize()
 
 ## File Abstract Class
 
-The abstract `File` class represents a generic file within the REPL environment.
+The abstract `File` class represents a generic file within the repl environment.
 
 ```typescript
 abstract class File {
@@ -450,7 +502,7 @@ abstract class File {
 
 ### JsFile Class
 
-The `JsFile` class represents javascript and typescript files within the REPL environment.
+The `JsFile` class represents javascript and typescript files within the repl environment.
 
 ```typescript
 class JsFile extends File {
@@ -463,7 +515,7 @@ class JsFile extends File {
 
 ### CssFile Class
 
-The `CssFile` class represents css files within the REPL environment.
+The `CssFile` class represents css files within the repl environment.
 
 ```typescript
 class CssFile extends File {
@@ -476,10 +528,10 @@ class CssFile extends File {
 
 ## Module Abstract Class
 
-The abstract `Module` class represents a generic file within the REPL environment.
+The abstract `Module` class represents a generic file within the repl environment.
 
 ```typescript
-export abstract class Module {
+abstract class Module {
   /**
    * Generates a new URL for an ES Module based on the current source code. This URL is not cached,
    * ensuring that each call provides a fresh module.
@@ -496,7 +548,7 @@ export abstract class Module {
 `JsModule` represents a JavaScript module capable of transpilation and dynamic import handling within the system. 
 
 ```typescript
-export class JsModule extends Module {
+class JsModule extends Module {
   constructor(runtime: Runtime, file: JsFile) 
 
   /** Generate an `ObjectUrl` to the module. */
@@ -525,7 +577,7 @@ export class JsModule extends Module {
 The `CssModule` class represents a CSS module capable of handling style sheets within the `Runtime`.
 
 ```typescript
-export class CssModule extends Module {
+class CssModule extends Module {
   constructor(private file: CssFile) 
 
   /** Generate an `ObjectUrl` to a javascript-module that injects a stylesheet with the css-file's source.. */
@@ -569,7 +621,7 @@ class FrameRegistry {
 Represents an individual `<iframe/>` within the application, managed by `Frame Registry`. It offers method to inject and execute Javascript and CSS code into its `Window`.
 
 ```typescript
-export class Frame {
+class Frame {
   constructor(public contentWindow: Window) {}
 
   /** Injects and executes an url pointing to a module into the frame's contentWindow. */
@@ -586,7 +638,7 @@ export class Frame {
 Parses the package.json file from a given base URL. Used internally by [`TypeImportUtils`](#typeimportutils).
 
 ```typescript
-export class PackageJsonParser {
+class PackageJsonParser {
   /** Fetches and parses the package.json file. Will throw if no valid entry is found.*/
   async parse(baseUrl: string): Promise<{
     typesUrl: string | undefined;
@@ -604,12 +656,12 @@ This class is crucial for maintaining type accuracy and enabling IntelliSense in
 
 ```typescript
 
-export interface TypeRegistryState {
+interface TypeRegistryState {
   alias: Record<string, string[]>
   sources: Record<string, string>
 }
 
-export class TypeRegistry {
+class TypeRegistry {
   constructor(public runtime: Runtime)
 
   /** Record of path-names and their respective sources. */
@@ -675,7 +727,7 @@ export default {
 
 ## @bigmistqke/repl/plugins/babel-solid-repl
 
-The `babel-solid-repl` plugin is designed to enhance the integration of SolidJS with a REPL environment. It ensures that previous render calls are cleaned up properly, simulating a form of Hot Module Replacement by disposing of artifacts from earlier render calls.
+The `babel-solid-repl` plugin is designed to enhance the integration of SolidJS with a repl environment. It ensures that previous render calls are cleaned up properly, simulating a form of Hot Module Replacement by disposing of artifacts from earlier render calls.
 
 ### Usage
 
@@ -717,9 +769,9 @@ This ensures that each render call is properly disposed of, simulating Hot Modul
 
 # Transform Utilities
 
-Transform utilities in `@bigmistqke/repl` enable the integration of JavaScript and TypeScript code transformation within the REPL environment. These utilities are designed to support dynamic transpilation of TypeScript and other code transformations directly in the browser.
+Transform utilities in `@bigmistqke/repl` enable the integration of JavaScript and TypeScript code transformation within the repl environment. These utilities are designed to support dynamic transpilation of TypeScript and other code transformations directly in the browser.
 
-`@bigmistqke/repl` allows users to provide their own transform functions instead of bundling specific tools. This approach offers developers flexibility to use the REPL with different toolsets according to their project requirements.
+`@bigmistqke/repl` allows users to provide their own transform functions instead of bundling specific tools. This approach offers developers flexibility to use the repl with different toolsets according to their project requirements.
 
 The transform utilities currently support:
 
@@ -741,7 +793,7 @@ This function takes the source code and its path, returning the transformed code
 This utility provides integration of [babel](https://babeljs.io/)-library within the `@bigmistqke/repl` environment.
 
 ```typescript
-export interface BabelConfig {
+interface BabelConfig {
   /** Required dynamic or static import of babel standalone library */
   babel: typeof Babel | Promise<typeof Babel>
   /** Optional cdn from where to download given babel-plugins. Defaults to `esm.sh`. */
@@ -751,7 +803,6 @@ export interface BabelConfig {
   /** Optional list of plugins. If urls are provided, they will be resolved according to the given cdn. */
   plugins?: (string | babel.PluginItem)[]
 }
-type TransformFn = (source: string, path: string) => string
 
 async function babelTransform(config: BabelConfig): TransformFn
 ```
@@ -761,14 +812,17 @@ async function babelTransform(config: BabelConfig): TransformFn
 ```typescript
 import { babelTransform } from '@bigmistqke/repl/transform/babel';
 
-<Repl
-  transform={babelTransform({
-    babel: import('https://esm.sh/@babel/standalone'),
-    presets: ['babel-preset-solid'],
-    plugins: [],
-    cdn: `https://esm.sh`
-  })}
-/>
+const repl = (
+  <Repl
+    transform={babelTransform({
+      babel: import('https://esm.sh/@babel/standalone'),
+      presets: ['babel-preset-solid'],
+      plugins: [],
+      cdn: `https://esm.sh`
+    })}
+  />
+)
+
 ```
 
 ## @bigmistqke/repl/transform/typescript
@@ -782,7 +836,6 @@ interface TypescriptConfig {
   /** Optional compiler options */
   tsconfig?: TS.CompilerOptions
 }
-type TransformFn = (source: string, path: string) => string
 
 async function typescriptTransform(config: TypescriptConfig): TransformFn
 ```
@@ -792,14 +845,16 @@ async function typescriptTransform(config: TypescriptConfig): TransformFn
 ```typescript
 import { typescriptTransform } from '@bigmistqke/repl/transform/typescript';
 
-<Repl
-  transform={typescriptTransform({
-    typescript: import('https://esm.sh/typescript'), 
-    tsconfig: {
-      ...
-    }
-  })}
-/>
+const repl = (
+  <Repl
+    transform={typescriptTransform({
+      typescript: import('https://esm.sh/typescript'), 
+      tsconfig: {
+        ...
+      }
+    })}
+  />
+)
 ```
 
 # Transform Module Path Utilities
@@ -807,7 +862,7 @@ import { typescriptTransform } from '@bigmistqke/repl/transform/typescript';
 In the `@bigmistqke/repl` environment, managing module paths effectively addresses several specific challenges:
 
 1. **Resolution of External Modules:** Ensuring that imports from sources such as CDNs are correctly resolved is crucial for external library integration.
-2. **Resolution of Relative Paths:** Accurately mapping relative paths within the REPL's virtual file system is essential for maintaining functional links between files.
+2. **Resolution of Relative Paths:** Accurately mapping relative paths within the repl's virtual file system is essential for maintaining functional links between files.
 3. **Removal of CSS Imports:** Since CSS imports in JavaScript or TypeScript files are not supported in-browser, these imports need to be transformed or removed to ensure compatibility.
 4. **Collect Types of External Modules** To successfully import the types of external modules, `@bigmistqke/repl` needs to be able to map over the module-paths of the external module's `.d.ts` files.
 
@@ -821,19 +876,70 @@ type TransformModulePaths =  (
 ) => string | undefined
 ```
 
-This modular approach lets users choose their tooling and update it as needed without being locked into a specific technology stack predefined by the REPL. Currently, `@bigmistqke/repl` provides a TypeScript-based utility, future expansions will include more diverse tooling options (PRs welcome!).
+This modular approach lets users choose their tooling and update it as needed without being locked into a specific technology stack predefined by the repl. Currently, `@bigmistqke/repl` provides a TypeScript-based utility, future expansions will include more diverse tooling options (PRs welcome!).
 
 ## @bigmistqke/repl/transform-module-paths/typescript
 
 ```typescript
 import { typescriptTransformModulePaths } from '@bigmistqke/repl/transform-module-paths/typescript';
 
-<Repl transformModulePaths={typescriptTransformModulePaths(import('https://esm.sh/typescript'))} />
+const repl = (
+  <Repl 
+    transformModulePaths={typescriptTransformModulePaths({
+      typescript: import('https://esm.sh/typescript')
+    })} 
+  />
+)
+```
+
+# Examples
+
+## Simple Example
+
+This straightforward example showcases how to set up and utilize the @bigmistqke/repl for a simple TypeScript computation directly within the browser. It illustrates the essential functionality of loading a single file, transpiling TypeScript, and executing a basic function, making it an ideal starting point for those new to integrating the REPL in their web applications.
+
+```tsx
+import { Repl, useRuntime } from '@bigmistqke/repl';
+import { typescriptTransform } from '@bigmistqke/repl/transform/typescript';
+
+const initialState = {
+  files: {
+    sources: {
+      'src/index.ts': `
+export const sum = (a: number, b: number): number => a + b;
+      `,
+    },
+  },
+};
+
+export default function App() {
+  function onSetup({ fileSystem }: Runtime) {
+    const file = fileSystem.get('src/index.ts');
+
+    // Get esm-url from file
+    const moduleUrl = file?.module.url;
+
+    // Import module and call its function
+    import(moduleUrl).then(module => {
+      console.log('Sum of 1 and 2 is:', module.sum(1, 2));
+    });
+  }
+
+  return (
+    <Repl
+      initialState={initialState}
+      onSetup={onSetup}
+      transform={typescriptTransform({
+        typescript: import('https://esm.sh/typescript'),
+      })}
+    />
+  );
+}
 ```
 
 ## Advanced Example
 
-This advanced example demonstrates complex interactions between various components and hooks, designed to facilitate an interactive and intuitive coding environment directly in the browser.
+This advanced example demonstrates how to setup a [solid](https://github.com/solidjs/solid) playground. This example includes integrations with `monaco-editor`, `babel`, `typescript` and the chrome devtools via `chobitsu`.
 
 ```tsx
 import { DevTools, Frame, Repl, TabBar, useRuntime } from '@bigmistqke/repl'
@@ -842,7 +948,7 @@ import { MonacoEditor, MonacoProvider, MonacoTheme } from '@bigmistqke/repl/edit
 // Importing monaco-themes optimized for textmate
 import vs_dark from '@bigmistqke/repl/editor/monaco/themes/vs_dark_good.json'
 // Importing runtime utilities
-import { JsFile, Runtime } from '@bigmistqke/repl/runtime'
+import { type Runtime } from '@bigmistqke/repl/runtime'
 // Importing transform utilities
 import { typescriptTransformModulePaths } from '@bigmistqke/repl/transform-module-paths/typescript'
 // Import utility to create a transform-function with babel
@@ -852,49 +958,23 @@ import { createEffect, createSignal, mapArray, onCleanup } from 'solid-js'
 // Importing a custom Babel plugin for Solid.js
 import { babelSolidReplPlugin } from 'src/plugins/babel-solid-repl'
 
-// TypeScript configuration for the REPL
-const tsconfig = {
-  target: 2, // ScriptTarget.ES2015
-  module: 5, // ModuleKind.ES2015
-  jsx: 1, // JsxEmit.Preserve
-  jsxImportSource: 'solid-js',
-  esModuleInterop: true,
-  allowSyntheticDefaultImports: true,
-  forceConsistentCasingInFileNames: true,
-  isolatedModules: true,
-  resolveJsonModule: true,
-  skipLibCheck: true,
-  strict: true,
-  noEmit: false,
-}
-
-// Initial state for the REPL
+// Initial state for the repl
 const initialState = {
   files: {
     sources: {
-      'src/index.css': `body {
-background: blue;
-}`,
+      'src/index.css': `body { background: blue; }`,
       'src/index.tsx': `import { render } from "solid-js/web";
 import { createSignal } from "solid-js";
 import "solid-js/jsx-runtime";
 import "./index.css";
 
-function Counter() {
 const [count, setCount] = createSignal(1);
-const increment = () => {
-console.log('increment');
-setCount(count => count + 1);
-}
 
-return (
-<button type="button" onClick={increment}>
-{count()}
-</button>
-);
-}
-
-render(() => <Counter />, document.body);
+render(() => (
+  <button onClick={() => setCount(count => count + 1)}>
+    {count()}
+  </button>
+), document.body);
 `,
     },
   },
@@ -904,27 +984,6 @@ export default function App() {
   // Reactive state for the current file path
   const [currentPath, setCurrentFile] = createSignal('src/index.tsx')
 
-  // Button to add new files to the virtual file system
-  function AddButton() {
-    const runtime = useRuntime()
-    return (
-      <button
-        onClick={() => {
-          let index = 1
-          let path = `src/index.tsx`
-          while (runtime.fileSystem.has(path)) {
-            path = `src/index\${index}.tsx`
-            index++
-          }
-          runtime.fileSystem.create(path)
-          setCurrentFile(path)
-        }}
-      >
-        add file
-      </button>
-    )
-  }
-
   // Setup function to initialize the runtime environment
   function onSetup({ fileSystem, frameRegistry }: Runtime) {
     createEffect(() => {
@@ -933,45 +992,44 @@ export default function App() {
 
       const entry = fileSystem.get('src/index.tsx')
 
-      if (entry instanceof JsFile) {
-        createEffect(() => {
-          // Inject the entry's module URL into the frame's window
-          frame.injectFile(entry)
-          onCleanup(() => frame.dispose(entry))
-        })
+      // Inject the entry's module URL into the frame's window
+      createEffect(() => {
+        frame.injectFile(entry)
+        onCleanup(() => frame.dispose(entry))
+      })
 
-        createEffect(
-          mapArray(entry.module.cssImports, css => {
-            createEffect(() => frame.injectFile(css))
-            onCleanup(() => frame.dispose(css))
-          }),
-        )
-      }
+      // Inject the css-imports from the entry-file into the frame's window.
+      createEffect(
+        mapArray(entry.module.cssImports, css => {
+          createEffect(() => frame.injectFile(css))
+          onCleanup(() => frame.dispose(css))
+        }),
+      )
     })
   }
 
   return (
     <Repl
-      // Automatically import types of external packages
       importExternalTypes
-      // Set up TypeScript and Babel transformations
       transformModulePaths={typescriptTransformModulePaths(import('https://esm.sh/typescript'))}
       transform={babelTransform({
         babel: import('https://esm.sh/@babel/standalone'),
         presets: ['babel-preset-solid'],
         plugins: [babelSolidReplPlugin],
-      })}
-      // Pass initial state
+      })}      
       initialState={initialState}
       onSetup={onSetup}
     >
-      <div>
-        <TabBar>
-          {({ path }) => <button onClick={() => setCurrentFile(path)}>{path}</button>}
-        </TabBar>
-        <AddButton />
-      </div>
-      <MonacoProvider theme={vs_dark as MonacoTheme} tsconfig={tsconfig}>
+      <MonacoProvider 
+        theme={vs_dark as MonacoTheme} 
+        tsconfig={{
+          target: 2, // ScriptTarget.ES2015
+          module: 5, // ModuleKind.ES2015
+          jsx: 1, // JsxEmit.Preserve
+          jsxImportSource: 'solid-js',
+          esModuleInterop: true,
+        }}
+      >
         <MonacoEditor path={currentPath()} />
       </MonacoProvider>
       <Frame
@@ -980,7 +1038,7 @@ export default function App() {
           margin: '0px',
         }}
       />
-      <DevTools name={'default'} />
+      <DevTools />
     </Repl>
   )
 }
