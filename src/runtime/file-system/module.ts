@@ -19,9 +19,7 @@ import { CssFile, JsFile } from './file'
 
 export type Model = ReturnType<Monaco['editor']['createModel']>
 
-/**
- * Abstract class representing a module that can generate and manage URLs for ES Modules based on source code.
- */
+/** Abstract class representing a module that can generate and manage URLs for ES Modules based on source code. */
 export abstract class Module {
   /**
    * Generates a new URL for an ES Module based on the current source code. This URL is not cached,
@@ -29,15 +27,11 @@ export abstract class Module {
    * @returns A string representing the URL, or undefined if it cannot be generated.
    */
   abstract generate: Accessor<string | undefined>
-  /**
-   * The current URL of the loaded module, if available.
-   */
+  /** The current URL of the loaded module, if available. */
   abstract url: string | undefined
 }
 
-/**
- * Represents a JavaScript module capable of transpilation and dynamic import handling within the system.
- */
+/** Represents a JavaScript module capable of transpilation and dynamic import handling within the system. */
 export class JsModule extends Module {
   generate: Accessor<string | undefined>
   private get: Accessor<string | undefined>
@@ -192,10 +186,7 @@ export class JsModule extends Module {
   }
 }
 
-/**
- * Represents a CSS module capable of handling style sheets within the `Runtime`. It extends the generic `Module` class
- * and provides mechanisms to apply styles dynamically to the document.
- */
+/** Represents a CSS module capable of handling style sheets within the `Runtime`. */
 export class CssModule extends Module {
   generate: Accessor<string | undefined>
   private get: Accessor<string | undefined>

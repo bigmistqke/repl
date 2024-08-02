@@ -3,8 +3,10 @@ import { SetStoreFunction, createStore } from 'solid-js/store'
 import { Runtime } from '../runtime'
 import { TypeImportUtils } from './type-import-utils'
 
-export type TypeRegistryState = {
+export interface TypeRegistryState {
+  /** Record of aliases and the path-names they should be aliased to. */
   alias: Record<string, string[]>
+  /** Record of path-names and their respective sources. */
   sources: Record<string, string>
 }
 
@@ -24,7 +26,6 @@ export class TypeRegistry {
 
   /**
    * Initializes a new instance of the TypeRegistry class.
-   *
    * @param runtime The repl-instance that interacts with this type registry.
    */
   constructor(public runtime: Runtime) {
@@ -35,7 +36,6 @@ export class TypeRegistry {
 
   /**
    * Converts the current state of the type registry into a JSON object.
-   *
    * @returns The current state of the type registry.
    */
   toJSON(): TypeRegistryState {
@@ -47,7 +47,6 @@ export class TypeRegistry {
 
   /**
    * Initializes the registry with a predefined state, setting up known types and aliases.
-   *
    * @param initialState The initial state to load into the registry.
    */
   initialize(initialState: Partial<TypeRegistryState>) {
@@ -67,10 +66,8 @@ export class TypeRegistry {
 
   /**
    * Adds or updates a path in the TypeScript configuration to map to an aliased package.
-   *
    * @param packageName The package name to alias.
    * @param virtualPath The virtual path that the alias points to.
-   * @private
    */
   aliasPath(packageName: string, virtualPath: string) {
     this.setAlias(packageName, [virtualPath])
@@ -78,10 +75,8 @@ export class TypeRegistry {
 
   /**
    * Adds or updates a type definition source to the registry.
-   *
    * @param path The path of the type definition file.
    * @param value The content of the type definition file.
-   * @private
    */
   set(path: string, value: string) {
     this.setSources(path, value)
@@ -89,10 +84,8 @@ export class TypeRegistry {
 
   /**
    * Checks if a specific path is already registered in the type sources.
-   *
    * @param path The path to check.
    * @returns True if the path is registered, false otherwise.
-   * @private
    */
   has(path: string) {
     return path in this.sources

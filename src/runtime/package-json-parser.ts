@@ -1,32 +1,58 @@
-type ExportCondition = {
+interface ExportCondition {
+  /** The import path for the module. */
   import?: string | ExportCondition
+  /** The default export path for the module. */
   default?: string | ExportCondition
+  /** The types definition path for the module. */
   types?: string
+  /** The browser-specific export path. */
   browser?: string | ExportCondition
+  /** The Node.js-specific export path. */
   node?: string | ExportCondition
+  /** Additional custom properties. */
   [key: string]: any
 }
 
-type ExportEntry = {
+interface ExportEntry {
+  /** The import path for the module. */
   import?: string | ExportCondition
+  /** The default export path for the module. */
   default?: string | ExportCondition
+  /** The types definition path for the module. */
   types?: string
+  /** The Node.js-specific export path. */
   node?: string | ExportCondition
+  /** The browser-specific export path. */
   browser?: string | ExportCondition
+  /** The development-specific export path. */
   development?: string | ExportCondition
+  /** Additional custom properties. */
   [key: string]: any
 }
 
 interface PackageJson {
+  /** The main entry point of the package. */
   main?: string
+  /** The name of the package. */
   name: string
+  /** The module entry point for ES modules. */
   module?: string
+  /** The types definition path for the package. */
   types?: string
+  /** Alias for the types definition path. */
   typings?: string
+  /** The exports field for the package. */
   exports?: string | ExportEntry
 }
 
+/** Parses the package.json file from a given base URL. */
 export class PackageJsonParser {
+  /**
+   * Fetches and parses the package.json file.
+   * @param baseUrl - The base URL to fetch the package.json from.
+   * @returns An object containing the script URL, types URL, and package name.
+   * @throws Will throw an error if no valid module entry is found.
+   */
   async parse(baseUrl: string) {
     if (baseUrl.startsWith('.')) {
       baseUrl = new URL(baseUrl, window.location.href.toString()).href
@@ -61,6 +87,14 @@ export class PackageJsonParser {
     }
   }
 
+  /**
+   * Resolves the export path for a given entry in the package exports.
+   * @param baseUrl - The base URL for resolving paths.
+   * @param exports - The exports entry to resolve.
+   * @param priority - The primary export key to resolve.
+   * @param secondary - The secondary export key to resolve.
+   * @returns The resolved export path or undefined if not found.
+   */
   private resolveExportPath(
     baseUrl: string,
     exports: ExportEntry | undefined,

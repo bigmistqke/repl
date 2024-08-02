@@ -1,11 +1,11 @@
 import type TS from 'typescript'
 
-export type TypescriptConfig = {
+export interface TypescriptConfig {
   typescript: typeof TS | Promise<typeof TS>
   tsconfig: TS.CompilerOptions
 }
 
-export async function typescriptAdapter(config: TypescriptConfig) {
+export async function typescriptTransform(config: TypescriptConfig) {
   const ts = await config.typescript
   return (source: string, path: string) => {
     const isTypescript = path.endsWith('ts') || path.endsWith('tsx')

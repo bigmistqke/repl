@@ -3,12 +3,15 @@ import { SetStoreFunction, createStore } from 'solid-js/store'
 import { Runtime } from '../runtime'
 import { CssFile, File, JsFile } from './file'
 
-export type FileSystemState = {
+export interface FileSystemState {
   sources: Record<string, string>
   alias: Record<string, string>
 }
-
-export type CompilationEvent = { url: string; path: string; fileSystem: FileSystem }
+export interface CompilationEvent {
+  url: string
+  path: string
+  fileSystem: FileSystem
+}
 export type CompilationHandler = (event: CompilationEvent) => void
 
 /**

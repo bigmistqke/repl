@@ -3,6 +3,7 @@ import { ShikiTextarea, ShikiTextareaProps } from 'solid-shiki-textarea'
 import { useRuntime } from 'src/use-runtime'
 
 interface ShikiEditorProps extends Omit<ShikiTextareaProps, 'value'> {
+  /** The path of the file in the virtual filesystem. */
   path: string
 }
 

@@ -1,4 +1,4 @@
-import loader, { type Monaco } from '@monaco-editor/loader'
+import { type Monaco } from '@monaco-editor/loader'
 import { wireTmGrammars } from 'monaco-editor-textmate'
 import { Registry } from 'monaco-textmate'
 import { loadWASM } from 'onigasm'
@@ -22,9 +22,10 @@ export type MonacoTheme = Parameters<Monaco['editor']['defineTheme']>[1]
 export function createMonaco(props: {
   tsconfig?: ts.CompilerOptions
   theme?: MonacoTheme | Promise<MonacoTheme>
+  monaco: Promise<Monaco> | Monaco
 }): Resource<Monaco> {
   const runtime = useRuntime()
-  const [monaco] = createResource(() => loader.init())
+  const [monaco] = createResource(() => props.monaco)
   // Load monaco and import all of the repl's resources
   const [resources] = createResource(() =>
     Promise.all([

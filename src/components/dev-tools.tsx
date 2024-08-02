@@ -13,7 +13,9 @@ import { html, javascript } from 'src/utils/object-url-literal'
 import { useRuntime } from '../use-runtime'
 import styles from './repl.module.css'
 
-export type DevToolsProps = ComponentProps<'iframe'> & { name?: string }
+export interface DevToolsProps extends ComponentProps<'iframe'> {
+  name?: string
+}
 
 /**
  * `DevTools` embeds an iframe to provide a custom Chrome DevTools interface for debugging purposes.

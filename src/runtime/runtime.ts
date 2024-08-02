@@ -5,15 +5,15 @@ import { FrameRegistry } from './frame-registry'
 import { ImportUtils } from './import-utils'
 import { TypeRegistry, TypeRegistryState } from './type-registry'
 
-export type RuntimeState = {
+export interface RuntimeState {
   files: FileSystemState
   types: TypeRegistryState
 }
 
-export type InitialState = Partial<{
-  files: Partial<FileSystemState>
-  types: Partial<TypeRegistryState>
-}>
+export interface InitialState {
+  files?: Partial<FileSystemState>
+  types?: Partial<TypeRegistryState>
+}
 
 export type Transform = (source: string, path: string) => string
 export type TransformModulePaths = (
@@ -21,25 +21,33 @@ export type TransformModulePaths = (
   callback: (value: string) => string | null,
 ) => string | undefined
 
-export type RuntimeConfig = {
-  /** Optional actions like saving the current state of the REPL. */
-  actions?: {
-    saveRepl?: boolean
-  }
+export interface RuntimeConfig {
   /** The CDN URL used to load TypeScript and other external libraries. */
   cdn?: string
   /** CSS class for styling the root REPL component. */
   class?: string
+  /** Log internal events. */
+  debug?: boolean
   /** Initial state of the virtual file system to preload files. */
   initialState?: InitialState
   /** Import external types from the cdn. */
   importExternalTypes?: boolean
-  /** Log internal events. */
-  debug?: boolean
+  /**
+   * Function to transform the source code.
+   * @param source - The source code to transform.
+   * @param path - The path of the source file.
+   * @returns The transformed source code.
+   */
+  transform: Transform
+  /**
+   * Function to transform module paths.
+   * @param source - The source code containing module paths.
+   * @param callback - A callback function to transform each module path.
+   * @returns The transformed module-path or null (will remove the module-declaration).
+   */
+  transformModulePaths: TransformModulePaths
   /** Callback function that runs after initializing the editor and file system. */
   onSetup?: (runtime: Runtime) => Promise<void> | void
-  transformModulePaths: TransformModulePaths
-  transform: Transform
 }
 
 /**
@@ -48,29 +56,15 @@ export type RuntimeConfig = {
  * It maintains references to the file system, frame management systems, and essential development libraries.
  */
 export class Runtime {
-  /**
-   * Configurations for the runtime environment. Ensures mandatory settings like 'cdn' are always included.
-   */
+  /** Configurations for the runtime environment. Ensures mandatory settings like 'cdn' are always included. */
   config: Mandatory<RuntimeConfig, 'cdn'>
-  /**
-   * Manages file operations within the virtual file system.
-   */
+  /** Manages file operations within the virtual file system. */
   fileSystem: FileSystem
-  /**
-   * Handles the registration and management of iframe containers for isolated code execution.
-   */
+  /** Handles the registration and management of iframe containers for isolated code execution. */
   frameRegistry: FrameRegistry
-  /**
-   * Manages TypeScript declaration files and other type-related functionality.
-   */
+  /** Manages TypeScript declaration files and other type-related functionality. */
   typeRegistry: TypeRegistry
-  // /**
-  //  * Utility class for transpiling code with configured Babel presets and plugins.
-  //  */
-  // transpiler: Transpiler
-  /**
-   * Utility class for handling imports from URLS pointing to non-esm packages.
-   */
+  /** Utility class for handling imports from URLS pointing to non-esm packages. */
   import: ImportUtils
 
   initialized = false
@@ -88,7 +82,6 @@ export class Runtime {
 
   /**
    * Serializes the current state of the repl into JSON format.
-   *
    * @returns JSON representation of the repl state.
    */
   toJSON(): RuntimeState {
@@ -98,9 +91,7 @@ export class Runtime {
     }
   }
 
-  /**
-   * Initializes the file system based on provided initial configuration, setting up files and types.
-   */
+  /** Initializes the file system based on provided initial configuration, setting up files and types. */
   initialize() {
     const initialState = this.config.initialState
     if (initialState) {
@@ -116,7 +107,6 @@ export class Runtime {
 
   /**
    * Triggers a download of the current repl-state as a JSON file.
-   *
    * @param [name='repl.config.json'] - Name of the file to download.
    */
   download(name = 'repl.config.json') {

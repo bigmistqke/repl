@@ -14,11 +14,12 @@ import { Runtime, RuntimeConfig } from '../runtime'
 import { runtimeContext } from '../use-runtime'
 import styles from './repl.module.css'
 
-export type ReplProps = ComponentProps<'div'> &
-  Omit<RuntimeConfig, 'transform' | 'transformModulePaths'> & {
-    transformModulePaths: TransformModulePaths | Promise<TransformModulePaths>
-    transform: Transform | Promise<Transform>
-  }
+type ReplPropsBase = ComponentProps<'div'> &
+  Omit<RuntimeConfig, 'transform' | 'transformModulePaths'>
+export interface ReplProps extends ReplPropsBase {
+  transformModulePaths: TransformModulePaths | Promise<TransformModulePaths>
+  transform: Transform | Promise<Transform>
+}
 
 /**
  * Initializes the Repl environment by dynamically loading required libraries (`Babel` and `TypeScript`)
@@ -33,14 +34,7 @@ export type ReplProps = ComponentProps<'div'> &
  */
 export function Repl(props: ReplProps) {
   const [, propsWithoutChildren] = splitProps(props, ['children'])
-  const [, rest] = splitProps(props, [
-    'actions',
-    'cdn',
-    'children',
-    'class',
-    'initialState',
-    'onSetup',
-  ])
+  const [, rest] = splitProps(props, ['cdn', 'children', 'class', 'initialState', 'onSetup'])
   const config = mergeProps(
     mergeProps(
       {
