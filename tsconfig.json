@@ -24,11 +24,14 @@
     "paths": {
       "src": ["./src"],
       "@bigmistqke/repl": ["./src"],
+      "@bigmistqke/repl/runtime": ["./src/runtime"],
       "@bigmistqke/repl/plugins/*": ["./src/plugins/*"],
-      "@bigmistqke/repl/monaco-themes/*": ["./src/components/monaco/themes/*"],
+      "@bigmistqke/repl/editor/monaco": ["./src/editor/monaco"],
+      "@bigmistqke/repl/editor/monaco/themes": ["./src/components/monaco/themes/*"],
+      "@bigmistqke/repl/editor/shiki": ["./src/editor/shiki"],
       "@bigmistqke/repl/transform/*": ["src/transform/*"],
       "@bigmistqke/repl/transform-module-paths/*": ["./src/transform-module-paths/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "dist"]
 }

@@ -1,8 +1,8 @@
-import type ts from 'typescript'
+import type TS from 'typescript'
 
 export type TypescriptConfig = {
-  typescript: typeof ts | Promise<typeof ts>
-  tsconfig: ts.CompilerOptions
+  typescript: typeof TS | Promise<typeof TS>
+  tsconfig: TS.CompilerOptions
 }
 
 export async function typescriptAdapter(config: TypescriptConfig) {

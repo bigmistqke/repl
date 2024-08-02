@@ -1,19 +1,11 @@
-import {
-  DevTools,
-  Frame,
-  JsFile,
-  MonacoEditor,
-  MonacoProvider,
-  Repl,
-  TabBar,
-  useRuntime,
-} from '@bigmistqke/repl'
-import vs_dark from '@bigmistqke/repl/monaco-themes/vs_dark_good.json'
+import { DevTools, Frame, Repl, TabBar, useRuntime } from '@bigmistqke/repl'
+import { MonacoEditor, MonacoProvider, MonacoTheme } from '@bigmistqke/repl/editor/monaco'
+import { JsFile } from '@bigmistqke/repl/runtime'
 import { typescriptTransformModulePaths } from '@bigmistqke/repl/transform-module-paths/typescript'
 import { babelTransform } from '@bigmistqke/repl/transform/babel'
 import { Resizable } from 'corvu/resizable'
 import { createEffect, createSignal, mapArray, onCleanup, type Component } from 'solid-js'
-import { MonacoTheme } from 'src/components/monaco/create-monaco'
+import vs_dark from 'src/editor/monaco/themes/vs_dark_good.json'
 import { babelSolidReplPlugin } from 'src/plugins/babel-solid-repl'
 import styles from './App.module.css'
 
@@ -101,9 +93,9 @@ const App: Component = () => {
     <Repl
       debug
       importExternalTypes
-      transformModulePaths={typescriptTransformModulePaths(import('typescript'))}
+      transformModulePaths={typescriptTransformModulePaths(import('https://esm.sh/typescript'))}
       transform={babelTransform({
-        babel: import('@babel/standalone'),
+        babel: import('https://esm.sh/@babel/standalone'),
         presets: ['babel-preset-solid'],
         plugins: [babelSolidReplPlugin],
       })}

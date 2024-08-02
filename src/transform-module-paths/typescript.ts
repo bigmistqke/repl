@@ -1,4 +1,4 @@
-import TS from 'typescript'
+import type TS from 'typescript'
 
 export async function typescriptTransformModulePaths(typescript: Promise<typeof TS> | typeof TS) {
   const ts = await typescript

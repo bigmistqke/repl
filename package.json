@@ -46,18 +46,17 @@
     "@types/babel__standalone": "^7.1.7",
     "babel-preset-solid": "^1.8.19",
     "clsx": "^2.1.0",
-    "colord": "^2.9.3",
     "onigasm": "^2.2.5",
-    "solid-shiki-textarea": "^0.1.5"
+    "solid-shiki-textarea": "^0.1.5",
+    "monaco-editor-textmate": "^4.0.0",
+    "monaco-textmate": "^3.0.1"
   },
   "peerDependencies": {
-    "@monaco-editor/loader": "^1.4.0",
-    "monaco-editor-textmate": "^4.0.0",
-    "monaco-textmate": "^3.0.1",
     "shiki": "^1.4.0",
     "solid-js": "^1.6.0"
   },
   "devDependencies": {
+    "@monaco-editor/loader": "^1.4.0",
     "@babel/plugin-syntax-import-attributes": "^7.24.1",
     "@babel/standalone": "^7.24.4",
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
@@ -102,6 +101,18 @@
         "default": "./dist/index.js"
       }
     },
+    "./editor/monaco": {
+      "import": {
+        "types": "./dist/editor/monaco.d.ts",
+        "default": "./dist/editor/monaco.js"
+      }
+    },
+    "./editor/shiki": {
+      "import": {
+        "types": "./dist/editor/shiki.d.ts",
+        "default": "./dist/editor/shiki.js"
+      }
+    },
     "./plugins/rollup-service-worker": {
       "import": {
         "types": "./dist/plugins/rollup-service-worker.d.ts",
@@ -112,6 +123,12 @@
       "import": {
         "types": "./dist/plugins.d.ts",
         "default": "./dist/plugins.js"
+      }
+    },
+    "./runtime": {
+      "import": {
+        "types": "./dist/runtime.d.ts",
+        "default": "./dist/runtime.js"
       }
     },
     "./transform/babel": {

@@ -15,7 +15,17 @@ export default defineConfig({
       {
         fileName: name => `${name}.d.ts`,
         libraries: {
-          importedLibraries: ['shiki', 'solid-js'],
+          importedLibraries: [
+            'shiki',
+            'solid-js',
+            'typescript',
+            'solid-shiki-textarea',
+            '@monaco-editor/loader',
+            '@babel/standalone',
+          ],
+        },
+        output: {
+          sortNodes: true, // Helps in maintaining the order but check if additional flags are necessary
         },
       },
       {
@@ -36,6 +46,9 @@ export default defineConfig({
     lib: {
       entry: {
         index: resolve(__dirname, 'src/index.ts'),
+        runtime: resolve(__dirname, 'src/runtime/index.ts'),
+        'editor/monaco': resolve(__dirname, 'src/editor/monaco/index.ts'),
+        'editor/shiki': resolve(__dirname, 'src/editor/shiki/index.tsx'),
         'plugins/babel-solid-repl': resolve(__dirname, 'src/plugins/babel-solid-repl.ts'),
         'plugins/rollup-service-worker': resolve(
           __dirname,
@@ -53,7 +66,7 @@ export default defineConfig({
       formats: ['es'],
     },
     rollupOptions: {
-      external: ['solid-js', 'shiki'],
+      external: ['solid-js', 'shiki', '@monaco-editor/loader'],
       output: {
         globals: {
           'solid-js': 'solidjs',
