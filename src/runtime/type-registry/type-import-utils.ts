@@ -6,7 +6,6 @@ import {
   pathToPackageNameAndVersion,
   relativeToAbsolutePath,
 } from 'src/utils/path'
-import ts from 'typescript'
 import { TypeRegistry, TypeRegistryState } from '.'
 import { Runtime } from '../runtime'
 
@@ -70,16 +69,13 @@ export class TypeImportUtils {
 
       const promises: Promise<void>[] = []
 
-      const transformedCode = this.runtime.transpiler.transformModuleDeclarations(code, node => {
-        const specifier = node.moduleSpecifier as ts.StringLiteral
-        let modulePath = specifier.text
-
+      const transformedCode = this.runtime.config.transformModulePaths(code, modulePath => {
         if (isRelativePath(modulePath)) {
+          promises.push(resolvePath(relativeToAbsolutePath(path, modulePath)))
           if (modulePath.endsWith('.js')) {
             modulePath = modulePath.replace('.js', '.d.ts')
-            specifier.text = modulePath
+            return modulePath
           }
-          promises.push(resolvePath(relativeToAbsolutePath(path, modulePath)))
         } else if (isUrl(modulePath)) {
           let virtualPath = this.getVirtualPath(modulePath)
           when(pathToPackageNameAndVersion(virtualPath), ([packageName, version]) => {
@@ -106,12 +102,13 @@ export class TypeImportUtils {
             }
           })
 
-          specifier.text = virtualPath
           promises.push(this.fromUrl(modulePath))
           this.typeRegistry.aliasPath(virtualPath, `file:///node_modules/${virtualPath}`)
+          return virtualPath
         } else {
           promises.push(this.fromPackageName(modulePath))
         }
+        return modulePath
       })
 
       if (!transformedCode) {

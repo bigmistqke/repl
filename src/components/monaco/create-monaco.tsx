@@ -3,12 +3,13 @@ import { wireTmGrammars } from 'monaco-editor-textmate'
 import { Registry } from 'monaco-textmate'
 import { loadWASM } from 'onigasm'
 import onigasm from 'onigasm/lib/onigasm.wasm?url'
-import { Accessor, Resource, createEffect, createResource, mapArray } from 'solid-js'
+import { Resource, createEffect, createResource, mapArray } from 'solid-js'
 import { unwrap } from 'solid-js/store'
 import { CssFile } from 'src/runtime'
 import { useRuntime } from 'src/use-runtime'
 import { every, whenever } from 'src/utils/conditionals'
 import { formatInfo } from 'src/utils/format-log'
+import ts from 'typescript'
 
 const GRAMMARS = new Map([
   ['typescript', 'source.tsx'],
@@ -18,9 +19,10 @@ const GRAMMARS = new Map([
 
 export type MonacoTheme = Parameters<Monaco['editor']['defineTheme']>[1]
 
-export function createMonaco(
-  config: Accessor<MonacoTheme | Promise<MonacoTheme>>,
-): Resource<Monaco> {
+export function createMonaco(props: {
+  tsconfig?: ts.CompilerOptions
+  theme?: MonacoTheme | Promise<MonacoTheme>
+}): Resource<Monaco> {
   const runtime = useRuntime()
   const [monaco] = createResource(() => loader.init())
   // Load monaco and import all of the repl's resources
@@ -30,7 +32,7 @@ export function createMonaco(
       import('./text-mate/css.tmLanguage.json'),
     ]),
   )
-  const [theme] = createResource(config)
+  const [theme] = createResource(() => props.theme)
 
   createEffect(
     whenever(every(monaco, theme), ([monaco, theme]) => {
@@ -109,9 +111,9 @@ export function createMonaco(
       createEffect(() => {
         // add virtual path to monaco's tsconfig's `path`-property
         const tsCompilerOptions = unwrap({
-          ...runtime.config.typescript?.compilerOptions,
+          ...props?.tsconfig,
           paths: {
-            ...runtime.config.typescript?.compilerOptions.paths,
+            ...props?.tsconfig?.paths,
             ...runtime.typeRegistry.alias,
           },
         })

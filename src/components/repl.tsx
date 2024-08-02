@@ -3,7 +3,6 @@ import {
   ComponentProps,
   Show,
   createEffect,
-  createMemo,
   createResource,
   mergeProps,
   splitProps,
@@ -30,14 +29,12 @@ export function Repl(props: ReplProps) {
   const [, propsWithoutChildren] = splitProps(props, ['children'])
   const [, rest] = splitProps(props, [
     'actions',
-    'babel',
     'cdn',
     'children',
     'class',
     'initialState',
     'mode',
     'onSetup',
-    'typescript',
   ])
   const config = mergeProps(
     {
@@ -46,51 +43,8 @@ export function Repl(props: ReplProps) {
     propsWithoutChildren,
   )
 
-  const [typescript] = createResource(() => config.typescript?.library)
-  const [babel] = createResource(() => config.babel?.library)
-  const [babelPresets] = createResource(() =>
-    Promise.all(
-      config.babel?.presets?.map(
-        async preset => (await import(/* @vite-ignore */ `${config.cdn}/${preset}`)).default,
-      ) || [],
-    ),
-  )
-  const [babelPlugins] = createResource(() =>
-    Promise.all(
-      config.babel?.plugins?.map(async plugin => {
-        if (typeof plugin === 'string') {
-          return (await import(/* @vite-ignore */ `${config.cdn}/${plugin}`)).default
-        }
-        return plugin
-      }) || [],
-    ),
-  )
-
-  const dependenciesLoaded = createMemo(previous => {
-    if (previous) return true
-    if (!typescript()) return false
-    if (config.babel && !(babel() && babelPlugins() && babelPresets())) return false
-    return true
-  }, false)
-
-  const [runtime] = createResource(dependenciesLoaded, async () => {
-    const runtime = new Runtime(
-      {
-        get typescript() {
-          return typescript() || typescript.latest!
-        },
-        get babel() {
-          return babel() || babel.latest
-        },
-        get babelPlugins() {
-          return babelPlugins() || babelPlugins.latest || []
-        },
-        get babelPresets() {
-          return babelPresets() || babelPresets.latest || []
-        },
-      },
-      config,
-    )
+  const [runtime] = createResource(async () => {
+    const runtime = new Runtime(config)
     await props.onSetup?.(runtime)
     runtime.initialize()
     return runtime
@@ -98,10 +52,6 @@ export function Repl(props: ReplProps) {
 
   createEffect(() => {
     if (!config.debug) return
-    createEffect(() => console.info(...formatInfo('typescript', typescript())))
-    createEffect(() => console.info(...formatInfo('babel', babel())))
-    createEffect(() => console.info(...formatInfo('babel-plugins', babelPlugins())))
-    createEffect(() => console.info(...formatInfo('babel-presets', babelPresets())))
     createEffect(() => runtime() && console.info(...formatInfo('runtime initialized')))
   })
 

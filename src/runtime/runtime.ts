@@ -3,9 +3,9 @@ import { mergeProps } from 'solid-js'
 import type { Mandatory } from 'src/utils/type'
 import type ts from 'typescript'
 import { FileSystem, FileSystemState } from './file-system'
+import { File } from './file-system/file'
 import { FrameRegistry } from './frame-registry'
 import { ImportUtils } from './import-utils'
-import { Transpiler } from './transpiler'
 import { TypeRegistry, TypeRegistryState } from './type-registry'
 
 export type RuntimeState = {
@@ -28,30 +28,31 @@ export type BabelConfig = {
   presets?: string[]
   plugins?: (string | babel.PluginItem)[]
 }
-export type RuntimeConfig = Partial<{
+export type RuntimeConfig = {
   /** Optional actions like saving the current state of the REPL. */
   actions?: {
     saveRepl?: boolean
   }
-  /** Configuration options for Babel, used for code transformation. */
-  babel: BabelConfig
   /** The CDN URL used to load TypeScript and other external libraries. */
-  cdn: string
+  cdn?: string
   /** CSS class for styling the root REPL component. */
-  class: string
+  class?: string
   /** Initial state of the virtual file system to preload files. */
-  initialState: InitialState
+  initialState?: InitialState
   /** Import external types from the cdn. */
   importExternalTypes?: boolean
   /** Log internal events. */
-  debug: boolean
+  debug?: boolean
   /** Theme setting for the Monaco editor. */
-  mode: 'light' | 'dark'
+  mode?: 'light' | 'dark'
   /** Callback function that runs after initializing the editor and file system. */
-  onSetup: (runtime: Runtime) => Promise<void> | void
-  /** TypeScript compiler options for the Monaco editor. */
-  typescript: TypescriptConfig
-}>
+  onSetup?: (runtime: Runtime) => Promise<void> | void
+  transformModulePaths: (
+    source: string,
+    callback: (value: string) => string | null,
+  ) => string | undefined
+  transform: (file: File) => string
+}
 
 /**
  * Provides a centralized context for managing the `Repl` runtime environment.
@@ -75,10 +76,10 @@ export class Runtime {
    * Manages TypeScript declaration files and other type-related functionality.
    */
   typeRegistry: TypeRegistry
-  /**
-   * Utility class for transpiling code with configured Babel presets and plugins.
-   */
-  transpiler: Transpiler
+  // /**
+  //  * Utility class for transpiling code with configured Babel presets and plugins.
+  //  */
+  // transpiler: Transpiler
   /**
    * Utility class for handling imports from URLS pointing to non-esm packages.
    */
@@ -87,17 +88,6 @@ export class Runtime {
   initialized = false
 
   constructor(
-    /** An object containing references to external libraries utilized by the REPL runtime. */
-    public libs: {
-      /**  The TypeScript library used for TypeScript code operations and transformations. */
-      typescript: typeof ts
-      /** The Babel library used for JavaScript code transformation. */
-      babel: typeof Babel | undefined
-      /** Babel presets used for transpiling files. */
-      babelPresets: any[]
-      /** Babel plugins used for transpiling files. */
-      babelPlugins: babel.PluginItem[]
-    },
     /** Configuration settings for the file system within the REPL runtime, used to initialize the FileSystem instance. */
     config: RuntimeConfig,
   ) {
@@ -106,7 +96,6 @@ export class Runtime {
     this.frameRegistry = new FrameRegistry()
     this.import = new ImportUtils(this)
     this.typeRegistry = new TypeRegistry(this)
-    this.transpiler = new Transpiler(this)
   }
 
   /**

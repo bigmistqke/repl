@@ -9,11 +9,10 @@ import {
   createSignal,
   untrack,
 } from 'solid-js'
-import { every, when, whenever } from 'src/utils/conditionals'
+import { when, whenever } from 'src/utils/conditionals'
 import { getExtensionFromPath } from 'src/utils/get-extension-from-path'
 import { javascript } from 'src/utils/object-url-literal'
 import { isRelativePath, isUrl, relativeToAbsolutePath } from 'src/utils/path'
-import type ts from 'typescript'
 import { Frame } from '../frame-registry/frame'
 import { Runtime } from '../runtime'
 import { CssFile, JsFile } from './file'
@@ -63,30 +62,10 @@ export class JsModule extends Module {
     const scheduled = createScheduled(fn => debounce(fn, 250))
     // Transpile source to javascript
     const [intermediary] = createResource(
-      every(
-        file.get.bind(file),
-        runtime.libs.babelPresets,
-        runtime.libs.babelPlugins,
-        // If no intermediary has been created before we do not throttle.
-        () => !initialized || scheduled(),
-      ),
-      async ([source, presets, plugins]) => {
+      () => [file.get(), !initialized || scheduled()],
+      () => {
         initialized = true
-        try {
-          let value: string = source
-          if (isTypescript) {
-            value = runtime.libs.typescript.transpile(
-              value,
-              runtime.config.typescript?.compilerOptions,
-            )
-          }
-          if (runtime.libs.babel) {
-            value = runtime.libs.babel.transform(value, { presets, plugins }).code!
-          }
-          return value
-        } catch (err) {
-          return source
-        }
+        return runtime.config.transform(file)
       },
     )
 
@@ -101,11 +80,8 @@ export class JsModule extends Module {
 
         try {
           return batch(() =>
-            runtime.transpiler.transformModuleDeclarations(value, node => {
-              const specifier = node.moduleSpecifier as ts.StringLiteral
-              let modulePath = specifier.text
-
-              if (isUrl(modulePath)) return
+            runtime.config.transformModulePaths(value, modulePath => {
+              if (isUrl(modulePath)) return modulePath
 
               const alias = runtime.fileSystem.alias[modulePath]
               // If the module-path is either an aliased path or a relative path
@@ -126,7 +102,7 @@ export class JsModule extends Module {
                   if (resolvedFile.module.url) {
                     // If moduleUrl is defined
                     // We transform the relative depedency with the module-url
-                    specifier.text = resolvedFile.module.url
+                    return resolvedFile.module.url
                   } else {
                     // If moduleUrl is not defined, we throw.
                     // This will break the loop, so we can return the previous result.
@@ -140,21 +116,23 @@ export class JsModule extends Module {
                     imports.includes(resolvedFile) ? imports : [...imports, resolvedFile],
                   )
                   staleImports.delete(resolvedFile)
-                  // Returning false will remove the node from the typescript-file
-                  return false
+                  // Returning null will remove the node from the typescript-file
+                  return null
                 }
+
+                return modulePath
               }
               // If the module-path is
               //    - not an aliased path,
               //    - nor a relative dependency,
               //    - nor a url
               // It must be a package-name.
-              else if (!isUrl(modulePath)) {
+              else {
                 // We transform this package-name to a cdn-url.
-                specifier.text = `${runtime.config.cdn}/${modulePath}`
                 if (runtime.config.importExternalTypes) {
                   runtime.typeRegistry.import.fromPackageName(modulePath)
                 }
+                return `${runtime.config.cdn}/${modulePath}`
               }
             }),
           )

@@ -44,6 +44,7 @@
     "@solid-primitives/resource": "^0.1.2",
     "@solid-primitives/scheduled": "^1.4.3",
     "@types/babel__standalone": "^7.1.7",
+    "babel-preset-solid": "^1.8.19",
     "clsx": "^2.1.0",
     "colord": "^2.9.3",
     "monaco-editor-textmate": "^4.0.0",

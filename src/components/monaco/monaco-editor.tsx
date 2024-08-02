@@ -12,7 +12,7 @@ import { CssFile } from 'src/runtime'
 import { useRuntime } from 'src/use-runtime'
 import { every, whenever } from 'src/utils/conditionals'
 import { MonacoTheme } from './create-monaco'
-import { useMonaco } from './monaco-provider'
+import { useMonacoContext } from './monaco-provider'
 
 type MonacoEditor = ReturnType<Monaco['editor']['create']>
 type MonacoEditorConfig = Parameters<Monaco['editor']['create']>[1]
@@ -44,20 +44,23 @@ export interface MonacoEditorProps extends Omit<ComponentProps<'div'>, 'ref'> {
 export function MonacoEditor(props: MonacoEditorProps) {
   const [, rest] = splitProps(props, ['class'])
   const runtime = useRuntime()
-  const monaco = useMonaco(() => props.theme)
+  const context = useMonacoContext(() => props.theme)
 
   // Initialize html-element of monaco-editor
   const container = (<div class={props.class} {...rest} />) as HTMLDivElement
 
-  const [editor] = createResource(monaco, monaco => {
-    // Create monaco-editor
-    return monaco.editor.create(container, {
-      value: '',
-      language: 'typescript',
-      automaticLayout: true,
-      ...props.editor,
-    })
-  })
+  const [editor] = createResource(
+    () => context.monaco(),
+    monaco => {
+      // Create monaco-editor
+      return monaco.editor.create(container, {
+        value: '',
+        language: 'typescript',
+        automaticLayout: true,
+        ...props.editor,
+      })
+    },
+  )
 
   // Get or create file
   const file = createMemo(
@@ -65,7 +68,7 @@ export function MonacoEditor(props: MonacoEditorProps) {
   )
 
   const model = createMemo(
-    whenever(every(monaco, file), ([monaco, file]) => {
+    whenever(every(context.monaco, file), ([monaco, file]) => {
       const uri = monaco.Uri.parse(`file:///${file.path}`)
       const source = untrack(() => file.get())
       const type = file instanceof CssFile ? 'css' : 'typescript'
@@ -74,7 +77,7 @@ export function MonacoEditor(props: MonacoEditorProps) {
   )
 
   createEffect(
-    whenever(every(monaco, editor), ([monaco, editor]) => {
+    whenever(every(context.monaco, editor), ([monaco, editor]) => {
       // Call onMount-prop
       props.onMount?.(editor)
 
