@@ -39,20 +39,21 @@
     "update-deps": "pnpm up -Li"
   },
   "dependencies": {
-    "@monaco-editor/loader": "^1.4.0",
     "@solid-primitives/list": "^0.0.100",
+    "@solid-primitives/promise": "^1.0.17",
     "@solid-primitives/resource": "^0.1.2",
     "@solid-primitives/scheduled": "^1.4.3",
     "@types/babel__standalone": "^7.1.7",
     "babel-preset-solid": "^1.8.19",
     "clsx": "^2.1.0",
     "colord": "^2.9.3",
-    "monaco-editor-textmate": "^4.0.0",
-    "monaco-textmate": "^3.0.1",
     "onigasm": "^2.2.5",
     "solid-shiki-textarea": "^0.1.5"
   },
   "peerDependencies": {
+    "@monaco-editor/loader": "^1.4.0",
+    "monaco-editor-textmate": "^4.0.0",
+    "monaco-textmate": "^3.0.1",
     "shiki": "^1.4.0",
     "solid-js": "^1.6.0"
   },
@@ -101,14 +102,34 @@
         "default": "./dist/index.js"
       }
     },
-    "./plugins": {
+    "./plugins/rollup-service-worker": {
+      "import": {
+        "types": "./dist/plugins/rollup-service-worker.d.ts",
+        "default": "./dist/plugins/rollup-service-worker.js"
+      }
+    },
+    "./plugins/babel-solid-repl": {
       "import": {
         "types": "./dist/plugins.d.ts",
         "default": "./dist/plugins.js"
-      },
-      "require": {
-        "types": "./dist/plugins.d.ts",
-        "default": "./dist/plugins.cjs.js"
+      }
+    },
+    "./transform/babel": {
+      "import": {
+        "types": "./dist/transform/babel.d.ts",
+        "default": "./dist/transform/babel.js"
+      }
+    },
+    "./transform/typescript": {
+      "import": {
+        "types": "./dist/transform/typescript.d.ts",
+        "default": "./dist/transform/typescript.js"
+      }
+    },
+    "./transform-module-paths/typescript": {
+      "import": {
+        "types": "./dist/transform-module-paths/typescript.d.ts",
+        "default": "./dist/transform-module-paths/typescript.js"
       }
     }
   },

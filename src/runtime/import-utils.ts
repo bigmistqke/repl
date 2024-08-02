@@ -2,7 +2,6 @@ import { createEffect, createResource } from 'solid-js'
 import { PackageJsonParser } from 'src/runtime'
 import { whenever } from 'src/utils/conditionals'
 import { isRelativePath, isUrl, relativeToAbsolutePath } from 'src/utils/path'
-import ts from 'typescript'
 import { Runtime } from './runtime'
 
 export class ImportUtils {
@@ -39,12 +38,11 @@ export class ImportUtils {
 
         const promises: Promise<void>[] = []
 
-        const transformedCode = this.runtime.transpiler.transformModuleDeclarations(code, node => {
-          const specifier = node.moduleSpecifier as ts.StringLiteral
-          const path = specifier.text
+        const transformedCode = await this.runtime.config.transformModulePaths(code, path => {
           if (isRelativePath(path)) {
             promises.push(resolvePath(relativeToAbsolutePath(url, path)))
           }
+          return path
         })
 
         if (!transformedCode) {

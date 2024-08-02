@@ -24,8 +24,10 @@
     "paths": {
       "src": ["./src"],
       "@bigmistqke/repl": ["./src"],
-      "@bigmistqke/repl/plugins": ["./src/plugins"],
-      "@bigmistqke/repl/monaco-themes/*": ["./src/components/monaco/themes/*"]
+      "@bigmistqke/repl/plugins/*": ["./src/plugins/*"],
+      "@bigmistqke/repl/monaco-themes/*": ["./src/components/monaco/themes/*"],
+      "@bigmistqke/repl/transform/*": ["src/transform/*"],
+      "@bigmistqke/repl/transform-module-paths/*": ["./src/transform-module-paths/*"]
     }
   },
   "include": ["src"]

@@ -1,4 +1,4 @@
-import { rollupServiceWorkerPlugin } from '@bigmistqke/repl/plugins'
+import { rollupServiceWorkerPlugin } from '@bigmistqke/repl/plugins/rollup-service-worker'
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill'
 import { defineConfig } from 'vite'
 import solidPlugin from 'vite-plugin-solid'

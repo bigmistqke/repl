@@ -1,5 +1,5 @@
 // import  from "@babel/parser"
-export const solidReplPlugin = function ({ types }: { types: any }): babel.PluginObj {
+export const babelSolidReplPlugin = function ({ types }: { types: any }): babel.PluginObj {
   return {
     name: 'solid-repl-plugin',
     visitor: {

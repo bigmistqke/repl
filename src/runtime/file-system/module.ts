@@ -63,9 +63,9 @@ export class JsModule extends Module {
     // Transpile source to javascript
     const [intermediary] = createResource(
       () => [file.get(), !initialized || scheduled()],
-      () => {
+      async () => {
         initialized = true
-        return runtime.config.transform(file)
+        return runtime.config.transform(file.get(), file.path)
       },
     )
 

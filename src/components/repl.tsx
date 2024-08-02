@@ -1,3 +1,4 @@
+import { until } from '@solid-primitives/promise'
 import clsx from 'clsx'
 import {
   ComponentProps,
@@ -7,12 +8,17 @@ import {
   mergeProps,
   splitProps,
 } from 'solid-js'
+import { Transform, TransformModulePaths } from 'src/runtime/runtime'
 import { formatInfo } from 'src/utils/format-log'
 import { Runtime, RuntimeConfig } from '../runtime'
 import { runtimeContext } from '../use-runtime'
 import styles from './repl.module.css'
 
-export type ReplProps = ComponentProps<'div'> & RuntimeConfig
+export type ReplProps = ComponentProps<'div'> &
+  Omit<RuntimeConfig, 'transform' | 'transformModulePaths'> & {
+    transformModulePaths: TransformModulePaths | Promise<TransformModulePaths>
+    transform: Transform | Promise<Transform>
+  }
 
 /**
  * Initializes the Repl environment by dynamically loading required libraries (`Babel` and `TypeScript`)
@@ -33,18 +39,32 @@ export function Repl(props: ReplProps) {
     'children',
     'class',
     'initialState',
-    'mode',
     'onSetup',
   ])
   const config = mergeProps(
-    {
-      cdn: 'https://esm.sh',
-    },
-    propsWithoutChildren,
+    mergeProps(
+      {
+        cdn: 'https://esm.sh',
+      },
+      propsWithoutChildren,
+    ),
   )
 
+  const [transform] = createResource(() => config.transform)
+  const [transformModulePaths] = createResource(() => config.transformModulePaths)
+
   const [runtime] = createResource(async () => {
-    const runtime = new Runtime(config)
+    await Promise.all([until(transform), until(transformModulePaths)])
+    const runtime = new Runtime(
+      mergeProps(config, {
+        get transform() {
+          return transform.latest!
+        },
+        get transformModulePaths() {
+          return transformModulePaths.latest!
+        },
+      }),
+    )
     await props.onSetup?.(runtime)
     runtime.initialize()
     return runtime
@@ -59,11 +79,7 @@ export function Repl(props: ReplProps) {
     <Show when={runtime()}>
       {runtime => (
         <runtimeContext.Provider value={runtime()}>
-          <div
-            data-dark-mode={props.mode || 'dark'}
-            class={clsx(styles.repl, props.class)}
-            {...rest}
-          >
+          <div class={clsx(styles.repl, props.class)} {...rest}>
             {props.children}
           </div>
         </runtimeContext.Provider>

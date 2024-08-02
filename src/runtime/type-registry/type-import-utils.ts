@@ -69,7 +69,7 @@ export class TypeImportUtils {
 
       const promises: Promise<void>[] = []
 
-      const transformedCode = this.runtime.config.transformModulePaths(code, modulePath => {
+      const transformedCode = await this.runtime.config.transformModulePaths(code, modulePath => {
         if (isRelativePath(modulePath)) {
           promises.push(resolvePath(relativeToAbsolutePath(path, modulePath)))
           if (modulePath.endsWith('.js')) {

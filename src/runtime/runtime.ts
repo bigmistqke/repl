@@ -1,9 +1,6 @@
-import * as Babel from '@babel/standalone'
 import { mergeProps } from 'solid-js'
 import type { Mandatory } from 'src/utils/type'
-import type ts from 'typescript'
 import { FileSystem, FileSystemState } from './file-system'
-import { File } from './file-system/file'
 import { FrameRegistry } from './frame-registry'
 import { ImportUtils } from './import-utils'
 import { TypeRegistry, TypeRegistryState } from './type-registry'
@@ -18,16 +15,12 @@ export type InitialState = Partial<{
   types: Partial<TypeRegistryState>
 }>
 
-export type TypescriptConfig = {
-  library: typeof ts | Promise<typeof ts>
-  compilerOptions: ts.CompilerOptions
-}
+export type Transform = (source: string, path: string) => string
+export type TransformModulePaths = (
+  source: string,
+  callback: (value: string) => string | null,
+) => string | undefined
 
-export type BabelConfig = {
-  library: typeof Babel | Promise<typeof Babel>
-  presets?: string[]
-  plugins?: (string | babel.PluginItem)[]
-}
 export type RuntimeConfig = {
   /** Optional actions like saving the current state of the REPL. */
   actions?: {
@@ -43,15 +36,10 @@ export type RuntimeConfig = {
   importExternalTypes?: boolean
   /** Log internal events. */
   debug?: boolean
-  /** Theme setting for the Monaco editor. */
-  mode?: 'light' | 'dark'
   /** Callback function that runs after initializing the editor and file system. */
   onSetup?: (runtime: Runtime) => Promise<void> | void
-  transformModulePaths: (
-    source: string,
-    callback: (value: string) => string | null,
-  ) => string | undefined
-  transform: (file: File) => string
+  transformModulePaths: TransformModulePaths
+  transform: Transform
 }
 
 /**

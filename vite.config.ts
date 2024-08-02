@@ -1,4 +1,4 @@
-import path from 'path'
+import { resolve } from 'path'
 import { defineConfig } from 'vite'
 import dtsBundleGenerator from 'vite-plugin-dts-bundle-generator'
 import { libInjectCss } from 'vite-plugin-lib-inject-css'
@@ -35,8 +35,18 @@ export default defineConfig({
   build: {
     lib: {
       entry: {
-        index: path.resolve(__dirname, 'src/index.ts'),
-        plugins: path.resolve(__dirname, 'src/plugins/index.ts'),
+        index: resolve(__dirname, 'src/index.ts'),
+        'plugins/babel-solid-repl': resolve(__dirname, 'src/plugins/babel-solid-repl.ts'),
+        'plugins/rollup-service-worker': resolve(
+          __dirname,
+          'src/plugins/rollup-service-worker/index.ts',
+        ),
+        'transform/babel': resolve(__dirname, 'src/transform/babel.ts'),
+        'transform/typescript': resolve(__dirname, 'src/transform/typescript.ts'),
+        'transform-module-paths/typescript': resolve(
+          __dirname,
+          'src/transform-module-paths/typescript.ts',
+        ),
       },
       name: 'repl',
       fileName: (format, name) => `${name}.js`,
