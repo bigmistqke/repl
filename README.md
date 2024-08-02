@@ -946,61 +946,60 @@ export default function App() {
 This advanced example demonstrates how to setup a [solid](https://github.com/solidjs/solid) playground. This example includes integrations with `monaco-editor`, `babel`, `typescript` and the chrome devtools via `chobitsu`.
 
 ```tsx
-import { DevTools, Frame, Repl, TabBar, useRuntime } from '@bigmistqke/repl'
-// Importing Monaco editor components and theme
-import { MonacoEditor, MonacoProvider, MonacoTheme } from '@bigmistqke/repl/editor/monaco'
-// Importing monaco-themes optimized for textmate
+import { DevTools, Frame, Repl } from '@bigmistqke/repl'
+import { MonacoEditor, MonacoTheme } from '@bigmistqke/repl/editor/monaco'
+import { babelSolidReplPlugin } from '@bigmistqke/repl/plugins/babel-solid-repl'
 import vs_dark from '@bigmistqke/repl/editor/monaco/themes/vs_dark_good.json'
-// Importing runtime utilities
-import { type Runtime } from '@bigmistqke/repl/runtime'
-// Importing transform utilities
 import { typescriptTransformModulePaths } from '@bigmistqke/repl/transform-module-paths/typescript'
-// Import utility to create a transform-function with babel
 import { babelTransform } from '@bigmistqke/repl/transform/babel'
-// Solid.js utilities for reactive state and effects
-import { createEffect, createSignal, mapArray, onCleanup } from 'solid-js'
-// Importing a custom Babel plugin for Solid.js
-import { babelSolidReplPlugin } from 'src/plugins/babel-solid-repl'
-
-// Initial state for the repl
-const initialState = {
-  files: {
-    sources: {
-      'src/index.css': `body { background: blue; }`,
-      'src/index.tsx': `import { render } from "solid-js/web";
-import { createSignal } from "solid-js";
-import "solid-js/jsx-runtime";
-import "./index.css";
-
-const [count, setCount] = createSignal(1);
-
-render(() => (
-  <button onClick={() => setCount(count => count + 1)}>
-    {count()}
-  </button>
-), document.body);
-`,
-    },
-  },
-}
+import loader from '@monaco-editor/loader'
+import { createEffect, mapArray } from 'solid-js'
 
 export default function App() {
-  // Reactive state for the current file path
-  const [currentPath, setCurrentFile] = createSignal('src/index.tsx')
+  return (
+    <Repl
+      importExternalTypes
+      transformModulePaths={
+        typescriptTransformModulePaths(import('https://esm.sh/typescript'))
+      }
+      transform={
+        babelTransform({
+          babel: import('https://esm.sh/@babel/standalone'),
+          presets: ['babel-preset-solid'],
+          plugins: [babelSolidReplPlugin],
+        })
+      }      
+      initialState={{
+        files: {
+          sources: {
+            'index.css': `body { background: blue; }`,
+            'index.tsx': `import { render } from "solid-js/web";
+              import { createSignal } from "solid-js";
+              import "solid-js/jsx-runtime";
+              import "./index.css";
 
-  // Setup function to initialize the runtime environment
-  function onSetup({ fileSystem, frameRegistry }: Runtime) {
-    createEffect(() => {
-      const frame = frameRegistry.get('default')
-      if (!frame) return
+              const [count, setCount] = createSignal(1);
 
-      const entry = fileSystem.get('src/index.tsx')
+              render(() => (
+                <button onClick={() => setCount(count => count + 1)}>
+                  {count()}
+                </button>
+              ), document.body);
+            `,
+          },
+        },
+      }}
+      onSetup={({ fileSystem, frameRegistry }) {
+        createEffect(() => {
+          // Get the default frame from the frame registry
+          const frame = frameRegistry.get('default')
+          if (!frame) return
 
-      // Inject the entry's module URL into the frame's window
-      createEffect(() => {
-        frame.injectFile(entry)
-        onCleanup(() => frame.dispose(entry))
-      })
+          // Get file in virtual filesystem that points to 'index.tsx'
+          const entry = fileSystem.get('index.tsx')
+
+          // Inject the entry's module URL into the frame's window
+          createEffect(() => frame.injectFile(entry))
 
       // Inject the css-imports from the entry-file into the frame's window.
       createEffect(
@@ -1026,7 +1025,8 @@ export default function App() {
       initialState={initialState}
       onSetup={onSetup}
     >
-      <MonacoProvider 
+      <MonacoEditor 
+        monaco={loader.init()}
         theme={vs_dark as MonacoTheme} 
         tsconfig={{
           target: 2, // ScriptTarget.ES2015
@@ -1035,15 +1035,9 @@ export default function App() {
           jsxImportSource: 'solid-js',
           esModuleInterop: true,
         }}
-      >
-        <MonacoEditor path={currentPath()} />
-      </MonacoProvider>
-      <Frame
-        bodyStyle={{
-          padding: '0px',
-          margin: '0px',
-        }}
+        path='index.tsx'
       />
+      <Frame />
       <DevTools />
     </Repl>
   )
