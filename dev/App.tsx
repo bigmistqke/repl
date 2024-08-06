@@ -148,7 +148,8 @@ render(() => <Counter />, document.body);
             })
 
             createEffect(
-              mapArray(entry.module.cssImports, css => {
+              mapArray(entry.cssImports, css => {
+                console.log('css ', css)
                 createEffect(() => frame.injectFile(css))
                 onCleanup(() => frame.dispose(css))
               }),

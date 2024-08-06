@@ -1,7 +1,6 @@
 export { CssFile, File, JsFile } from './file-system/file'
-export { CssModule, JsModule, Module } from './file-system/module'
 export { FrameRegistry } from './frame-registry'
 export { Frame } from './frame-registry/frame'
-export { PackageJsonParser } from './package-json'
+export { PackageJsonParser } from './package-json-parser'
 export { Runtime, type RuntimeConfig } from './runtime'
 export { TypeRegistry } from './type-registry'

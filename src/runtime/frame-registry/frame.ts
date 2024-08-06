@@ -42,10 +42,10 @@ export class Frame {
    */
   injectFile(file: CssFile | JsFile) {
     // We need to generate a new module-url everytime we inject a file, to ensure the body is executed.
-    return when(file.module.generate(), url => this.injectModuleUrl(url))
+    return when(file.generate(), url => this.injectModuleUrl(url))
   }
 
   dispose(file: CssFile | JsFile) {
-    return file.module.dispose(this)
+    return file.dispose(this)
   }
 }
