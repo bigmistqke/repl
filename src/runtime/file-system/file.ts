@@ -34,14 +34,29 @@ export abstract class VirtualFile {
   private source: Accessor<string>
   /** Setter for the source state. */
   private setSource: Setter<string>
+
+  controlled: () => boolean
   /**
    * Constructs an instance of a Javascript file
    * @param repl - Reference to the ReplContext
    * @param path - Path in virtual file system
    */
-  constructor(public path: string) {
+  constructor(
+    public runtime: Runtime,
+    public path: string,
+    controlled?: boolean,
+  ) {
     ;[this.source, this.setSource] = createSignal<string>('')
+    createEffect(() => {
+      if (controlled !== undefined ? controlled : runtime.config.controlled) {
+        const source = runtime.config.files?.[path]
+        if (source) {
+          this.setSource(source)
+        }
+      }
+    })
   }
+
   /**
    * Serializes the file's current state to a JSON-compatible string.
    * @returns The current source code of the file.
@@ -55,6 +70,7 @@ export abstract class VirtualFile {
    * @param value - New source code to set.
    */
   set(value: string) {
+    this.runtime.config.onFileChange?.(this.path, value)
     this.setSource(value)
   }
 
@@ -87,7 +103,7 @@ export class JsFile extends VirtualFile {
     public runtime: Runtime,
     public path: string,
   ) {
-    super(path)
+    super(runtime, path)
 
     const extension = getExtensionFromPath(path)
     const isTypescript = extension === 'ts' || extension === 'tsx'
@@ -96,6 +112,7 @@ export class JsFile extends VirtualFile {
 
     let initialized = false
     const scheduled = createScheduled(fn => debounce(fn, 250))
+
     // Transpile source to javascript
     const [intermediary] = createResource(
       () => [this.get(), !initialized || scheduled()],
@@ -152,7 +169,6 @@ export class JsFile extends VirtualFile {
                   // Returning null will remove the node from the typescript-file
                   return null
                 } else if (resolvedFile) {
-                  console.log('resolvedFile is', resolvedFile)
                   if (!resolvedFile.url) throw `still loading dependency`
                   return resolvedFile.url
                 }
@@ -245,10 +261,8 @@ export class CssFile extends VirtualFile {
    * Constructs an instance of a CSS module associated with a specific CSS file.
    * @param file The CSS file managed by this module.
    */
-  constructor(path: string) {
-    super(path)
-
-    console.log('create css file')
+  constructor(runtime: Runtime, path: string) {
+    super(runtime, path)
 
     const scheduled = createScheduled(fn => debounce(fn, 250))
 
@@ -295,8 +309,8 @@ export class WasmFile extends VirtualFile {
    * Constructs an instance of a WASM module associated with a specific WASM file.
    * @param path - The path to the WASM file within the virtual file system.
    */
-  constructor(path: string) {
-    super(path)
+  constructor(runtime: Runtime, path: string, controlled?: boolean) {
+    super(runtime, path, controlled)
 
     const scheduled = createScheduled(fn => debounce(fn, 250))
 

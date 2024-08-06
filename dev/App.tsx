@@ -1,6 +1,6 @@
-import { DevTools, Frame, Repl, TabBar, useRuntime } from '@bigmistqke/repl'
+import { Frame, Repl, TabBar } from '@bigmistqke/repl'
 import { MonacoEditor, MonacoProvider, MonacoTheme } from '@bigmistqke/repl/editor/monaco'
-import { JsFile, VirtualFile, WasmFile } from '@bigmistqke/repl/runtime'
+import { JsFile, Runtime, VirtualFile, WasmFile } from '@bigmistqke/repl/runtime'
 import { typescriptTransformModulePaths } from '@bigmistqke/repl/transform-module-paths/typescript'
 import { babelTransform } from '@bigmistqke/repl/transform/babel'
 import loader from '@monaco-editor/loader'
@@ -14,6 +14,7 @@ import {
   onCleanup,
   type Component,
 } from 'solid-js'
+import { createStore } from 'solid-js/store'
 import vs_dark from 'src/editor/monaco/themes/vs_dark_good.json'
 import { babelSolidReplPlugin } from 'src/plugins/babel-solid-repl'
 import { every, whenever } from 'src/utils/conditionals'
@@ -47,9 +48,10 @@ function getWabtResource() {
 class WatFile extends VirtualFile {
   private wasmFile: WasmFile
 
-  constructor(path: string) {
-    super(path)
-    this.wasmFile = new WasmFile(path.replace('.wat', '.wasm'))
+  constructor(runtime: Runtime, path: string) {
+    super(runtime, path)
+
+    this.wasmFile = new WasmFile(runtime, path.replace('.wat', '.wasm'), false)
     const wabt = getWabtResource()
     const [wasm] = createResource(every(this.get.bind(this), wabt), ([source, wabt]) =>
       wabt.parseWat(path, source),
@@ -73,91 +75,13 @@ class WatFile extends VirtualFile {
   }
 }
 
-const Frames = () => {
-  const [isDragging, setIsDragging] = createSignal(false)
-  return (
-    <Resizable.Panel
-      as={Resizable}
-      style={{ display: 'flex', overflow: 'hidden', flex: 1 }}
-      orientation="vertical"
-    >
-      <Resizable.Panel
-        as={Frame}
-        style={{
-          'min-height': 0,
-          'pointer-events': isDragging() ? 'none' : undefined,
-          display: 'flex',
-          overflow: 'none',
-        }}
-        bodyStyle={{
-          padding: '0px',
-          margin: '0px',
-        }}
-      />
-      <Resizable.Handle
-        onDragStart={() => setIsDragging(true)}
-        onDragEnd={() => setIsDragging(false)}
-        class={styles.handle}
-      />
-      <Resizable.Panel
-        as={DevTools}
-        minSize={0}
-        name={'default'}
-        style={{
-          'min-height': 0,
-          'pointer-events': isDragging() ? 'none' : undefined,
-          overflow: 'hidden',
-        }}
-      />
-    </Resizable.Panel>
-  )
-}
-
 const App: Component = () => {
   const [currentPath, setCurrentFile] = createSignal('src/index.tsx')
-  const AddButton = () => {
-    const runtime = useRuntime()
-
-    return (
-      <button
-        onClick={() => {
-          let index = 1
-          let path = `src/index.tsx`
-          while (runtime.fileSystem.has(path)) {
-            path = `src/index${index}.tsx`
-            index++
-          }
-          runtime.fileSystem.create(path)
-          setCurrentFile(path)
-        }}
-      >
-        add file
-      </button>
-    )
-  }
-
-  return (
-    <Repl
-      debug
-      importExternalTypes
-      transformModulePaths={typescriptTransformModulePaths({
-        typescript: import('https://esm.sh/typescript'),
-      })}
-      transform={babelTransform({
-        babel: import('https://esm.sh/@babel/standalone'),
-        presets: ['babel-preset-solid'],
-        plugins: [babelSolidReplPlugin],
-      })}
-      extensions={{
-        wat: (runtime, path) => new WatFile(path),
-      }}
-      initialState={{
-        files: {
-          sources: {
-            'src/index.css': `body {
-  background: blue;
+  const [files, setFiles] = createStore<Record<string, string>>({
+    'src/index.css': `body {
+background: blue;
 }`,
-            'src/index.tsx': `import { render } from "solid-js/web";
+    'src/index.tsx': `import { render } from "solid-js/web";
 import { createSignal, createResource, createEffect, Show } from "solid-js";
 import "solid-js/jsx-runtime";
 import "./index.css";
@@ -165,10 +89,11 @@ import wat from "./test.wat";
 
 function App() {
   const [wasm] = createResource(async () => {
-    let memory;
-    const wasm = await wat({
-        env: {
-        jsprint: function jsprint(byteOffset) {
+  let memory;
+  const wasm = await wat({
+    env: {
+      jsprint: 
+        function jsprint(byteOffset) {
           var s = '';
           var a = new Uint8Array(memory.buffer);
           for (var i = byteOffset; a[i]; i++) {
@@ -176,7 +101,7 @@ function App() {
           }
           alert(s);
         }
-      }
+    }
     })
     memory = wasm.exports.pagememory;
     return wasm
@@ -191,36 +116,53 @@ function App() {
 
 render(() => <App />, document.body);
 `,
-            'src/test.wat': `
-          ;; hello_world.wat
+    'src/test.wat': `
+  ;; hello_world.wat
 
 (module
 
-  ;; Import our myprint function 
-  (import "env" "jsprint" (func $jsprint (param i32)))
+;; Import our myprint function 
+(import "env" "jsprint" (func $jsprint (param i32)))
 
-  ;; Define a single page memory of 64KB.
-  (memory $0 1)
+;; Define a single page memory of 64KB.
+(memory $0 1)
 
-  ;; Store the Hello World (null terminated) string at byte offset 0 
-  (data (i32.const 0) "Hello World!\x00")
+;; Store the Hello World (null terminated) string at byte offset 0 
+(data (i32.const 0) "Hello World!\x00")
 
-  ;; Export the memory so it can be access in the host environment.
-  (export "pagememory" (memory $0))
+;; Export the memory so it can be access in the host environment.
+(export "pagememory" (memory $0))
 
-  ;; Define a function to be called from our host
-  (func $helloworld
-    (call $jsprint (i32.const 0))
-  )
+;; Define a function to be called from our host
+(func $helloworld
+(call $jsprint (i32.const 0))
+)
 
-  ;; Export the wasmprint function for the host to call.
-  (export "helloworld" (func $helloworld))
+;; Export the wasmprint function for the host to call.
+(export "helloworld" (func $helloworld))
 )
 `,
-          },
-        },
+  })
+
+  return (
+    <Repl
+      debug
+      importExternalTypes
+      controlled
+      transformModulePaths={typescriptTransformModulePaths({
+        typescript: import('https://esm.sh/typescript'),
+      })}
+      transform={babelTransform({
+        babel: import('https://esm.sh/@babel/standalone'),
+        presets: ['babel-preset-solid'],
+        plugins: [babelSolidReplPlugin],
+      })}
+      extensions={{
+        wat: (runtime, path) => new WatFile(runtime, path),
       }}
+      files={files}
       class={styles.repl}
+      onFileChange={(path, source) => setFiles(path, source)}
       onSetup={async ({ fileSystem, frameRegistry }) => {
         createEffect(() => {
           const frame = frameRegistry.get('default')
@@ -251,18 +193,38 @@ render(() => <App />, document.body);
         <Resizable.Panel
           style={{ overflow: 'hidden', display: 'flex', 'flex-direction': 'column' }}
         >
-          <div style={{ display: 'flex' }}>
-            <TabBar style={{ flex: 1 }}>
-              {({ path }) => <button onClick={() => setCurrentFile(path)}>{path}</button>}
-            </TabBar>
-            <AddButton />
-          </div>
+          <TabBar>
+            {({ path }) => <button onClick={() => setCurrentFile(path)}>{path}</button>}
+          </TabBar>
           <MonacoProvider monaco={loader.init()} theme={vs_dark as MonacoTheme} tsconfig={tsconfig}>
             <MonacoEditor style={{ flex: 1 }} path={currentPath()} />
           </MonacoProvider>
         </Resizable.Panel>
         <Resizable.Handle class={styles.handle} />
-        <Frames />
+        {(() => {
+          const [isDragging, setIsDragging] = createSignal(false)
+          return (
+            <Resizable.Panel
+              as={Resizable}
+              style={{ display: 'flex', overflow: 'hidden', flex: 1 }}
+              orientation="vertical"
+            >
+              <Frame
+                style={{
+                  'min-height': 0,
+                  'pointer-events': isDragging() ? 'none' : undefined,
+                  display: 'flex',
+                  height: '100%',
+                  overflow: 'none',
+                }}
+                bodyStyle={{
+                  padding: '0px',
+                  margin: '0px',
+                }}
+              />
+            </Resizable.Panel>
+          )
+        })()}
       </Resizable>
     </Repl>
   )

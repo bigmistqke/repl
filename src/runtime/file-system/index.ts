@@ -41,6 +41,7 @@ export class FileSystem {
    * @private
    */
   private setFiles: SetStoreFunction<Record<string, VirtualFile>>
+
   /**
    * List of cleanup functions to be called on instance disposal.
    * @private
@@ -61,12 +62,9 @@ export class FileSystem {
   /**
    * Initializes the file system based on provided initial configuration, setting up files and types.
    */
-  initialize(initialState: Partial<FileSystemState>) {
-    if (initialState.sources) {
-      Object.entries(initialState.sources).map(([path, source]) => this.create(path).set(source))
-    }
-    if (initialState.alias) {
-      this.setAlias(initialState.alias)
+  initialize(files: Record<string, string>) {
+    for (const [path, source] of Object.entries(files)) {
+      this.create(path).set(source)
     }
   }
 
@@ -106,6 +104,7 @@ export class FileSystem {
     if (!extension || !(extension in this.runtime.extensions)) {
       throw `extension type is not supported`
     }
+    console.log('create', path, extension, this.runtime.extensions)
     const file = this.runtime.extensions[extension]!(this.runtime, path)
     this.setFiles(path, file)
     return file
@@ -164,5 +163,9 @@ export class FileSystem {
     return Object.fromEntries(
       Object.entries(this.files).filter(([path]) => path.split('/')[0] !== 'node_modules'),
     )
+  }
+
+  remove(path: string) {
+    this.setFiles({ [path]: undefined })
   }
 }

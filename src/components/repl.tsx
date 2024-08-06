@@ -4,11 +4,14 @@ import {
   ComponentProps,
   Show,
   createEffect,
+  createRenderEffect,
   createResource,
+  mapArray,
   mergeProps,
   splitProps,
 } from 'solid-js'
 import { Transform, TransformModulePaths } from 'src/runtime/runtime'
+import { every, whenever } from 'src/utils/conditionals'
 import { formatInfo } from 'src/utils/format-log'
 import { Runtime, RuntimeConfig } from '../runtime'
 import { runtimeContext } from '../use-runtime'
@@ -19,6 +22,7 @@ type ReplPropsBase = ComponentProps<'div'> &
 export interface ReplProps extends ReplPropsBase {
   transformModulePaths: TransformModulePaths | Promise<TransformModulePaths>
   transform: Transform | Promise<Transform>
+  files?: Record<string, string>
 }
 
 /**
@@ -34,7 +38,7 @@ export interface ReplProps extends ReplPropsBase {
  */
 export function Repl(props: ReplProps) {
   const [, propsWithoutChildren] = splitProps(props, ['children'])
-  const [, rest] = splitProps(props, ['cdn', 'children', 'class', 'initialState', 'onSetup'])
+  const [, rest] = splitProps(props, ['cdn', 'children', 'class', 'files', 'files', 'onSetup'])
   const config = mergeProps(
     mergeProps(
       {
@@ -57,12 +61,38 @@ export function Repl(props: ReplProps) {
         get transformModulePaths() {
           return transformModulePaths.latest!
         },
-      }),
+      }) as RuntimeConfig,
     )
     await props.onSetup?.(runtime)
     runtime.initialize()
     return runtime
   })
+  createRenderEffect(
+    whenever(
+      every(runtime, () => config.files),
+      ([runtime, files]) => {
+        createRenderEffect(
+          mapArray(
+            () => Object.keys(files),
+            key => {
+              // const oldFile = runtime.fileSystem.get(key)
+              console.log(
+                'file is ',
+
+                runtime.fileSystem.get(key)?.generate(),
+              )
+              const file = runtime.fileSystem.get(key) ?? runtime.fileSystem.create(key)
+              createRenderEffect(() => {
+                file.set(files[key]!)
+              })
+
+              createEffect(() => console.log('file is ', runtime.fileSystem.get(key)?.get()))
+            },
+          ),
+        )
+      },
+    ),
+  )
 
   createEffect(() => {
     if (!config.debug) return

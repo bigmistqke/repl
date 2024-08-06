@@ -22,15 +22,13 @@ export type TransformModulePaths = (
   callback: (value: string) => string | null,
 ) => string | undefined
 
-export interface RuntimeConfig {
+interface RuntimeConfigBase {
   /** The CDN URL used to load TypeScript and other external libraries. */
   cdn?: string
   /** CSS class for styling the root REPL component. */
   class?: string
   /** Log internal events. */
   debug?: boolean
-  /** Initial state of the virtual file system to preload files. */
-  initialState?: InitialState
   /** Import external types from the cdn. */
   importExternalTypes?: boolean
   /**
@@ -47,11 +45,29 @@ export interface RuntimeConfig {
    * @returns The transformed module-path or null (will remove the module-declaration).
    */
   transformModulePaths: TransformModulePaths
-  /** Callback function that runs after initializing the editor and file system. */
+  /** Optional event that runs after initializing the editor and file system. */
   onSetup?: (runtime: Runtime) => Promise<void> | void
+  /** Optional event that runs after a file's source is updated. */
+  onFileChange?: (path: string, src: string) => void
   /** Additional extensions besides .js and .css */
-  extensions?: Record<string, (path: string, source: string) => VirtualFile>
+  extensions?: Record<string, (runtime: Runtime, path: string) => VirtualFile>
 }
+
+interface RuntimeConfigControlled extends RuntimeConfigBase {
+  /** Sources of the virtual file system to preload files. Controlled mode. */
+  files: Record<string, string>
+  /** Optional boolean controlling if files should maintain their own state or if the file's sources should be derived from `config.files`. Defaults to `false`. */
+  controlled: true
+}
+
+interface RuntimeConfigUncontrolled extends RuntimeConfigBase {
+  /** Sources of the virtual file system to preload files. Controlled mode. */
+  files?: Record<string, string>
+  /** Optional boolean controlling if files should maintain their own state or if the file's sources should be derived from `config.files`. Defaults to `false`. */
+  controlled?: false
+}
+
+export type RuntimeConfig = RuntimeConfigControlled | RuntimeConfigUncontrolled
 
 type FileFactory<T extends VirtualFile> = (runtime: Runtime, path: string) => T
 
@@ -92,12 +108,12 @@ export class Runtime {
   /**  */
   get extensions(): Extensions {
     return {
-      css: (runtime, path) => new CssFile(path),
+      css: (runtime, path) => new CssFile(runtime, path),
       js: (runtime, path) => new JsFile(runtime, path),
       jsx: (runtime, path) => new JsFile(runtime, path),
       ts: (runtime, path) => new JsFile(runtime, path),
       tsx: (runtime, path) => new JsFile(runtime, path),
-      wasm: (runtime, path) => new WasmFile(path),
+      wasm: (runtime, path) => new WasmFile(runtime, path),
       ...this.config.extensions,
     }
   }
@@ -127,14 +143,8 @@ export class Runtime {
 
   /** Initializes the file system based on provided initial configuration, setting up files and types. */
   initialize() {
-    const initialState = this.config.initialState
-    if (initialState) {
-      if (initialState.types) {
-        this.typeRegistry.initialize(initialState.types)
-      }
-      if (initialState.files) {
-        this.fileSystem.initialize(initialState.files)
-      }
+    if (this.config.files) {
+      this.fileSystem.initialize(this.config.files)
     }
     this.initialized = true
   }
