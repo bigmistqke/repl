@@ -3,12 +3,13 @@ import {
   Accessor,
   Setter,
   batch,
+  createEffect,
   createMemo,
   createResource,
   createSignal,
   untrack,
 } from 'solid-js'
-import { when } from 'src/utils/conditionals'
+import { when, whenever } from 'src/utils/conditionals'
 import { getExtensionFromPath } from 'src/utils/get-extension-from-path'
 import { javascript } from 'src/utils/object-url-literal'
 import { isRelativePath, isUrl, relativeToAbsolutePath } from 'src/utils/path'
@@ -19,7 +20,7 @@ import { Runtime } from '../runtime'
  * Represents a generic file within the virtual file system, providing methods to manipulate and access the file's source code.
  * This is an abstract class and should be extended to handle specific types of files.
  */
-export abstract class File {
+export abstract class VirtualFile {
   /**
    * Generates a new URL for an ES Module based on the current source code. This URL is not cached,
    * ensuring that each call provides a fresh module.
@@ -69,7 +70,7 @@ export abstract class File {
 /**
  * Represents a JavaScript file within the system. Extends the generic File class.
  */
-export class JsFile extends File {
+export class JsFile extends VirtualFile {
   private getUrl: Accessor<string | undefined>
   private esm: Accessor<string | undefined>
 
@@ -150,6 +151,10 @@ export class JsFile extends File {
                   staleImports.delete(resolvedFile)
                   // Returning null will remove the node from the typescript-file
                   return null
+                } else if (resolvedFile) {
+                  console.log('resolvedFile is', resolvedFile)
+                  if (!resolvedFile.url) throw `still loading dependency`
+                  return resolvedFile.url
                 }
 
                 return modulePath
@@ -231,10 +236,10 @@ export class JsFile extends File {
 /**
  * Represents a CSS file within the system. Extends the generic File class.
  */
-export class CssFile extends File {
+export class CssFile extends VirtualFile {
   /** Module associated with the CSS file, handling CSS-specific interactions and styling applications. */
-  generate: Accessor<string | undefined>
   private getUrl: Accessor<string | undefined>
+  generate: Accessor<string | undefined>
 
   /**
    * Constructs an instance of a CSS module associated with a specific CSS file.
@@ -247,20 +252,21 @@ export class CssFile extends File {
 
     const scheduled = createScheduled(fn => debounce(fn, 250))
 
-    this.generate = () => javascript`(() => {
-        let stylesheet = document.getElementById('bigmistqke-repl-${path}');
-        if (!stylesheet) {
-          stylesheet = document.createElement('style')
-          stylesheet.setAttribute('id', 'bigmistqke-repl-${path}');
-          document.head.appendChild(stylesheet)
-        }
-        const styles = document.createTextNode(\`${this.get()}\`)
-        stylesheet.innerHTML = ''
-        stylesheet.appendChild(styles)
-      })()`
-
+    this.generate = () => javascript`
+(() => {
+  let stylesheet = document.getElementById('bigmistqke-repl-${path}');
+  if (!stylesheet) {
+    stylesheet = document.createElement('style')
+    stylesheet.setAttribute('id', 'bigmistqke-repl-${path}');
+    document.head.appendChild(stylesheet)
+  }
+  const styles = document.createTextNode(\`${this.get()}\`)
+  stylesheet.innerHTML = ''
+  stylesheet.appendChild(styles)
+})()
+`
     this.getUrl = createMemo(previous => {
-      if (!scheduled) previous
+      if (!scheduled()) previous
       return this.generate()
     })
   }
@@ -279,5 +285,61 @@ export class CssFile extends File {
    */
   dispose(frame: Frame) {
     frame.contentWindow.document.getElementById(`bigmistqke-repl-${this.path}`)?.remove()
+  }
+}
+
+export class WasmFile extends VirtualFile {
+  private getUrl: Accessor<string | undefined>
+  generate: Accessor<string | undefined>
+  /**
+   * Constructs an instance of a WASM module associated with a specific WASM file.
+   * @param path - The path to the WASM file within the virtual file system.
+   */
+  constructor(path: string) {
+    super(path)
+
+    const scheduled = createScheduled(fn => debounce(fn, 250))
+
+    // Create a JavaScript module that instantiates the WASM module
+    this.generate = () => {
+      const wasmBinaryString = this.get()
+      if (!wasmBinaryString) return undefined
+      // Convert the binary string to a binary format
+      const binaryBuffer = Uint8Array.from(atob(wasmBinaryString), c => c.charCodeAt(0))
+      // Inline binary buffer into script
+      return javascript`
+const wasmCode = new Uint8Array([${binaryBuffer.toString()}]);
+export default (imports) =>  WebAssembly.instantiate(wasmCode, imports).then(result => result.instance);
+`
+    }
+
+    // Create a Blob URL for the JS wrapper
+    // return URL.createObjectURL(new Blob([jsWrapper], { type: 'application/javascript' }))
+    this.getUrl = createMemo(previous => (!scheduled() ? previous : this.generate() || previous))
+  }
+
+  /**
+   * Retrieves the URL of the currently active JavaScript wrapper module.
+   * @returns The URL as a string, or undefined if not available.
+   */
+  get url() {
+    return this.getUrl()
+  }
+}
+
+export class CompiledFile extends VirtualFile {
+  private wasmFile: WasmFile
+  constructor(path: string, wasm: Accessor<string | undefined>) {
+    super(path)
+    this.wasmFile = new WasmFile(path.replace('.wat', '.wasm'))
+    createEffect(whenever(wasm, wasm => this.wasmFile.set(wasm)))
+  }
+
+  generate() {
+    return this.wasmFile.generate()
+  }
+
+  get url() {
+    return this.wasmFile.url // Use the URL from WasmFile
   }
 }

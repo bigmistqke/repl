@@ -1,4 +1,4 @@
-export { CssFile, File, JsFile } from './file-system/file'
+export { CompiledFile, CssFile, JsFile, VirtualFile, WasmFile } from './file-system/file'
 export { FrameRegistry } from './frame-registry'
 export { Frame } from './frame-registry/frame'
 export { PackageJsonParser } from './package-json-parser'

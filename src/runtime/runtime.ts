@@ -1,6 +1,7 @@
 import { mergeProps } from 'solid-js'
 import type { Mandatory } from 'src/utils/type'
 import { FileSystem, FileSystemState } from './file-system'
+import { CssFile, JsFile, VirtualFile, WasmFile } from './file-system/file'
 import { FrameRegistry } from './frame-registry'
 import { ImportUtils } from './import-utils'
 import { TypeRegistry, TypeRegistryState } from './type-registry'
@@ -48,7 +49,29 @@ export interface RuntimeConfig {
   transformModulePaths: TransformModulePaths
   /** Callback function that runs after initializing the editor and file system. */
   onSetup?: (runtime: Runtime) => Promise<void> | void
+  /** Additional extensions besides .js and .css */
+  extensions?: Record<string, (path: string, source: string) => VirtualFile>
 }
+
+type FileFactory<T extends VirtualFile> = (runtime: Runtime, path: string) => T
+
+// Create a type for the specific methods
+interface DefinedExtensions {
+  css: FileFactory<CssFile>
+  js: FileFactory<JsFile>
+  jsx: FileFactory<JsFile>
+  ts: FileFactory<JsFile>
+  tsx: FileFactory<JsFile>
+  wasm: FileFactory<WasmFile>
+}
+
+// Use an index signature for all other keys
+interface GenericFileMethods {
+  [key: string]: FileFactory<VirtualFile>
+}
+
+// Combine the specific and generic file methods into one type
+type Extensions = DefinedExtensions & GenericFileMethods
 
 /**
  * Provides a centralized context for managing the `Repl` runtime environment.
@@ -66,7 +89,18 @@ export class Runtime {
   typeRegistry: TypeRegistry
   /** Utility class for handling imports from URLS pointing to non-esm packages. */
   import: ImportUtils
-
+  /**  */
+  get extensions(): Extensions {
+    return {
+      css: (runtime, path) => new CssFile(path),
+      js: (runtime, path) => new JsFile(runtime, path),
+      jsx: (runtime, path) => new JsFile(runtime, path),
+      ts: (runtime, path) => new JsFile(runtime, path),
+      tsx: (runtime, path) => new JsFile(runtime, path),
+      wasm: (runtime, path) => new WasmFile(path),
+      ...this.config.extensions,
+    }
+  }
   initialized = false
 
   constructor(

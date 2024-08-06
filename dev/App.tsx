@@ -1,13 +1,23 @@
 import { DevTools, Frame, Repl, TabBar, useRuntime } from '@bigmistqke/repl'
 import { MonacoEditor, MonacoProvider, MonacoTheme } from '@bigmistqke/repl/editor/monaco'
-import { JsFile } from '@bigmistqke/repl/runtime'
+import { JsFile, VirtualFile, WasmFile } from '@bigmistqke/repl/runtime'
 import { typescriptTransformModulePaths } from '@bigmistqke/repl/transform-module-paths/typescript'
 import { babelTransform } from '@bigmistqke/repl/transform/babel'
 import loader from '@monaco-editor/loader'
 import { Resizable } from 'corvu/resizable'
-import { createEffect, createSignal, mapArray, onCleanup, type Component } from 'solid-js'
+import {
+  Resource,
+  createEffect,
+  createResource,
+  createSignal,
+  mapArray,
+  onCleanup,
+  type Component,
+} from 'solid-js'
 import vs_dark from 'src/editor/monaco/themes/vs_dark_good.json'
 import { babelSolidReplPlugin } from 'src/plugins/babel-solid-repl'
+import { every, whenever } from 'src/utils/conditionals'
+import WABT from 'wabt'
 import styles from './App.module.css'
 
 const tsconfig = {
@@ -24,6 +34,43 @@ const tsconfig = {
   strict: true, // Enable all strict type-checking options
   noEmit: false, // Allow TypeScript to emit output files
   outDir: './dist', // Specify output directory for compiled files
+}
+
+let cachedWabt: Resource<Awaited<ReturnType<typeof WABT>>>
+function getWabtResource() {
+  if (!cachedWabt) {
+    ;[cachedWabt] = createResource(() => WABT())
+  }
+  return cachedWabt
+}
+
+class WatFile extends VirtualFile {
+  private wasmFile: WasmFile
+
+  constructor(path: string) {
+    super(path)
+    this.wasmFile = new WasmFile(path.replace('.wat', '.wasm'))
+    const wabt = getWabtResource()
+    const [wasm] = createResource(every(this.get.bind(this), wabt), ([source, wabt]) =>
+      wabt.parseWat(path, source),
+    )
+
+    createEffect(
+      whenever(wasm, wasm => {
+        const { buffer } = wasm.toBinary({})
+        const base64String = btoa(String.fromCharCode(...new Uint8Array(buffer)))
+        this.wasmFile.set(base64String)
+      }),
+    )
+  }
+
+  generate() {
+    return this.wasmFile.generate()
+  }
+
+  get url() {
+    return this.wasmFile.url // Use the URL from WasmFile
+  }
 }
 
 const Frames = () => {
@@ -68,7 +115,6 @@ const Frames = () => {
 
 const App: Component = () => {
   const [currentPath, setCurrentFile] = createSignal('src/index.tsx')
-
   const AddButton = () => {
     const runtime = useRuntime()
 
@@ -102,6 +148,9 @@ const App: Component = () => {
         presets: ['babel-preset-solid'],
         plugins: [babelSolidReplPlugin],
       })}
+      extensions={{
+        wat: (runtime, path) => new WatFile(path),
+      }}
       initialState={{
         files: {
           sources: {
@@ -109,25 +158,64 @@ const App: Component = () => {
   background: blue;
 }`,
             'src/index.tsx': `import { render } from "solid-js/web";
-import { createSignal } from "solid-js";
+import { createSignal, createResource, createEffect, Show } from "solid-js";
 import "solid-js/jsx-runtime";
 import "./index.css";
+import wat from "./test.wat";
 
-function Counter() {
-  const [count, setCount] = createSignal(1);
-  const increment = () => {
-    console.log('increment');
-    setCount(count => count + 1);
-  }
+function App() {
+  const [wasm] = createResource(async () => {
+    let memory;
+    const wasm = await wat({
+        env: {
+        jsprint: function jsprint(byteOffset) {
+          var s = '';
+          var a = new Uint8Array(memory.buffer);
+          for (var i = byteOffset; a[i]; i++) {
+            s += String.fromCharCode(a[i]);
+          }
+          alert(s);
+        }
+      }
+    })
+    memory = wasm.exports.pagememory;
+    return wasm
+  })
 
   return (
-    <button type="button" onClick={increment}>
-      {count()}
+    <button onClick={() => wasm()?.exports.helloworld()}>
+      hello world from wasm
     </button>
   );
 }
 
-render(() => <Counter />, document.body);
+render(() => <App />, document.body);
+`,
+            'src/test.wat': `
+          ;; hello_world.wat
+
+(module
+
+  ;; Import our myprint function 
+  (import "env" "jsprint" (func $jsprint (param i32)))
+
+  ;; Define a single page memory of 64KB.
+  (memory $0 1)
+
+  ;; Store the Hello World (null terminated) string at byte offset 0 
+  (data (i32.const 0) "Hello World!\x00")
+
+  ;; Export the memory so it can be access in the host environment.
+  (export "pagememory" (memory $0))
+
+  ;; Define a function to be called from our host
+  (func $helloworld
+    (call $jsprint (i32.const 0))
+  )
+
+  ;; Export the wasmprint function for the host to call.
+  (export "helloworld" (func $helloworld))
+)
 `,
           },
         },
@@ -140,6 +228,8 @@ render(() => <Counter />, document.body);
 
           const entry = fileSystem.get('src/index.tsx')
 
+          createEffect(() => console.log('THIS HAPPENS', entry?.generate()))
+
           if (entry instanceof JsFile) {
             createEffect(() => {
               // inject entry's module-url into frame's window
@@ -149,7 +239,6 @@ render(() => <Counter />, document.body);
 
             createEffect(
               mapArray(entry.cssImports, css => {
-                console.log('css ', css)
                 createEffect(() => frame.injectFile(css))
                 onCleanup(() => frame.dispose(css))
               }),

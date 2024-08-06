@@ -1,7 +1,8 @@
 import { onCleanup } from 'solid-js'
 import { SetStoreFunction, createStore } from 'solid-js/store'
+import { getExtensionFromPath } from 'src/utils/get-extension-from-path'
 import { Runtime } from '../runtime'
-import { CssFile, File, JsFile } from './file'
+import { VirtualFile } from './file'
 
 export interface FileSystemState {
   sources: Record<string, string>
@@ -34,12 +35,12 @@ export class FileSystem {
    * Stores file instances by path.
    * @private
    */
-  private files: Record<string, File>
+  private files: Record<string, VirtualFile>
   /**
    * Store setter for files.
    * @private
    */
-  private setFiles: SetStoreFunction<Record<string, File>>
+  private setFiles: SetStoreFunction<Record<string, VirtualFile>>
   /**
    * List of cleanup functions to be called on instance disposal.
    * @private
@@ -53,7 +54,7 @@ export class FileSystem {
    */
   constructor(public runtime: Runtime) {
     ;[this.alias, this.setAlias] = createStore<Record<string, string>>({})
-    ;[this.files, this.setFiles] = createStore<Record<string, File>>()
+    ;[this.files, this.setFiles] = createStore<Record<string, VirtualFile>>()
     onCleanup(() => this.cleanups.forEach(cleanup => cleanup()))
   }
 
@@ -101,7 +102,11 @@ export class FileSystem {
    * @returns The newly created file instance.
    */
   create(path: string) {
-    const file = path.endsWith('.css') ? new CssFile(path) : new JsFile(this.runtime, path)
+    const extension = getExtensionFromPath(path)
+    if (!extension || !(extension in this.runtime.extensions)) {
+      throw `extension type is not supported`
+    }
+    const file = this.runtime.extensions[extension]!(this.runtime, path)
     this.setFiles(path, file)
     return file
   }

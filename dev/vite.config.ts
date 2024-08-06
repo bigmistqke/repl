@@ -2,6 +2,7 @@ import { rollupServiceWorkerPlugin } from '@bigmistqke/repl/plugins/rollup-servi
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill'
 import { defineConfig } from 'vite'
 import solidPlugin from 'vite-plugin-solid'
+import wasmPlugin from 'vite-plugin-wasm'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineConfig({
@@ -37,6 +38,7 @@ export default defineConfig({
           .replace(/import\.meta\.env\.NODE_ENV/g, '"development"')
       },
     },
+    wasmPlugin(),
     rollupServiceWorkerPlugin(),
   ],
   optimizeDeps: {
