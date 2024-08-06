@@ -901,6 +901,7 @@ This straightforward example showcases how to set up and utilize the @bigmistqke
 ```tsx
 import { Repl, useRuntime } from '@bigmistqke/repl';
 import { typescriptTransform } from '@bigmistqke/repl/transform/typescript';
+import { typescriptTransformModulePaths } from '@bigmistqke/repl/transform-module-paths/typescript';
 
 const initialState = {
   files: {
@@ -930,6 +931,9 @@ export default function App() {
       initialState={initialState}
       onSetup={onSetup}
       transform={typescriptTransform({
+        typescript: import('https://esm.sh/typescript'),
+      })}
+      transformModulePaths={typescriptTransformModulePaths({
         typescript: import('https://esm.sh/typescript'),
       })}
     />
@@ -1011,7 +1015,9 @@ export default function App() {
   return (
     <Repl
       importExternalTypes
-      transformModulePaths={typescriptTransformModulePaths(import('https://esm.sh/typescript'))}
+      transformModulePaths={typescriptTransformModulePaths({ 
+        typescript: import('https://esm.sh/typescript') 
+      })}
       transform={babelTransform({
         babel: import('https://esm.sh/@babel/standalone'),
         presets: ['babel-preset-solid'],
