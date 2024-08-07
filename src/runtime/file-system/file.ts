@@ -31,11 +31,12 @@ export abstract class VirtualFile {
   abstract url: string | undefined
 
   /** Source code of the file as a reactive state. */
-  private source: Accessor<string>
+  #source: Accessor<string>
   /** Setter for the source state. */
-  private setSource: Setter<string>
+  #setSource: Setter<string>
 
-  controlled: () => boolean
+  private controlled: () => boolean
+
   /**
    * Constructs an instance of a Javascript file
    * @param repl - Reference to the ReplContext
@@ -46,15 +47,8 @@ export abstract class VirtualFile {
     public path: string,
     controlled?: boolean,
   ) {
-    ;[this.source, this.setSource] = createSignal<string>('')
-    createEffect(() => {
-      if (controlled !== undefined ? controlled : runtime.config.controlled) {
-        const source = runtime.config.files?.[path]
-        if (source) {
-          this.setSource(source)
-        }
-      }
-    })
+    ;[this.#source, this.#setSource] = createSignal<string>('')
+    this.controlled = () => (controlled !== undefined ? controlled : !!runtime.config.controlled)
   }
 
   /**
@@ -62,7 +56,7 @@ export abstract class VirtualFile {
    * @returns The current source code of the file.
    */
   toJSON() {
-    return this.source()
+    return this.get()
   }
 
   /**
@@ -71,7 +65,9 @@ export abstract class VirtualFile {
    */
   set(value: string) {
     this.runtime.config.onFileChange?.(this.path, value)
-    this.setSource(value)
+    if (!this.controlled()) {
+      this.#setSource(value)
+    }
   }
 
   /**
@@ -79,7 +75,7 @@ export abstract class VirtualFile {
    * @returns The current source code.
    */
   get() {
-    return this.source()
+    return this.controlled() ? this.runtime.config.files![this.path]! : this.#source()
   }
 }
 
