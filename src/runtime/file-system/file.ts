@@ -10,10 +10,8 @@ import {
   untrack,
 } from 'solid-js'
 import { when, whenever } from 'src/utils/conditionals'
-import { getExtensionFromPath } from 'src/utils/get-extension-from-path'
 import { javascript } from 'src/utils/object-url-literal'
 import { isRelativePath, isUrl, relativeToAbsolutePath } from 'src/utils/path'
-import { Frame } from '../frame-registry/frame'
 import { Runtime } from '../runtime'
 
 /**
@@ -34,8 +32,8 @@ export abstract class VirtualFile {
   #source: Accessor<string>
   /** Setter for the source state. */
   #setSource: Setter<string>
-
-  private controlled: () => boolean
+  /** Derived state if the file is controlled. */
+  #controlled: () => boolean
 
   /**
    * Constructs an instance of a Javascript file
@@ -45,10 +43,11 @@ export abstract class VirtualFile {
   constructor(
     public runtime: Runtime,
     public path: string,
+    /** If undefined controlled state will be derived from Runtime.config.controlled */
     controlled?: boolean,
   ) {
     ;[this.#source, this.#setSource] = createSignal<string>('')
-    this.controlled = () => (controlled !== undefined ? controlled : !!runtime.config.controlled)
+    this.#controlled = () => (controlled !== undefined ? controlled : !!runtime.config.controlled)
   }
 
   /**
@@ -65,7 +64,7 @@ export abstract class VirtualFile {
    */
   set(value: string) {
     this.runtime.config.onFileChange?.(this.path, value)
-    if (!this.controlled()) {
+    if (!this.#controlled()) {
       this.#setSource(value)
     }
   }
@@ -75,7 +74,13 @@ export abstract class VirtualFile {
    * @returns The current source code.
    */
   get() {
-    return this.controlled() ? this.runtime.config.files![this.path]! : this.#source()
+    return this.#controlled() ? this.runtime.config.files![this.path]! : this.#source()
+  }
+
+  moduleTransform(): string | null {
+    const url = this.url
+    if (!url) throw `Currently module-url of ${this.path} is undefined.`
+    return url
   }
 }
 
@@ -83,36 +88,42 @@ export abstract class VirtualFile {
  * Represents a JavaScript file within the system. Extends the generic File class.
  */
 export class JsFile extends VirtualFile {
-  private getUrl: Accessor<string | undefined>
-  private esm: Accessor<string | undefined>
+  /** An array of imported `VirtualFiles` found referred to in the source. */
+  directDependencies: Accessor<VirtualFile[]>
+  /** Internal setter for the imported `VirtualFiles`. */
+  #setDirectDependencies: Setter<VirtualFile[]>
+  /** Internal callback to get current module-url. */
+  #getUrl: Accessor<string | undefined>
+  /** Internal callback to get the esm output of the current source. */
+  #esm: Accessor<string | undefined>
 
-  /** Reactive state of CSS files imported into this JavaScript file. */
-  cssImports: Accessor<CssFile[]>
-  /** Setter for the cssImports state. */
-  private setCssImports: Setter<CssFile[]>
-  /**
-   * Creates a JavaScript module associated with a specific JavaScript file.
-   * @param runtime - Reference to the ReplContext
-   * @param path - Path in virtual file system
-   */
   constructor(
     public runtime: Runtime,
     public path: string,
   ) {
     super(runtime, path)
-
-    const extension = getExtensionFromPath(path)
-    const isTypescript = extension === 'ts' || extension === 'tsx'
-
-    ;[this.cssImports, this.setCssImports] = createSignal<CssFile[]>([])
+    ;[this.directDependencies, this.#setDirectDependencies] = createSignal<VirtualFile[]>([])
 
     let initialized = false
     const scheduled = createScheduled(fn => debounce(fn, 250))
 
     // Transpile source to javascript
     const [intermediary] = createResource(
-      () => [this.get(), !initialized || scheduled()],
-      async () => ((initialized = true), runtime.config.transform(this.get(), this.path)),
+      () => [this.get(), !initialized || scheduled()] as const,
+      async ([source]) => {
+        initialized = true
+        try {
+          if (Array.isArray(runtime.config.transform)) {
+            return runtime.config.transform.reduce(
+              (source, transform) => transform(source, path),
+              source,
+            )
+          }
+          return runtime.config.transform(this.get(), this.path)
+        } catch (error) {
+          console.error('error while transforming js', error)
+        }
+      },
     )
 
     // Transpile intermediary to esm-module:
@@ -120,84 +131,67 @@ export class JsFile extends VirtualFile {
     // - Transform local dependencies to module-urls
     // - Transform package-names to cdn-url
     // NOTE:  possible optimisation would be to memo the holes and swap them out with .slice
-    this.esm = createMemo<string | undefined>(previous =>
-      when(intermediary, value => {
-        const staleImports = new Set(untrack(this.cssImports))
+    this.#esm = createMemo<string | undefined>(previous =>
+      when(
+        intermediary,
+        value => {
+          console.log('transpiling esm', path)
+          const imports: VirtualFile[] = []
+          const staleImports = new Set(untrack(this.directDependencies))
+          try {
+            return batch(() =>
+              runtime.config.transformModulePaths(value, modulePath => {
+                if (isUrl(modulePath)) return modulePath
 
-        try {
-          return batch(() =>
-            runtime.config.transformModulePaths(value, modulePath => {
-              if (isUrl(modulePath)) return modulePath
-
-              const alias = runtime.fileSystem.alias[modulePath]
-              // If the module-path is either an aliased path or a relative path
-              if (alias || isRelativePath(modulePath)) {
-                // We resolve the path to a File
-                const resolvedFile = runtime.fileSystem.resolve(
-                  // If path is aliased we resolve the aliased path
-                  alias ||
-                    // Else the path must be a relative path
-                    // So we transform it to an absolute path
-                    // and resolve this absolute path
-                    relativeToAbsolutePath(path, modulePath),
-                )
-
-                // If the resolved file is a js-file
-                if (resolvedFile instanceof JsFile) {
-                  // We get its module-url
-                  if (resolvedFile.url) {
-                    // If moduleUrl is defined
-                    // We transform the relative depedency with the module-url
-                    return resolvedFile.url
-                  } else {
-                    // If moduleUrl is not defined, we throw.
-                    // This will break the loop, so we can return the previous result.
-                    throw `module ${modulePath} not defined`
-                  }
-                }
-                // If the resolved file is a css-file
-                else if (resolvedFile instanceof CssFile) {
-                  // We add the resolved file to the css-imports of this js-file.
-                  this.setCssImports(imports =>
-                    imports.includes(resolvedFile) ? imports : [...imports, resolvedFile],
+                const alias = runtime.fileSystem.alias[modulePath]
+                // If the module-path is either an aliased path or a relative path
+                if (alias || isRelativePath(modulePath)) {
+                  // We resolve the path to a File
+                  const file = runtime.fileSystem.resolve(
+                    // If path is aliased we resolve the aliased path
+                    alias ||
+                      // Else the path must be a relative path
+                      // So we transform it to an absolute path
+                      // and resolve this absolute path
+                      relativeToAbsolutePath(path, modulePath),
                   )
-                  staleImports.delete(resolvedFile)
-                  // Returning null will remove the node from the typescript-file
-                  return null
-                } else if (resolvedFile) {
-                  if (!resolvedFile.url) throw `still loading dependency`
-                  return resolvedFile.url
-                }
 
-                return modulePath
-              }
-              // If the module-path is
-              //    - not an aliased path,
-              //    - nor a relative dependency,
-              //    - nor a url
-              // It must be a package-name.
-              else {
-                // We transform this package-name to a cdn-url.
-                if (runtime.config.importExternalTypes) {
-                  runtime.typeRegistry.import.fromPackageName(modulePath)
+                  if (!file) {
+                    throw `Could not resolve relative module-path to its virtual file. Are you sure ${modulePath} exists?`
+                  }
+
+                  imports.push(file)
+                  staleImports.delete(file)
+
+                  return file.moduleTransform()
                 }
-                return `${runtime.config.cdn}/${modulePath}`
-              }
-            }),
-          )
-        } catch (error) {
-          console.warn('error', error)
-          return previous
-        } finally {
-          this.setCssImports(cssImports =>
-            cssImports.filter(cssImport => !staleImports.has(cssImport)),
-          )
-        }
-      }),
+                // If the module-path is
+                //    - not an aliased path,
+                //    - nor a relative dependency,
+                //    - nor a url
+                // It must be a package-name.
+                else {
+                  // We transform this package-name to a cdn-url.
+                  if (runtime.config.importExternalTypes) {
+                    runtime.typeRegistry.import.fromPackageName(modulePath)
+                  }
+                  return `${runtime.config.cdn}/${modulePath}`
+                }
+              }),
+            )
+          } catch (error) {
+            console.warn('error', error)
+            return previous
+          } finally {
+            this.#setDirectDependencies(imports)
+          }
+        },
+        () => previous,
+      ),
     )
 
     // Get latest module-url from esm-module
-    this.getUrl = createMemo(previous =>
+    this.#getUrl = createMemo(previous =>
       when(
         this.generate.bind(this),
         esm => esm,
@@ -206,15 +200,40 @@ export class JsFile extends VirtualFile {
     )
   }
 
+  /**
+   * Resolves and returns all unique dependencies of the file, including both direct and indirect dependencies.
+   * This method uses a depth-first search (DFS) approach to traverse and collect all imports.
+   *
+   * @returns A set of all unique import files.
+   */
+  resolveDependencies() {
+    const set = new Set<VirtualFile>()
+    const stack = [...this.directDependencies()] // Initialize the stack with direct imports
+
+    while (stack.length > 0) {
+      const file = stack.pop()
+      if (file && !set.has(file)) {
+        set.add(file)
+        if (file instanceof JsFile) {
+          for (const fileImport of file.directDependencies()) {
+            if (!set.has(fileImport)) {
+              stack.push(fileImport)
+            }
+          }
+        }
+      }
+    }
+
+    return Array.from(set)
+  }
+
   generate() {
-    return when(
-      () => this.esm(),
-      esm =>
-        URL.createObjectURL(
-          new Blob([esm], {
-            type: 'application/javascript',
-          }),
-        ),
+    return when(this.#esm.bind(this), esm =>
+      URL.createObjectURL(
+        new Blob([esm], {
+          type: 'application/javascript',
+        }),
+      ),
     )
   }
 
@@ -223,25 +242,7 @@ export class JsFile extends VirtualFile {
    * @returns The URL as a string, or undefined if not available.
    */
   get url() {
-    return this.getUrl()
-  }
-
-  /**
-   * Executes the cleanup function attached to the `dispose` property of the window object in the provided frame.
-   * This method is intended for use in environments where the cleanup logic is either explicitly mentioned in the code
-   * or added through the code via a Babel transform: p.ex `solid-repl-plugin` of `@bigmistqke/repl/plugins`.
-   * This plugin automatically assigns Solid.js's `render()` cleanup function to `window.dispose` so that the DOM can
-   * be emptied in between runs.
-   *
-   * If you are using a different UI library or want to implement a custom cleanup mechanism, you will need to create or adapt
-   * a Babel plugin to set the appropriate cleanup function to `window.dispose` according to your application's needs.
-   *
-   * @param frame - The frame containing the window object on which the cleanup function is called.
-   *                This is typically an iframe or a similar isolated environment where the UI components are rendered.
-   */
-  dispose(frame: Frame) {
-    // @ts-expect-error
-    frame.contentWindow.dispose?.()
+    return this.#getUrl()
   }
 }
 
@@ -249,9 +250,7 @@ export class JsFile extends VirtualFile {
  * Represents a CSS file within the system. Extends the generic File class.
  */
 export class CssFile extends VirtualFile {
-  /** Module associated with the CSS file, handling CSS-specific interactions and styling applications. */
-  private getUrl: Accessor<string | undefined>
-  generate: Accessor<string | undefined>
+  jsFile: JsFile
 
   /**
    * Constructs an instance of a CSS module associated with a specific CSS file.
@@ -260,25 +259,31 @@ export class CssFile extends VirtualFile {
   constructor(runtime: Runtime, path: string) {
     super(runtime, path)
 
+    this.jsFile = runtime.fileSystem.create<JsFile>(path.replace('.css', '.js'))
+
     const scheduled = createScheduled(fn => debounce(fn, 250))
 
-    this.generate = () => javascript`
-(() => {
-  let stylesheet = document.getElementById('bigmistqke-repl-${path}');
-  if (!stylesheet) {
+    createEffect(() => {
+      if (!scheduled()) return
+      this.jsFile.set(`
+  import { dispose } from "@repl/std"
+  (() => {
+    let stylesheet = document.getElementById('bigmistqke-repl-${path}');
     stylesheet = document.createElement('style')
     stylesheet.setAttribute('id', 'bigmistqke-repl-${path}');
     document.head.appendChild(stylesheet)
-  }
-  const styles = document.createTextNode(\`${this.get()}\`)
-  stylesheet.innerHTML = ''
-  stylesheet.appendChild(styles)
-})()
-`
-    this.getUrl = createMemo(previous => {
-      if (!scheduled()) previous
-      return this.generate()
+    dispose('${path}', () => stylesheet.remove())
+    const styles = document.createTextNode(\`${this.get()}\`)
+    stylesheet.innerHTML = ''
+    stylesheet.appendChild(styles)
+  })()`)
     })
+
+    createEffect(() => console.log('jsFile from css', this.jsFile.generate()))
+  }
+
+  generate() {
+    return this.jsFile.generate()
   }
 
   /**
@@ -286,20 +291,12 @@ export class CssFile extends VirtualFile {
    * @returns The URL as a string, or undefined if not available.
    */
   get url() {
-    return this.getUrl()
-  }
-
-  /**
-   * Removes the style element associated with this module from the specified `Frame`.
-   * @param frame The `Frame` from which the style element is to be removed.
-   */
-  dispose(frame: Frame) {
-    frame.contentWindow.document.getElementById(`bigmistqke-repl-${this.path}`)?.remove()
+    return this.jsFile.url
   }
 }
 
 export class WasmFile extends VirtualFile {
-  private getUrl: Accessor<string | undefined>
+  #getUrl: Accessor<string | undefined>
   generate: Accessor<string | undefined>
   /**
    * Constructs an instance of a WASM module associated with a specific WASM file.
@@ -325,7 +322,7 @@ export default (imports) =>  WebAssembly.instantiate(wasmCode, imports).then(res
 
     // Create a Blob URL for the JS wrapper
     // return URL.createObjectURL(new Blob([jsWrapper], { type: 'application/javascript' }))
-    this.getUrl = createMemo(previous => (!scheduled() ? previous : this.generate() || previous))
+    this.#getUrl = createMemo(previous => (!scheduled() ? previous : this.generate() || previous))
   }
 
   /**
@@ -333,16 +330,21 @@ export default (imports) =>  WebAssembly.instantiate(wasmCode, imports).then(res
    * @returns The URL as a string, or undefined if not available.
    */
   get url() {
-    return this.getUrl()
+    return this.#getUrl()
   }
 }
 
-export class CompiledFile extends VirtualFile {
+export class WasmTarget extends VirtualFile {
   private wasmFile: WasmFile
-  constructor(path: string, wasm: Accessor<string | undefined>) {
-    super(path)
-    this.wasmFile = new WasmFile(path.replace('.wat', '.wasm'))
-    createEffect(whenever(wasm, wasm => this.wasmFile.set(wasm)))
+  constructor(runtime: Runtime, path: string, wasm: (source: string) => string | undefined) {
+    super(runtime, path)
+    this.wasmFile = new WasmFile(runtime, path.replace('.wat', '.wasm'))
+    createEffect(
+      whenever(
+        () => wasm(this.get()),
+        wasm => this.wasmFile.set(wasm),
+      ),
+    )
   }
 
   generate() {

@@ -8,22 +8,13 @@ import { Frame } from './frame'
  * @class FrameRegistry
  */
 export class FrameRegistry {
-  /**
-   * A record of Frame instances indexed by a unique name identifier.
-   * @private
-   */
-  private frames: Record<string, Frame>
-  /**
-   * A setter function to update the frames record.
-   * @private
-   */
-  private setFrames: SetStoreFunction<Record<string, Frame>>
+  /** A record of Frame instances indexed by a unique name identifier. */
+  #frames: Record<string, Frame>
+  /** A setter function to update the frames record. */
+  #setFrames: SetStoreFunction<Record<string, Frame>>
 
-  /**
-   * Initializes a new instance of FrameRegistry.
-   */
   constructor() {
-    ;[this.frames, this.setFrames] = createStore({})
+    ;[this.#frames, this.#setFrames] = createStore({})
   }
 
   /**
@@ -33,7 +24,8 @@ export class FrameRegistry {
    * @param window - The window object of the frame.
    */
   add(name: string, window: Window) {
-    this.setFrames(name, new Frame(window))
+    console.log(this.#setFrames)
+    this.#setFrames(name, new Frame(window))
   }
 
   /**
@@ -42,7 +34,7 @@ export class FrameRegistry {
    * @param name - The name of the frame to delete.
    */
   delete(name: string) {
-    this.setFrames(name, undefined!)
+    this.#setFrames(name, undefined!)
   }
 
   /**
@@ -52,16 +44,16 @@ export class FrameRegistry {
    * @returns The frame associated with the given name, if it exists.
    */
   get(name: string) {
-    return this.frames[name]
+    return this.#frames[name]
   }
 
   /**
    * Checks if a frame with the given name exists in the registry.
    *
    * @param {string} name - The name to check.
-   * @returns {boolean} True if the frame exists, false otherwise.
+   * @returns True if the frame exists, false otherwise.
    */
   has(name: string) {
-    return name in this.frames
+    return name in this.#frames
   }
 }

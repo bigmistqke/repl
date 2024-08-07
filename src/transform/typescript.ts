@@ -2,7 +2,7 @@ import type TS from 'typescript'
 
 export interface TypescriptConfig {
   typescript: typeof TS | Promise<typeof TS>
-  tsconfig: TS.CompilerOptions
+  tsconfig?: TS.CompilerOptions
 }
 
 export async function typescriptTransform(config: TypescriptConfig) {

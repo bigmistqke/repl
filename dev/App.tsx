@@ -3,6 +3,7 @@ import { MonacoEditor, MonacoProvider, MonacoTheme } from '@bigmistqke/repl/edit
 import { JsFile, Runtime, VirtualFile, WasmFile } from '@bigmistqke/repl/runtime'
 import { typescriptTransformModulePaths } from '@bigmistqke/repl/transform-module-paths/typescript'
 import { babelTransform } from '@bigmistqke/repl/transform/babel'
+import { typescriptTransform } from '@bigmistqke/repl/transform/typescript'
 import loader from '@monaco-editor/loader'
 import { Resizable } from 'corvu/resizable'
 import {
@@ -11,12 +12,12 @@ import {
   createResource,
   createSignal,
   mapArray,
+  on,
   onCleanup,
   type Component,
 } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import vs_dark from 'src/editor/monaco/themes/vs_dark_good.json'
-import { babelSolidReplPlugin } from 'src/plugins/babel-solid-repl'
 import { every, whenever } from 'src/utils/conditionals'
 import WABT from 'wabt'
 import styles from './App.module.css'
@@ -83,6 +84,7 @@ background: blue;
 }`,
     'src/index.tsx': `import { render } from "solid-js/web";
 import { createSignal, createResource, createEffect, Show } from "solid-js";
+import { dispose } from "@repl/std";
 import "solid-js/jsx-runtime";
 import "./index.css";
 import wat from "./test.wat";
@@ -114,7 +116,7 @@ function App() {
   );
 }
 
-render(() => <App />, document.body);
+dispose('src/index.tsx', render(() => <App />, document.body));
 `,
     'src/test.wat': `
   ;; hello_world.wat
@@ -152,11 +154,16 @@ render(() => <App />, document.body);
       transformModulePaths={typescriptTransformModulePaths({
         typescript: import('https://esm.sh/typescript'),
       })}
-      transform={babelTransform({
-        babel: import('https://esm.sh/@babel/standalone'),
-        presets: ['babel-preset-solid'],
-        plugins: [babelSolidReplPlugin],
-      })}
+      transform={[
+        typescriptTransform({
+          typescript: import('https://esm.sh/typescript'),
+          tsconfig,
+        }),
+        babelTransform({
+          babel: import('https://esm.sh/@babel/standalone'),
+          presets: ['babel-preset-solid'],
+        }),
+      ]}
       extensions={{
         wat: (runtime, path) => new WatFile(runtime, path),
       }}
@@ -170,22 +177,31 @@ render(() => <App />, document.body);
 
           const entry = fileSystem.get('src/index.tsx')
 
-          createEffect(() => console.log('THIS HAPPENS', entry?.generate()))
-
-          if (entry instanceof JsFile) {
-            createEffect(() => {
-              // inject entry's module-url into frame's window
-              frame.injectFile(entry)
-              onCleanup(() => frame.dispose(entry))
-            })
-
+          createEffect(() => {
+            if (!entry) return
+            // inject entry's module-url into frame's window
+            frame.injectFile(entry)
+            // Dispose
             createEffect(
-              mapArray(entry.cssImports, css => {
-                createEffect(() => frame.injectFile(css))
-                onCleanup(() => frame.dispose(css))
-              }),
+              on(
+                () => entry.url,
+                () => onCleanup(() => frame.dispose(entry.path)),
+              ),
             )
-          }
+
+            if (entry instanceof JsFile) {
+              createEffect(
+                mapArray(entry.resolveDependencies.bind(this), dependency => {
+                  createEffect(
+                    on(
+                      () => dependency.url,
+                      () => onCleanup(() => frame.dispose(dependency.path)),
+                    ),
+                  )
+                }),
+              )
+            }
+          })
         })
       }}
     >

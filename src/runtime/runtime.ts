@@ -37,7 +37,7 @@ interface RuntimeConfigBase {
    * @param path - The path of the source file.
    * @returns The transformed source code.
    */
-  transform: Transform
+  transform: Transform | Array<Transform>
   /**
    * Function to transform module paths.
    * @param source - The source code containing module paths.

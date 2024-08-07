@@ -1,6 +1,6 @@
 import { onCleanup } from 'solid-js'
 import { SetStoreFunction, createStore } from 'solid-js/store'
-import { getExtensionFromPath } from 'src/utils/get-extension-from-path'
+import std from '../../std/index?raw'
 import { Runtime } from '../runtime'
 import { VirtualFile } from './file'
 
@@ -16,118 +16,98 @@ export interface CompilationEvent {
 export type CompilationHandler = (event: CompilationEvent) => void
 
 /**
- * Manages the virtual file system within a Monaco Editor-based TypeScript IDE.
- * This class handles file operations, module imports, and integration of TypeScript types,
- * providing a robust environment for coding directly in the browser.
- *
+ * Manages the virtual file system of code sources.
  * @class FileSystem
  */
 export class FileSystem {
-  /**
-   * Stores aliases for modules.
-   */
+  /** Aliases for modules. */
   alias: Record<string, string>
-  /**
-   * Store setter for aliases.
-   */
+  /** Store setter for aliases. */
   setAlias: SetStoreFunction<Record<string, string>>
-  /**
-   * Stores file instances by path.
-   * @private
-   */
-  private files: Record<string, VirtualFile>
+  /** Stores file instances by path. */
+  #files: Record<string, VirtualFile>
   /**
    * Store setter for files.
    * @private
    */
-  private setFiles: SetStoreFunction<Record<string, VirtualFile>>
+  #setFiles: SetStoreFunction<Record<string, VirtualFile>>
 
   /**
    * List of cleanup functions to be called on instance disposal.
    * @private
    */
-  private cleanups: (() => void)[] = []
+  #cleanups: (() => void)[] = []
 
-  /**
-   * Constructs an instance of the FileSystem, setting up initial properties and configuration.
-   *
-   * @param runtime - The `ReplContext` instance.
-   */
   constructor(public runtime: Runtime) {
-    ;[this.alias, this.setAlias] = createStore<Record<string, string>>({})
-    ;[this.files, this.setFiles] = createStore<Record<string, VirtualFile>>()
-    onCleanup(() => this.cleanups.forEach(cleanup => cleanup()))
+    const [files, setFiles] = createStore<Record<string, VirtualFile>>({})
+    this.#files = files
+    this.#setFiles = setFiles
+    ;[this.alias, this.setAlias] = createStore<Record<string, string>>({
+      '@repl/std': '@repl/std.ts',
+    })
+    onCleanup(() => this.#cleanups.forEach(cleanup => cleanup()))
   }
 
-  /**
-   * Initializes the file system based on provided initial configuration, setting up files and types.
-   */
+  /** Initializes the file system based on provided initial files. */
   initialize(files: Record<string, string>) {
-    for (const [path, source] of Object.entries(files)) {
+    const filesAndStd = {
+      ...files,
+      // Repl's standard library is passed to each repl-project.
+      '@repl/std.ts': std,
+    }
+    for (const [path, source] of Object.entries(filesAndStd)) {
       this.create(path).set(source)
     }
   }
 
-  /**
-   * Serializes the current state of the file system into JSON format.
-   *
-   * @returns JSON representation of the file system state.
-   */
+  /** Serializes the current state of the file system into JSON format. */
   toJSON(): FileSystemState {
     return {
       sources: Object.fromEntries(
-        Object.entries(this.files).map(([key, value]) => [key, value.toJSON()]),
+        Object.entries(this.#files).map(([key, value]) => [key, value.toJSON()]),
       ),
       alias: this.alias,
     }
   }
 
-  /**
-   * Adds a project by importing multiple files into the file system.
-   *
-   * @param files - A record of file paths and their content to add to the file system.
-   */
+  /** Adds a project by importing multiple files into the file system. */
   addProject(files: Record<string, string>) {
     Object.entries(files).forEach(([path, value]) => {
       this.create(path).set(value)
     })
   }
 
-  /**
-   * Creates a new file in the file system at the specified path.
-   *
-   * @param path - The path to create the file at.
-   * @returns The newly created file instance.
-   */
-  create(path: string) {
-    const extension = getExtensionFromPath(path)
-    if (!extension || !(extension in this.runtime.extensions)) {
+  /** Creates a new file in the file system at the specified path. */
+  create<T extends VirtualFile>(path: string) {
+    let extension: string | null = null
+
+    for (const key in this.runtime.extensions) {
+      if (
+        path.endsWith(key) &&
+        // Prefer the more specific extension: `.module.css` instead of `.css`
+        key.length > (extension?.length || 0)
+      ) {
+        extension = key
+      }
+    }
+
+    if (extension === null) {
       throw `extension type is not supported`
     }
-    console.log('create', path, extension, this.runtime.extensions)
+
     const file = this.runtime.extensions[extension]!(this.runtime, path)
-    this.setFiles(path, file)
-    return file
+    this.#setFiles(path, file)
+    return file as T
   }
 
-  /**
-   * Checks if a file exists at the specified path.
-   *
-   * @param path - The path to check for a file.
-   * @returns True if the file exists, false otherwise.
-   */
+  /** Checks if a file exists at the specified path. */
   has(path: string) {
-    return path in this.files
+    return path in this.#files
   }
 
-  /**
-   * Retrieves a file from the file system by its path.
-   *
-   * @param path - The path to retrieve the file from.
-   * @returns The file instance if found, undefined otherwise.
-   */
+  /** Retrieves a file from the file system by its path.  */
   get(path: string) {
-    return this.files[path]
+    return this.#files[path]
   }
 
   /**
@@ -139,17 +119,17 @@ export class FileSystem {
    */
   resolve(path: string) {
     return (
-      this.files[path] ||
-      this.files[`${path}/index.ts`] ||
-      this.files[`${path}/index.tsx`] ||
-      this.files[`${path}/index.d.ts`] ||
-      this.files[`${path}/index.js`] ||
-      this.files[`${path}/index.jsx`] ||
-      this.files[`${path}.ts`] ||
-      this.files[`${path}.tsx`] ||
-      this.files[`${path}.d.ts`] ||
-      this.files[`${path}.js`] ||
-      this.files[`${path}.jsx`]
+      this.#files[path] ||
+      this.#files[`${path}/index.ts`] ||
+      this.#files[`${path}/index.tsx`] ||
+      this.#files[`${path}/index.d.ts`] ||
+      this.#files[`${path}/index.js`] ||
+      this.#files[`${path}/index.jsx`] ||
+      this.#files[`${path}.ts`] ||
+      this.#files[`${path}.tsx`] ||
+      this.#files[`${path}.d.ts`] ||
+      this.#files[`${path}.js`] ||
+      this.#files[`${path}.jsx`]
     )
   }
 
@@ -161,11 +141,11 @@ export class FileSystem {
    */
   all() {
     return Object.fromEntries(
-      Object.entries(this.files).filter(([path]) => path.split('/')[0] !== 'node_modules'),
+      Object.entries(this.#files).filter(([path]) => path.split('/')[0] !== 'node_modules'),
     )
   }
 
   remove(path: string) {
-    this.setFiles({ [path]: undefined })
+    this.#setFiles({ [path]: undefined })
   }
 }

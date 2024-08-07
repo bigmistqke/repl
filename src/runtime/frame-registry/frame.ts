@@ -1,6 +1,6 @@
 import { onCleanup } from 'solid-js'
 import { when } from 'src/utils/conditionals'
-import { CssFile, JsFile } from '../file-system/file'
+import { VirtualFile } from '../file-system/file'
 
 /**
  * Represents an individual `<iframe/>` within the application.
@@ -34,18 +34,36 @@ export class Frame {
   }
 
   /**
-   * Injects and executes the esm-module of the given `CssFile` or `JsFile` into the frame's window.
+   * Injects and executes the esm-module of the given `VirtualFile` into the frame's window.
    * Returns the injected script-element.
    *
-   * @param file - The file to inject, which could be a `CssFile` or `JsFile`.
+   * @param file - The file to inject, which could be a `VirtualFile`.
    * @returns The script element that was injected.
    */
-  injectFile(file: CssFile | JsFile) {
+  injectFile(file: VirtualFile) {
     // We need to generate a new module-url everytime we inject a file, to ensure the body is executed.
-    return when(file.generate(), url => this.injectModuleUrl(url))
+    return when(file.generate(), url => {
+      return this.injectModuleUrl(url)
+    })
   }
 
-  dispose(file: CssFile | JsFile) {
-    return file.dispose(this)
+  /**
+   * Runs `this.contentWindow.repl.dispose()` if it is defined.
+   * To make use of the disposal mechanism, pass your cleanup-functions to `dispose` of the repl-standard library.
+   *
+   * @example in repl-code:
+   * ```tsx
+   * import { dispose } from "@repl/std"
+   * import { render } from "solid-js/web"
+   *
+   * // This will remove the render-artefacts everytime frame.dispose() is called.
+   * dispose(render(() => <>{new Date().now()}</>))
+   * ```
+   */
+  dispose(id?: string) {
+    const disposeFn = this.contentWindow.repl?.dispose
+    if (typeof disposeFn === 'function') {
+      return disposeFn(id)
+    }
   }
 }

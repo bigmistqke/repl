@@ -21,7 +21,7 @@ type ReplPropsBase = ComponentProps<'div'> &
   Omit<RuntimeConfig, 'transform' | 'transformModulePaths'>
 export interface ReplProps extends ReplPropsBase {
   transformModulePaths: TransformModulePaths | Promise<TransformModulePaths>
-  transform: Transform | Promise<Transform>
+  transform: Transform | Promise<Transform> | Array<Transform | Promise<Transform>>
   files?: Record<string, string>
 }
 
@@ -48,7 +48,9 @@ export function Repl(props: ReplProps) {
     ),
   )
 
-  const [transform] = createResource(() => config.transform)
+  const [transform] = createResource<Transform | Transform[]>(() =>
+    Array.isArray(config.transform) ? Promise.all(config.transform) : config.transform,
+  )
   const [transformModulePaths] = createResource(() => config.transformModulePaths)
 
   const [runtime] = createResource(async () => {
@@ -75,18 +77,10 @@ export function Repl(props: ReplProps) {
           mapArray(
             () => Object.keys(files),
             key => {
-              // const oldFile = runtime.fileSystem.get(key)
-              console.log(
-                'file is ',
-
-                runtime.fileSystem.get(key)?.generate(),
-              )
               const file = runtime.fileSystem.get(key) ?? runtime.fileSystem.create(key)
               createRenderEffect(() => {
                 file.set(files[key]!)
               })
-
-              createEffect(() => console.log('file is ', runtime.fileSystem.get(key)?.get()))
             },
           ),
         )

@@ -26,6 +26,29 @@ export function createMonaco(props: {
 }): Resource<Monaco> {
   const runtime = useRuntime()
   const [monaco] = createResource(() => props.monaco)
+
+  /* createEffect(
+    whenever(monaco, monaco => {
+      createEffect(
+        mapArray(
+          () => Object.keys(runtime.fileSystem.all()),
+          path => {
+            const uri = monaco.Uri.parse(`file:///${path}`)
+            createEffect(() => {
+              if (monaco.editor.getModel(uri)) return
+              console.log('THIS HAPPENS!!!!', path)
+              const source = runtime.fileSystem.get(path)!.get()
+              const extension = getExtensionFromPath(path)
+              if (!extension) return
+              console.log('extensions[extension]', extensions[extension])
+              monaco.editor.createModel(source, extensions[extension] || 'javascript', uri)
+            })
+          },
+        ),
+      )
+    }),
+  ) */
+
   // Load monaco and import all of the repl's resources
   const [resources] = createResource(() =>
     Promise.all([
@@ -85,7 +108,7 @@ export function createMonaco(props: {
         const uri = monaco.Uri.parse(`file:///${path}`)
         if (!monaco.editor.getModel(uri)) {
           const type = value instanceof CssFile ? 'css' : 'typescript'
-          monaco.editor.createModel('', type, uri)
+          monaco.editor.createModel(value.get(), type, uri)
         }
       })
 
@@ -108,16 +131,28 @@ export function createMonaco(props: {
         ),
       )
 
+      function wrapPaths(paths: Record<string, string[] | string>): Record<string, string[]> {
+        return Object.fromEntries(
+          Object.entries(paths).map(([key, paths]) => [
+            key,
+            (Array.isArray(paths) ? paths : [paths]).map(path => `file:///${path}`),
+          ]),
+        )
+      }
+
       // Sync monaco-editor's tsconfig with repl's typescript-prop and type-registry's alias-property.
       createEffect(() => {
         // add virtual path to monaco's tsconfig's `path`-property
         const tsCompilerOptions = unwrap({
           ...props?.tsconfig,
           paths: {
-            ...props?.tsconfig?.paths,
+            ...(props?.tsconfig?.paths ? wrapPaths(props.tsconfig.paths) : undefined),
             ...runtime.typeRegistry.alias,
+            ...(runtime.fileSystem.alias ? wrapPaths(runtime.fileSystem.alias) : undefined),
           },
         })
+
+        console.log('tsCompilerOptions', tsCompilerOptions)
 
         monaco.languages.typescript.typescriptDefaults.setCompilerOptions(tsCompilerOptions as any)
         monaco.languages.typescript.javascriptDefaults.setCompilerOptions(tsCompilerOptions as any)
