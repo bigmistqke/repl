@@ -1,3 +1,4 @@
+import { CssFile } from '@bigmistqke/repl/runtime'
 import { type Monaco } from '@monaco-editor/loader'
 import { wireTmGrammars } from 'monaco-editor-textmate'
 import { Registry } from 'monaco-textmate'
@@ -5,7 +6,6 @@ import { loadWASM } from 'onigasm'
 import onigasm from 'onigasm/lib/onigasm.wasm?url'
 import { Resource, createEffect, createResource, mapArray } from 'solid-js'
 import { unwrap } from 'solid-js/store'
-import { CssFile } from 'src/runtime'
 import { useRuntime } from 'src/use-runtime'
 import { every, whenever } from 'src/utils/conditionals'
 import { formatInfo } from 'src/utils/format-log'
@@ -26,28 +26,6 @@ export function createMonaco(props: {
 }): Resource<Monaco> {
   const runtime = useRuntime()
   const [monaco] = createResource(() => props.monaco)
-
-  /* createEffect(
-    whenever(monaco, monaco => {
-      createEffect(
-        mapArray(
-          () => Object.keys(runtime.fileSystem.all()),
-          path => {
-            const uri = monaco.Uri.parse(`file:///${path}`)
-            createEffect(() => {
-              if (monaco.editor.getModel(uri)) return
-              console.log('THIS HAPPENS!!!!', path)
-              const source = runtime.fileSystem.get(path)!.get()
-              const extension = getExtensionFromPath(path)
-              if (!extension) return
-              console.log('extensions[extension]', extensions[extension])
-              monaco.editor.createModel(source, extensions[extension] || 'javascript', uri)
-            })
-          },
-        ),
-      )
-    }),
-  ) */
 
   // Load monaco and import all of the repl's resources
   const [resources] = createResource(() =>
@@ -96,21 +74,37 @@ export function createMonaco(props: {
 
   createEffect(
     whenever(monaco, monaco => {
+      createEffect(
+        mapArray(
+          () => Object.values(runtime.fileSystem.all()),
+          file => {
+            // Initialize models for all Files in FileSystem
+            // Object.entries(runtime.fileSystem.all()).forEach(([path, value]) => {
+            const uri = monaco.Uri.parse(`file:///${file.path}`)
+
+            const model =
+              monaco.editor.getModel(uri) ||
+              monaco.editor.createModel(
+                file.get(),
+                file instanceof CssFile ? 'css' : 'typescript',
+                uri,
+              )
+
+            createEffect(() => {
+              if (model.getValue() !== file.get()) {
+                model.setValue(file.get())
+              }
+            })
+          },
+        ),
+      )
+
       // Initialize typescript-services with empty editor
       monaco.editor
         .create(document.createElement('div'), {
           language: 'typescript',
         })
         .dispose()
-
-      // Initialize models for all Files in FileSystem
-      Object.entries(runtime.fileSystem.all()).forEach(([path, value]) => {
-        const uri = monaco.Uri.parse(`file:///${path}`)
-        if (!monaco.editor.getModel(uri)) {
-          const type = value instanceof CssFile ? 'css' : 'typescript'
-          monaco.editor.createModel(value.get(), type, uri)
-        }
-      })
 
       // Sync monaco-editor's virtual file-system with type-registry's sources
       createEffect(
@@ -151,8 +145,6 @@ export function createMonaco(props: {
             ...(runtime.fileSystem.alias ? wrapPaths(runtime.fileSystem.alias) : undefined),
           },
         })
-
-        console.log('tsCompilerOptions', tsCompilerOptions)
 
         monaco.languages.typescript.typescriptDefaults.setCompilerOptions(tsCompilerOptions as any)
         monaco.languages.typescript.javascriptDefaults.setCompilerOptions(tsCompilerOptions as any)

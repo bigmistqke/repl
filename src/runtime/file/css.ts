@@ -1,0 +1,56 @@
+import { createScheduled, debounce } from '@solid-primitives/scheduled'
+import { createEffect } from 'solid-js'
+import { Runtime } from '../runtime'
+import { JsFile } from './js'
+import { AbstractFile } from './virtual'
+
+export function createStyleLoaderSource(path: string, source: string) {
+  return `
+import { dispose } from "@repl/std"
+(() => {
+  let stylesheet = document.getElementById('bigmistqke-repl-${path}');
+  stylesheet = document.createElement('style')
+  stylesheet.setAttribute('id', 'bigmistqke-repl-${path}');
+  document.head.appendChild(stylesheet)
+  dispose('${path}', () => stylesheet.remove())
+  const styles = document.createTextNode(\`${source}\`)
+  stylesheet.innerHTML = ''
+  stylesheet.appendChild(styles)
+})()`
+}
+
+/**
+ * Represents a CSS file within the system. Extends the generic File class.
+ */
+export class CssFile extends AbstractFile {
+  jsFile: JsFile
+
+  /**
+   * Constructs an instance of a CSS module associated with a specific CSS file.
+   * @param file The CSS file managed by this module.
+   */
+  constructor(runtime: Runtime, path: string) {
+    super(runtime, path)
+
+    this.jsFile = runtime.fileSystem.create<JsFile>(path.replace('.css', '.js'))
+
+    const scheduled = createScheduled(fn => debounce(fn, 250))
+
+    createEffect(() => {
+      if (!scheduled()) return
+      this.jsFile.set(createStyleLoaderSource(path, this.get()))
+    })
+  }
+
+  generate() {
+    return this.jsFile.generate()
+  }
+
+  /**
+   * Retrieves the URL of the currently active CSS esm-module.
+   * @returns The URL as a string, or undefined if not available.
+   */
+  get url() {
+    return this.jsFile.url
+  }
+}

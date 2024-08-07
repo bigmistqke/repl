@@ -1,8 +1,8 @@
 import { onCleanup } from 'solid-js'
 import { SetStoreFunction, createStore } from 'solid-js/store'
-import std from '../../std/index?raw'
-import { Runtime } from '../runtime'
-import { VirtualFile } from './file'
+import std from '../std/index?raw'
+import { AbstractFile } from './file/virtual'
+import { Runtime } from './runtime'
 
 export interface FileSystemState {
   sources: Record<string, string>
@@ -25,12 +25,12 @@ export class FileSystem {
   /** Store setter for aliases. */
   setAlias: SetStoreFunction<Record<string, string>>
   /** Stores file instances by path. */
-  #files: Record<string, VirtualFile>
+  #files: Record<string, AbstractFile>
   /**
    * Store setter for files.
    * @private
    */
-  #setFiles: SetStoreFunction<Record<string, VirtualFile>>
+  #setFiles: SetStoreFunction<Record<string, AbstractFile>>
 
   /**
    * List of cleanup functions to be called on instance disposal.
@@ -39,7 +39,7 @@ export class FileSystem {
   #cleanups: (() => void)[] = []
 
   constructor(public runtime: Runtime) {
-    const [files, setFiles] = createStore<Record<string, VirtualFile>>({})
+    const [files, setFiles] = createStore<Record<string, AbstractFile>>({})
     this.#files = files
     this.#setFiles = setFiles
     ;[this.alias, this.setAlias] = createStore<Record<string, string>>({
@@ -78,7 +78,7 @@ export class FileSystem {
   }
 
   /** Creates a new file in the file system at the specified path. */
-  create<T extends VirtualFile>(path: string) {
+  create<T extends AbstractFile>(path: string) {
     let extension: string | null = null
 
     for (const key in this.runtime.extensions) {
@@ -95,7 +95,7 @@ export class FileSystem {
       throw `extension type is not supported`
     }
 
-    const file = this.runtime.extensions[extension]!(this.runtime, path)
+    const file = new this.runtime.extensions[extension]!(this.runtime, path)
     this.#setFiles(path, file)
     return file as T
   }

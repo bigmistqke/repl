@@ -49,6 +49,8 @@ export default defineConfig({
         runtime: resolve(__dirname, 'src/runtime/index.ts'),
         'editor/monaco': resolve(__dirname, 'src/editor/monaco/index.ts'),
         'editor/shiki': resolve(__dirname, 'src/editor/shiki/index.tsx'),
+        'file-extra/css-module': resolve(__dirname, 'src/file-extra/css-module.ts'),
+        'file-extra/wat': resolve(__dirname, 'src/file-extra/wat.ts'),
         'plugins/babel-solid-repl': resolve(__dirname, 'src/plugins/babel-solid-repl.ts'),
         'plugins/rollup-service-worker': resolve(
           __dirname,

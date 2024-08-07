@@ -922,7 +922,7 @@ export default function App() {
 
     // Import module and call its function
     import(moduleUrl).then(module => {
-      console.log('Sum of 1 and 2 is:', module.sum(1, 2));
+      console.info('Sum of 1 and 2 is:', module.sum(1, 2));
     });
   }
 

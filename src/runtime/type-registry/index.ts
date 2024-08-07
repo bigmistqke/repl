@@ -21,7 +21,7 @@ export class TypeRegistry {
   sources: Record<string, string>
   private setSources: SetStoreFunction<Record<string, string>>
   alias: Record<string, string[]>
-  private setAlias: SetStoreFunction<Record<string, string[]>>
+  setAlias: SetStoreFunction<Record<string, string[]>>
   import: TypeImportUtils
 
   /**

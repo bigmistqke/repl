@@ -47,6 +47,9 @@ importers:
       solid-shiki-textarea:
         specifier: ^0.1.5
         version: 0.1.5(shiki@1.11.0)(solid-js@1.8.17)
+      zeptoid:
+        specifier: ^1.0.1
+        version: 1.0.1
     devDependencies:
       '@babel/plugin-syntax-import-attributes':
         specifier: ^7.24.1
@@ -2161,6 +2164,9 @@ packages:
   text-table@0.2.0:
     resolution: {integrity: sha512-N+8UisAXDGk8PFXP4HAzVR9nbfmVJ3zYLAWiTIoqC5v5isinhr+r5uaO8+7r3BMfuNIufIsA7RdpVgacC2cSpw==}
 
+  tiny-webcrypto@1.0.1:
+    resolution: {integrity: sha512-xmRCZrKqgLNfDVjj12Da9l7a/gKyqwIQ0gTIQ2p+/tbosZxFGW41QQ5C6Pwz9tiVO0OTUDh8IcBqncVHbq1RqQ==}
+
   tinybench@2.5.0:
     resolution: {integrity: sha512-kRwSG8Zx4tjF9ZiyH4bhaebu+EDz1BOx9hOigYHlUW4xxI/wKIUQUqo018UlU4ar6ATPBsaMrdbKZ+tmPdohFA==}
 
@@ -2235,6 +2241,9 @@ packages:
 
   ufo@1.1.2:
     resolution: {integrity: sha512-TrY6DsjTQQgyS3E3dBaOXf0TpPD8u9FVrVYmKVegJuFw51n/YB9XPt+U6ydzFG5ZIN7+DIjPbNmXoBj9esYhgQ==}
+
+  uint-rng@1.2.0:
+    resolution: {integrity: sha512-ZQ+FZ7y4o0abzRjqHgSPXnC+sfpthLJI3B5zeazPh28f8l1WKTXxZfYvZrcS9RjrHDT6vFwc/KVi/1UyJC4s5A==}
 
   undici-types@5.26.5:
     resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
@@ -2478,6 +2487,9 @@ packages:
   yocto-queue@1.0.0:
     resolution: {integrity: sha512-9bnSc/HEW2uRy67wc+T8UwauLuPJVn28jb+GtJY16iiKWyvmYJRXVT4UamsAEGQfPohgr2q4Tq0sQbQlxTfi1g==}
     engines: {node: '>=12.20'}
+
+  zeptoid@1.0.1:
+    resolution: {integrity: sha512-LJrctN9zR01YuLUl2M8yhc7Z5HzlwgUADFnmM8VSPWO5IX+glR5kfX9rJ+Kwvs51ruh8lyijDZwW1mCu0PDBig==}
 
 snapshots:
 
@@ -4448,6 +4460,8 @@ snapshots:
 
   text-table@0.2.0: {}
 
+  tiny-webcrypto@1.0.1: {}
+
   tinybench@2.5.0: {}
 
   tinypool@0.6.0: {}
@@ -4496,6 +4510,10 @@ snapshots:
   typescript@5.4.2: {}
 
   ufo@1.1.2: {}
+
+  uint-rng@1.2.0:
+    dependencies:
+      tiny-webcrypto: 1.0.1
 
   undici-types@5.26.5: {}
 
@@ -4746,3 +4764,7 @@ snapshots:
   yocto-queue@0.1.0: {}
 
   yocto-queue@1.0.0: {}
+
+  zeptoid@1.0.1:
+    dependencies:
+      uint-rng: 1.2.0

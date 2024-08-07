@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { ComponentProps, For, JSXElement, splitProps } from 'solid-js'
-import { File } from 'src/runtime'
+import { VirtualFile } from 'src/runtime'
 import { useRuntime } from 'src/use-runtime'
 import styles from './repl.module.css'
 
@@ -9,7 +9,7 @@ export interface TabBarProps extends Omit<ComponentProps<'div'>, 'children'> {
    * A render prop function that receives an object with the current path and file object.
    * It should return a `JSX.Element` to render for each tab.
    */
-  children: (arg: { path: string; paths: File | undefined }) => JSXElement
+  children: (arg: { path: string; paths: VirtualFile | undefined }) => JSXElement
   /**
    * Optional array of file paths to specifically include in the tab bar.
    * If not provided, all files from the file system are used.

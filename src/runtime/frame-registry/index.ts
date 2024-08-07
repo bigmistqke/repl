@@ -24,7 +24,6 @@ export class FrameRegistry {
    * @param window - The window object of the frame.
    */
   add(name: string, window: Window) {
-    console.log(this.#setFrames)
     this.#setFrames(name, new Frame(window))
   }
 

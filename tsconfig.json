@@ -30,7 +30,9 @@
       "@bigmistqke/repl/editor/monaco/themes/*": ["./src/editor/monaco/themes/*"],
       "@bigmistqke/repl/editor/shiki": ["./src/editor/shiki"],
       "@bigmistqke/repl/transform/*": ["src/transform/*"],
-      "@bigmistqke/repl/transform-module-paths/*": ["./src/transform-module-paths/*"]
+      "@bigmistqke/repl/transform-module-paths/*": ["./src/transform-module-paths/*"],
+      "@bigmistqke/repl/file-extra/css-module": ["src/file-extra/css-module"],
+      "@bigmistqke/repl/file-extra/wat": ["src/file-extra/wat"]
     }
   },
   "include": ["src", "dist"]

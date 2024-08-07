@@ -1,25 +1,15 @@
 import { Frame, Repl, TabBar } from '@bigmistqke/repl'
 import { MonacoEditor, MonacoProvider, MonacoTheme } from '@bigmistqke/repl/editor/monaco'
-import { JsFile, Runtime, VirtualFile, WasmFile } from '@bigmistqke/repl/runtime'
+import { CssModuleFile } from '@bigmistqke/repl/file-extra/css-module'
+import { JsFile } from '@bigmistqke/repl/runtime'
 import { typescriptTransformModulePaths } from '@bigmistqke/repl/transform-module-paths/typescript'
 import { babelTransform } from '@bigmistqke/repl/transform/babel'
 import { typescriptTransform } from '@bigmistqke/repl/transform/typescript'
 import loader from '@monaco-editor/loader'
 import { Resizable } from 'corvu/resizable'
-import {
-  Resource,
-  createEffect,
-  createResource,
-  createSignal,
-  mapArray,
-  on,
-  onCleanup,
-  type Component,
-} from 'solid-js'
+import { createEffect, createSignal, mapArray, on, onCleanup, type Component } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import vs_dark from 'src/editor/monaco/themes/vs_dark_good.json'
-import { every, whenever } from 'src/utils/conditionals'
-import WABT from 'wabt'
 import styles from './App.module.css'
 
 const tsconfig = {
@@ -38,111 +28,31 @@ const tsconfig = {
   outDir: './dist', // Specify output directory for compiled files
 }
 
-let cachedWabt: Resource<Awaited<ReturnType<typeof WABT>>>
-function getWabtResource() {
-  if (!cachedWabt) {
-    ;[cachedWabt] = createResource(() => WABT())
-  }
-  return cachedWabt
-}
-
-class WatFile extends VirtualFile {
-  private wasmFile: WasmFile
-
-  constructor(runtime: Runtime, path: string) {
-    super(runtime, path)
-
-    this.wasmFile = new WasmFile(runtime, path.replace('.wat', '.wasm'), false)
-    const wabt = getWabtResource()
-    const [wasm] = createResource(every(this.get.bind(this), wabt), ([source, wabt]) =>
-      wabt.parseWat(path, source),
-    )
-
-    createEffect(
-      whenever(wasm, wasm => {
-        const { buffer } = wasm.toBinary({})
-        const base64String = btoa(String.fromCharCode(...new Uint8Array(buffer)))
-        this.wasmFile.set(base64String)
-      }),
-    )
-  }
-
-  generate() {
-    return this.wasmFile.generate()
-  }
-
-  get url() {
-    return this.wasmFile.url // Use the URL from WasmFile
-  }
-}
-
 const App: Component = () => {
   const [currentPath, setCurrentFile] = createSignal('src/index.tsx')
   const [files, setFiles] = createStore<Record<string, string>>({
-    'src/index.css': `body {
+    'src/index.module.css': `body {
 background: blue;
-}`,
+}
+/* .test */
+.button {
+  background: red;
+}
+`,
     'src/index.tsx': `import { render } from "solid-js/web";
-import { createSignal, createResource, createEffect, Show } from "solid-js";
 import { dispose } from "@repl/std";
 import "solid-js/jsx-runtime";
-import "./index.css";
-import wat from "./test.wat";
+import styles from "./index.module.css";
 
 function App() {
-  const [wasm] = createResource(async () => {
-  let memory;
-  const wasm = await wat({
-    env: {
-      jsprint: 
-        function jsprint(byteOffset) {
-          var s = '';
-          var a = new Uint8Array(memory.buffer);
-          for (var i = byteOffset; a[i]; i++) {
-            s += String.fromCharCode(a[i]);
-          }
-          alert(s);
-        }
-    }
-    })
-    memory = wasm.exports.pagememory;
-    return wasm
-  })
-
   return (
-    <button onClick={() => wasm()?.exports.helloworld()}>
-      hello world from wasm
+    <button class={styles.button} >
+      hello
     </button>
   );
 }
 
 dispose('src/index.tsx', render(() => <App />, document.body));
-`,
-    'src/test.wat': `
-  ;; hello_world.wat
-
-(module
-
-;; Import our myprint function 
-(import "env" "jsprint" (func $jsprint (param i32)))
-
-;; Define a single page memory of 64KB.
-(memory $0 1)
-
-;; Store the Hello World (null terminated) string at byte offset 0 
-(data (i32.const 0) "Hello World!\x00")
-
-;; Export the memory so it can be access in the host environment.
-(export "pagememory" (memory $0))
-
-;; Define a function to be called from our host
-(func $helloworld
-(call $jsprint (i32.const 0))
-)
-
-;; Export the wasmprint function for the host to call.
-(export "helloworld" (func $helloworld))
-)
 `,
   })
 
@@ -165,7 +75,7 @@ dispose('src/index.tsx', render(() => <App />, document.body));
         }),
       ]}
       extensions={{
-        wat: (runtime, path) => new WatFile(runtime, path),
+        'module.css': CssModuleFile,
       }}
       files={files}
       class={styles.repl}
@@ -188,20 +98,23 @@ dispose('src/index.tsx', render(() => <App />, document.body));
                 () => onCleanup(() => frame.dispose(entry.path)),
               ),
             )
+          })
 
-            if (entry instanceof JsFile) {
-              createEffect(
-                mapArray(entry.resolveDependencies.bind(this), dependency => {
+          if (entry instanceof JsFile) {
+            createEffect(
+              mapArray(
+                () => entry.resolveDependencies(),
+                dependency => {
                   createEffect(
                     on(
                       () => dependency.url,
                       () => onCleanup(() => frame.dispose(dependency.path)),
                     ),
                   )
-                }),
-              )
-            }
-          })
+                },
+              ),
+            )
+          }
         })
       }}
     >

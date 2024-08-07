@@ -36,6 +36,7 @@ export interface MonacoEditorProps extends Partial<MonacoEditorPropsBase> {
 export function MonacoEditor(props: MonacoEditorProps) {
   const [, rest] = splitProps(props, ['class'])
   const runtime = useRuntime()
+  // @ts-expect-error
   const context = useMonacoContext(props)
 
   // Initialize html-element of monaco-editor
@@ -78,27 +79,10 @@ export function MonacoEditor(props: MonacoEditorProps) {
         whenever(model, model => {
           // Update monaco-editor's model to current file's model
           editor.setModel(model)
-          // Set the value
-          model.setValue(file().get())
           // Update the file when the model changes content
           model.onDidChangeContent(() => file().set(model.getValue()))
         }),
       )
-
-      // Add action to context-menu of monaco-editor
-      createEffect(() => {
-        if (runtime.config.actions?.saveRepl === false) return
-        const { dispose } = editor.addAction({
-          id: 'save-repl',
-          label: 'Save Repl',
-          keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyY], // Optional: set a keybinding
-          precondition: undefined,
-          keybindingContext: undefined,
-          contextMenuGroupId: 'repl',
-          run: () => runtime.download(),
-        })
-        onCleanup(() => dispose())
-      })
 
       // Dispose monaco-editor after cleanup
       onCleanup(() => editor.dispose())

@@ -1,4 +1,7 @@
-export { CssFile, JsFile, VirtualFile, WasmFile, WasmTarget } from './file-system/file'
+export { CssFile, createStyleLoaderSource } from './file/css'
+export { JsFile } from './file/js'
+export { AbstractFile as VirtualFile } from './file/virtual'
+export { WasmFile, WasmTarget } from './file/wasm'
 export { FrameRegistry } from './frame-registry'
 export { Frame } from './frame-registry/frame'
 export { PackageJsonParser } from './package-json-parser'

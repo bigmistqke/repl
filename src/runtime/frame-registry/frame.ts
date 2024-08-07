@@ -1,6 +1,6 @@
 import { onCleanup } from 'solid-js'
 import { when } from 'src/utils/conditionals'
-import { VirtualFile } from '../file-system/file'
+import { AbstractFile } from '../file/virtual'
 
 /**
  * Represents an individual `<iframe/>` within the application.
@@ -40,7 +40,7 @@ export class Frame {
    * @param file - The file to inject, which could be a `VirtualFile`.
    * @returns The script element that was injected.
    */
-  injectFile(file: VirtualFile) {
+  injectFile(file: AbstractFile) {
     // We need to generate a new module-url everytime we inject a file, to ensure the body is executed.
     return when(file.generate(), url => {
       return this.injectModuleUrl(url)
@@ -61,6 +61,8 @@ export class Frame {
    * ```
    */
   dispose(id?: string) {
+    // TODO: if we don't ignore we get error when building declaration files.
+    // @ts-expect-error
     const disposeFn = this.contentWindow.repl?.dispose
     if (typeof disposeFn === 'function') {
       return disposeFn(id)

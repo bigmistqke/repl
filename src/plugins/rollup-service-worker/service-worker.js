@@ -4,12 +4,12 @@ const CACHE_NAME = 'esm-cache-v1' // Update this version to invalidate the cache
 const ESM_SH_REGEX = /^https:\/\/esm.sh\//
 
 self.addEventListener('install', event => {
-  console.log('install')
+  console.info('install')
   event.waitUntil(caches.open(CACHE_NAME))
 })
 
 self.addEventListener('activate', event => {
-  console.log('activate')
+  console.info('activate')
   // Remove old caches
   event.waitUntil(
     caches.keys().then(cacheNames => {

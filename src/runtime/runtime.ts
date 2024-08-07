@@ -1,7 +1,10 @@
 import { mergeProps } from 'solid-js'
 import type { Mandatory } from 'src/utils/type'
 import { FileSystem, FileSystemState } from './file-system'
-import { CssFile, JsFile, VirtualFile, WasmFile } from './file-system/file'
+import { CssFile } from './file/css'
+import { JsFile } from './file/js'
+import { AbstractFile } from './file/virtual'
+import { WasmFile } from './file/wasm'
 import { FrameRegistry } from './frame-registry'
 import { ImportUtils } from './import-utils'
 import { TypeRegistry, TypeRegistryState } from './type-registry'
@@ -50,7 +53,7 @@ interface RuntimeConfigBase {
   /** Optional event that runs after a file's source is updated. */
   onFileChange?: (path: string, src: string) => void
   /** Additional extensions besides .js and .css */
-  extensions?: Record<string, (runtime: Runtime, path: string) => VirtualFile>
+  extensions?: Record<string, typeof AbstractFile>
 }
 
 interface RuntimeConfigControlled extends RuntimeConfigBase {
@@ -69,21 +72,19 @@ interface RuntimeConfigUncontrolled extends RuntimeConfigBase {
 
 export type RuntimeConfig = RuntimeConfigControlled | RuntimeConfigUncontrolled
 
-type FileFactory<T extends VirtualFile> = (runtime: Runtime, path: string) => T
-
 // Create a type for the specific methods
 interface DefinedExtensions {
-  css: FileFactory<CssFile>
-  js: FileFactory<JsFile>
-  jsx: FileFactory<JsFile>
-  ts: FileFactory<JsFile>
-  tsx: FileFactory<JsFile>
-  wasm: FileFactory<WasmFile>
+  css: typeof CssFile
+  js: typeof JsFile
+  jsx: typeof JsFile
+  ts: typeof JsFile
+  tsx: typeof JsFile
+  wasm: typeof WasmFile
 }
 
 // Use an index signature for all other keys
 interface GenericFileMethods {
-  [key: string]: FileFactory<VirtualFile>
+  [key: string]: new (runtime: any, path: string) => AbstractFile
 }
 
 // Combine the specific and generic file methods into one type
@@ -108,12 +109,12 @@ export class Runtime {
   /**  */
   get extensions(): Extensions {
     return {
-      css: (runtime, path) => new CssFile(runtime, path),
-      js: (runtime, path) => new JsFile(runtime, path),
-      jsx: (runtime, path) => new JsFile(runtime, path),
-      ts: (runtime, path) => new JsFile(runtime, path),
-      tsx: (runtime, path) => new JsFile(runtime, path),
-      wasm: (runtime, path) => new WasmFile(runtime, path),
+      css: CssFile,
+      js: JsFile,
+      jsx: JsFile,
+      ts: JsFile,
+      tsx: JsFile,
+      wasm: WasmFile,
       ...this.config.extensions,
     }
   }

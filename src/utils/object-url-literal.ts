@@ -36,7 +36,7 @@ export function html(template: TemplateStringsArray, ...values: string[]) {
  * @returns  The URL of the created JavaScript blob, which can be used to dynamically load scripts.
  * @example
  
- * const scriptUrl = js`console.log('Hello, ${username}');`;
+ * const scriptUrl = js`console.info('Hello, ${username}');`;
  * someElement.src = scriptUrl;
  */
 export function javascript(template: TemplateStringsArray, ...values: string[]) {

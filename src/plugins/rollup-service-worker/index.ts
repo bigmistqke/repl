@@ -24,10 +24,10 @@ export function rollupServiceWorkerPlugin() {
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/repl-service-worker.js')
     .then(registration => {
-      console.log('Service Worker registered with scope:', registration.scope);
+      console.info('Service Worker registered with scope:', registration.scope);
     })
     .catch(error => {
-      console.log('Service Worker registration failed:', error);
+      console.info('Service Worker registration failed:', error);
     });
 }
 </script>
