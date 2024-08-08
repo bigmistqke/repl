@@ -8,11 +8,13 @@ export function createStyleLoaderSource(path: string, source: string) {
   return `
 import { dispose } from "@repl/std"
 (() => {
-  let stylesheet = document.getElementById('bigmistqke-repl-${path}');
-  stylesheet = document.createElement('style')
-  stylesheet.setAttribute('id', 'bigmistqke-repl-${path}');
-  document.head.appendChild(stylesheet)
-  dispose('${path}', () => stylesheet.remove())
+  let stylesheet = document.querySelector('[data-repl-css-id="${path}"]');
+  if(!stylesheet){
+    stylesheet = document.createElement('style')
+    stylesheet.setAttribute('data-repl-css-id', '${path}');
+    document.head.appendChild(stylesheet)
+    dispose('${path}', () => stylesheet.remove())
+  }
   const styles = document.createTextNode(\`${source}\`)
   stylesheet.innerHTML = ''
   stylesheet.appendChild(styles)
@@ -51,6 +53,6 @@ export class CssFile extends AbstractFile {
    * @returns The URL as a string, or undefined if not available.
    */
   get url() {
-    return this.jsFile.url
+    return this.jsFile.generate()
   }
 }

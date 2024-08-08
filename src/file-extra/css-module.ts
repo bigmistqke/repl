@@ -21,10 +21,6 @@ export class CssModuleFile extends AbstractFile {
     super(runtime, path)
     this.jsFile = runtime.fileSystem.create(`${path}.ts`)
 
-    runtime.typeRegistry.setAlias({
-      [path]: [`${path}.ts`],
-    })
-
     createEffect(() => {
       const aliases = {} as Record<string, string>
       const transformed = transformCssClasses(this.get(), className => {
@@ -47,8 +43,9 @@ export default ${JSON.stringify(aliases)} as const
   }
 
   moduleTransform() {
-    if (!this.url) throw `Module not loaded`
-    return this.url
+    const url = this.generate()
+    if (!url) throw `Module not loaded`
+    return url
   }
 }
 

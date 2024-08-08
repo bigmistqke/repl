@@ -6,12 +6,15 @@ import {
   createMemo,
   createResource,
   createSignal,
+  onCleanup,
   untrack,
 } from 'solid-js'
 import { when } from 'src/utils/conditionals'
 import { isRelativePath, isUrl, relativeToAbsolutePath } from 'src/utils/path'
 import { Runtime } from '../runtime'
 import { AbstractFile } from './virtual'
+
+type StaleDependencyHandler = (file: AbstractFile) => void
 
 /**
  * Represents a JavaScript file within the system. Extends the generic File class.
@@ -26,12 +29,18 @@ export class JsFile extends AbstractFile {
   /** Internal callback to get the esm output of the current source. */
   #esm: Accessor<string | undefined>
 
+  #dependencyRemovedHandlers: Accessor<StaleDependencyHandler[]>
+  #setDependencyRemovedHandlers: Setter<StaleDependencyHandler[]>
+
   constructor(
     public runtime: Runtime,
     public path: string,
   ) {
     super(runtime, path)
     ;[this.directDependencies, this.#setDirectDependencies] = createSignal<AbstractFile[]>([])
+    ;[this.#dependencyRemovedHandlers, this.#setDependencyRemovedHandlers] = createSignal<
+      StaleDependencyHandler[]
+    >([])
 
     let initialized = false
     const scheduled = createScheduled(fn => debounce(fn, 250))
@@ -65,7 +74,7 @@ export class JsFile extends AbstractFile {
         intermediary,
         value => {
           const imports: AbstractFile[] = []
-          const staleImports = new Set(untrack(this.directDependencies))
+          const removedImports = new Set(untrack(this.directDependencies))
           try {
             return batch(() =>
               runtime.config.transformModulePaths(value, modulePath => {
@@ -89,7 +98,7 @@ export class JsFile extends AbstractFile {
                   }
 
                   imports.push(file)
-                  staleImports.delete(file)
+                  removedImports.delete(file)
 
                   return file.moduleTransform()
                 }
@@ -112,6 +121,9 @@ export class JsFile extends AbstractFile {
             return previous
           } finally {
             this.#setDirectDependencies(imports)
+            for (const removedImport of removedImports) {
+              this.#callDependencyRemovedHandlers(removedImport)
+            }
           }
         },
         () => previous,
@@ -126,6 +138,26 @@ export class JsFile extends AbstractFile {
         () => previous,
       ),
     )
+  }
+
+  onDependencyRemoved(callback: StaleDependencyHandler) {
+    this.#setDependencyRemovedHandlers(callbacks => [...callbacks, callback])
+    onCleanup(() => {
+      this.#setDependencyRemovedHandlers(callbacks => {
+        const index = callbacks.findIndex(_callback => _callback === callback)
+        if (index !== -1) {
+          callbacks.splice(index, 1)
+          return [...callbacks]
+        }
+        return callbacks
+      })
+    })
+  }
+
+  #callDependencyRemovedHandlers(file: AbstractFile) {
+    for (const handler of this.#dependencyRemovedHandlers()) {
+      handler(file)
+    }
   }
 
   /**

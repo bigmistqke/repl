@@ -7,7 +7,7 @@ import { babelTransform } from '@bigmistqke/repl/transform/babel'
 import { typescriptTransform } from '@bigmistqke/repl/transform/typescript'
 import loader from '@monaco-editor/loader'
 import { Resizable } from 'corvu/resizable'
-import { createEffect, createSignal, mapArray, on, onCleanup, type Component } from 'solid-js'
+import { createEffect, createSignal, on, onCleanup, type Component } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import vs_dark from 'src/editor/monaco/themes/vs_dark_good.json'
 import styles from './App.module.css'
@@ -101,19 +101,7 @@ dispose('src/index.tsx', render(() => <App />, document.body));
           })
 
           if (entry instanceof JsFile) {
-            createEffect(
-              mapArray(
-                () => entry.resolveDependencies(),
-                dependency => {
-                  createEffect(
-                    on(
-                      () => dependency.url,
-                      () => onCleanup(() => frame.dispose(dependency.path)),
-                    ),
-                  )
-                },
-              ),
-            )
+            entry.onDependencyRemoved(file => frame.dispose(file.path))
           }
         })
       }}
