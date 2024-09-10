@@ -9,7 +9,7 @@ import {
   untrack,
 } from 'solid-js'
 import { CssFile } from 'src/runtime'
-import { useRuntime } from 'src/use-runtime'
+import { useRuntime } from 'src/solid/use-runtime'
 import { every, whenever } from 'src/utils/conditionals'
 import { MonacoProviderProps, useMonacoContext } from './monaco-provider'
 

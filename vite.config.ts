@@ -45,7 +45,7 @@ export default defineConfig({
   build: {
     lib: {
       entry: {
-        index: resolve(__dirname, 'src/index.ts'),
+        index: resolve(__dirname, 'src/solid/index.ts'),
         runtime: resolve(__dirname, 'src/runtime/index.ts'),
         'editor/monaco': resolve(__dirname, 'src/editor/monaco/index.ts'),
         'editor/shiki': resolve(__dirname, 'src/editor/shiki/index.tsx'),

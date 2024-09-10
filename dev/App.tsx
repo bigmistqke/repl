@@ -1,5 +1,4 @@
 import { Frame, Repl, TabBar } from '@bigmistqke/repl'
-import { MonacoEditor, MonacoProvider, MonacoTheme } from '@bigmistqke/repl/editor/monaco'
 import { CssModuleFile } from '@bigmistqke/repl/file-extra/css-module'
 import { JsFile } from '@bigmistqke/repl/runtime'
 import { typescriptTransformModulePaths } from '@bigmistqke/repl/transform-module-paths/typescript'
@@ -9,7 +8,8 @@ import loader from '@monaco-editor/loader'
 import { Resizable } from 'corvu/resizable'
 import { createEffect, createSignal, on, onCleanup, type Component } from 'solid-js'
 import { createStore } from 'solid-js/store'
-import vs_dark from 'src/editor/monaco/themes/vs_dark_good.json'
+import { MonacoEditor, MonacoProvider, MonacoTheme } from 'src/solid/editor/monaco'
+import vs_dark from 'src/solid/editor/monaco/themes/vs_dark_good.json'
 import styles from './App.module.css'
 
 const tsconfig = {

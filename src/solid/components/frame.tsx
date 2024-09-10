@@ -8,7 +8,7 @@ import {
   splitProps,
   type JSX,
 } from 'solid-js'
-import { useRuntime } from 'src/use-runtime'
+import { useRuntime } from 'src/solid/use-runtime'
 import { formatError } from 'src/utils/format-log'
 import { html } from 'src/utils/object-url-literal'
 import styles from './repl.module.css'

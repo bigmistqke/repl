@@ -10,7 +10,7 @@ import {
 import { Frame } from 'src/runtime'
 import { whenever } from 'src/utils/conditionals'
 import { html, javascript } from 'src/utils/object-url-literal'
-import { useRuntime } from '../use-runtime'
+import { useRuntime } from '../'
 import styles from './repl.module.css'
 
 export interface DevToolsProps extends ComponentProps<'iframe'> {

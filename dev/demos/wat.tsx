@@ -1,5 +1,4 @@
 import { Frame, Repl, TabBar } from '@bigmistqke/repl'
-import { MonacoEditor, MonacoProvider, MonacoTheme } from '@bigmistqke/repl/editor/monaco'
 import { JsFile, Runtime, VirtualFile, WasmFile } from '@bigmistqke/repl/runtime'
 import { typescriptTransformModulePaths } from '@bigmistqke/repl/transform-module-paths/typescript'
 import { babelTransform } from '@bigmistqke/repl/transform/babel'
@@ -17,7 +16,8 @@ import {
   type Component,
 } from 'solid-js'
 import { createStore } from 'solid-js/store'
-import vs_dark from 'src/editor/monaco/themes/vs_dark_good.json'
+import { MonacoEditor, MonacoProvider, MonacoTheme } from 'src/solid/editor/monaco'
+import vs_dark from 'src/solid/editor/monaco/themes/vs_dark_good.json'
 import { every, whenever } from 'src/utils/conditionals'
 import WABT from 'wabt'
 import zeptoid from 'zeptoid'

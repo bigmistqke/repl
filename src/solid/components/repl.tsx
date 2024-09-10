@@ -1,3 +1,4 @@
+import { Runtime, RuntimeConfig } from '@bigmistqke/repl/runtime'
 import { until } from '@solid-primitives/promise'
 import clsx from 'clsx'
 import {
@@ -13,8 +14,7 @@ import {
 import { Transform, TransformModulePaths } from 'src/runtime/runtime'
 import { every, whenever } from 'src/utils/conditionals'
 import { formatInfo } from 'src/utils/format-log'
-import { Runtime, RuntimeConfig } from '../runtime'
-import { runtimeContext } from '../use-runtime'
+import { runtimeContext } from '../'
 import styles from './repl.module.css'
 
 type ReplPropsBase = ComponentProps<'div'> &

@@ -1,6 +1,6 @@
 import { createMemo, splitProps } from 'solid-js'
 import { ShikiTextarea, ShikiTextareaProps } from 'solid-shiki-textarea'
-import { useRuntime } from 'src/use-runtime'
+import { useRuntime } from 'src/solid/use-runtime'
 
 interface ShikiEditorProps extends Omit<ShikiTextareaProps, 'value'> {
   /** The path of the file in the virtual filesystem. */
