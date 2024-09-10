@@ -25,6 +25,8 @@
       "src": ["./src"],
       "@bigmistqke/repl": ["./src/solid"],
       "@bigmistqke/repl/runtime": ["./src/runtime"],
+      "@bigmistqke/repl/custom-element": ["./src/custom-element"],
+      "@bigmistqke/repl/custom-element/*": ["./src/custom-element/*"],
       "@bigmistqke/repl/plugins/*": ["./src/plugins/*"],
       "@bigmistqke/repl/editor/monaco": ["src/solid/editor/monaco"],
       "@bigmistqke/repl/editor/monaco/themes/*": ["src/solid/editor/monaco/themes/*"],

@@ -7,7 +7,7 @@ import {
   onCleanup,
   splitProps,
 } from 'solid-js'
-import { Frame } from 'src/runtime'
+import { Frame, Runtime } from 'src/runtime'
 import { whenever } from 'src/utils/conditionals'
 import { html, javascript } from 'src/utils/object-url-literal'
 import { useRuntime } from '../'
@@ -31,9 +31,14 @@ export interface DevToolsProps extends ComponentProps<'iframe'> {
  * <DevTools name="exampleFrame" />
  */
 export function DevTools(props: DevToolsProps) {
+  const runtime = useRuntime()
+  return <DevTools.Standalone runtime={runtime} {...props} />
+}
+
+/** Standalone version of `<DevTools/>`. For use outside of `<Repl/>`-context. */
+DevTools.Standalone = function (props: DevToolsProps & { runtime: Runtime }) {
   const config = mergeProps({ name: 'default' }, props)
   const [, rest] = splitProps(config, ['class'])
-  const runtime = useRuntime()
 
   const chiiModule = html`<!doctype html>
     <html lang="en">
@@ -112,7 +117,7 @@ export function DevTools(props: DevToolsProps) {
   ) as HTMLIFrameElement
 
   const [targetFrame] = createResource(
-    () => runtime.frameRegistry.get(config.name),
+    () => props.runtime.frameRegistry.get(config.name),
     frame => {
       if (frame.contentWindow.document.readyState === 'interactive') return frame
       return new Promise<Frame>(resolve => {

@@ -1,7 +1,7 @@
 import { rollupServiceWorkerPlugin } from '@bigmistqke/repl/plugins/rollup-service-worker'
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill'
 import { defineConfig } from 'vite'
-import solidPlugin from 'vite-plugin-solid'
+import solid from 'vite-plugin-solid'
 import wasmPlugin from 'vite-plugin-wasm'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
@@ -9,16 +9,9 @@ export default defineConfig({
   base: './',
   plugins: [
     tsconfigPaths(),
-    solidPlugin({
+    solid({
       babel: {
-        plugins: [
-          [
-            '@babel/plugin-syntax-import-attributes',
-            {
-              deprecatedAssertSyntax: true,
-            },
-          ],
-        ],
+        plugins: [['@babel/plugin-proposal-decorators', { version: '2023-05' }]],
       },
     }),
     {

@@ -8,60 +8,68 @@ import {
   mergeProps,
   useContext,
 } from 'solid-js'
+import { useRuntime } from 'src/solid/use-runtime'
 import { formatWarn } from 'src/utils/format-log'
 import ts from 'typescript'
 import { MonacoTheme, createMonaco } from './create-monaco'
+import { MonacoEditorProps } from './monaco-editor'
 
 const monacoContext = createContext<{
   monaco: Resource<Monaco>
   tsconfig: ts.CompilerOptions
 }>()
+
 export const useMonacoContext = (
-  config: MonacoProviderProps,
+  config: MonacoProviderProps | MonacoEditorProps,
 ): { monaco: Resource<Monaco>; tsconfig: ts.CompilerOptions } => {
   const context = useContext(monacoContext)
-  // A <MonacoEditor/> created outside a <MonacoProvider/>
-  if (!context) {
-    return {
-      monaco: createMonaco(
-        mergeProps(config, {
-          get theme() {
-            const _theme = config.theme
-            if (!_theme) {
-              throw `A <MonacoEditor/> mounted outside a <MonacoProvider/> requires its theme-prop to be defined.`
-            }
-            return _theme
-          },
-          get monaco() {
-            const _monaco = config.monaco
-            if (!_monaco) {
-              throw `A <MonacoEditor/> mounted outside a <MonacoProvider/> requires its monaco-prop to be defined.`
-            }
-            return _monaco
-          },
-          tsconfig: {},
-        }),
-      ),
-      tsconfig: {},
-    }
+  const runtime = useRuntime()
+
+  if (context) {
+    createEffect(() => {
+      if (!config.theme) return
+      console.warn(
+        ...formatWarn(
+          'Theme-prop of a <MonacoEditor/> mounted inside a <MonacoProvider/> is ignored.',
+        ),
+      )
+    })
+
+    createEffect(() => {
+      if (!config.monaco) return
+      console.warn(
+        ...formatWarn(
+          'Monaco-prop of a <MonacoEditor/> mounted inside a <MonacoProvider/> is ignored.',
+        ),
+      )
+    })
+
+    return context
   }
-  createEffect(() => {
-    if (!config.theme) return
-    console.warn(
-      ...formatWarn(
-        'Theme-prop of a <MonacoEditor/> mounted inside a <MonacoProvider/> is ignored.',
-      ),
-    )
-  })
-  createEffect(() => {
-    if (!config.monaco) return
-    console.warn(
-      ...formatWarn(
-        'Monaco-prop of a <MonacoEditor/> mounted inside a <MonacoProvider/> is ignored.',
-      ),
-    )
-  })
-  return context
+
+  // A <MonacoEditor/> created outside a <MonacoProvider/>
+  return {
+    monaco: createMonaco(
+      mergeProps(config, {
+        runtime,
+        get theme() {
+          const _theme = config.theme
+          if (!_theme) {
+            throw `A <MonacoEditor/> mounted outside a <MonacoProvider/> requires its theme-prop to be defined.`
+          }
+          return _theme
+        },
+        get monaco() {
+          const _monaco = config.monaco
+          if (!_monaco) {
+            throw `A <MonacoEditor/> mounted outside a <MonacoProvider/> requires its monaco-prop to be defined.`
+          }
+          return _monaco
+        },
+      }),
+    ),
+    tsconfig: config.tsconfig || {},
+  }
 }
 
 export interface MonacoProviderProps {

@@ -9,7 +9,11 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 export default defineConfig({
   plugins: [
     tsconfigPaths(),
-    solid(),
+    solid({
+      babel: {
+        plugins: [['@babel/plugin-proposal-decorators', { version: '2023-05' }]],
+      },
+    }),
     libInjectCss(),
     dtsBundleGenerator(
       {

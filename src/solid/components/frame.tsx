@@ -8,9 +8,11 @@ import {
   splitProps,
   type JSX,
 } from 'solid-js'
+import { Runtime } from 'src/runtime/runtime'
 import { useRuntime } from 'src/solid/use-runtime'
 import { formatError } from 'src/utils/format-log'
 import { html } from 'src/utils/object-url-literal'
+import { Without } from 'src/utils/type-utils'
 import styles from './repl.module.css'
 
 export interface FrameProps extends ComponentProps<'iframe'> {
@@ -23,6 +25,7 @@ export interface FrameProps extends ComponentProps<'iframe'> {
    * Optional CSS properties or a string that defines the style of the iframe's body.
    */
   bodyStyle?: JSX.CSSProperties | string | undefined
+  runtime: Runtime
 }
 
 /**
@@ -37,10 +40,17 @@ export interface FrameProps extends ComponentProps<'iframe'> {
  * // To create an iframe with specific styles and a unique name:
  * <ReplFrame name="myCustomFrame" bodyStyle={{ backgroundColor: 'red' }} />
  */
-export function Frame(props: FrameProps) {
+export function Frame(props: Without<FrameProps, 'runtime'>) {
+  const runtime = useRuntime()
+  return <Frame.Standalone {...props} runtime={runtime} />
+}
+
+/** Standalone version of `<Frame/>`. For use outside of `<Repl/>`-context. */
+Frame.Standalone = function (props: FrameProps) {
   const [, rest] = splitProps(props, ['class', 'bodyStyle', 'name'])
   const config = mergeProps({ name: 'default' }, props)
-  const runtime = useRuntime()
+
+  createEffect(() => console.log('props.runtime', props.runtime))
 
   const iframe = (
     <iframe
@@ -64,18 +74,18 @@ export function Frame(props: FrameProps) {
     }
 
     const onReady = () => {
-      if (runtime.frameRegistry.has(config.name)) {
+      if (props.runtime.frameRegistry.has(config.name)) {
         console.warn(`A frame with the same name already exist: ${config.name}`)
         return
       }
-      runtime.frameRegistry.add(config.name, iframe.contentWindow!)
+      props.runtime.frameRegistry.add(config.name, iframe.contentWindow!)
       iframe.contentWindow?.removeEventListener('DOMContentLoaded', onReady)
     }
 
     iframe.contentWindow.addEventListener('DOMContentLoaded', onReady)
 
     onCleanup(() => {
-      runtime.frameRegistry.delete(config.name)
+      props.runtime.frameRegistry.delete(config.name)
     })
 
     createEffect(() => {

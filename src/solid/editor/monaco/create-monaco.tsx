@@ -1,4 +1,4 @@
-import { CssFile } from '@bigmistqke/repl/runtime'
+import { CssFile, Runtime } from '@bigmistqke/repl/runtime'
 import { type Monaco } from '@monaco-editor/loader'
 import { wireTmGrammars } from 'monaco-editor-textmate'
 import { Registry } from 'monaco-textmate'
@@ -6,7 +6,6 @@ import { loadWASM } from 'onigasm'
 import onigasm from 'onigasm/lib/onigasm.wasm?url'
 import { Resource, createEffect, createResource, mapArray } from 'solid-js'
 import { unwrap } from 'solid-js/store'
-import { useRuntime } from 'src/solid/use-runtime'
 import { every, whenever } from 'src/utils/conditionals'
 import { formatInfo } from 'src/utils/format-log'
 import ts from 'typescript'
@@ -23,8 +22,8 @@ export function createMonaco(props: {
   tsconfig?: ts.CompilerOptions
   theme?: MonacoTheme | Promise<MonacoTheme>
   monaco: Promise<Monaco> | Monaco
+  runtime: Runtime
 }): Resource<Monaco> {
-  const runtime = useRuntime()
   const [monaco] = createResource(() => props.monaco)
 
   // Load monaco and import all of the repl's resources
@@ -76,7 +75,7 @@ export function createMonaco(props: {
     whenever(monaco, monaco => {
       createEffect(
         mapArray(
-          () => Object.values(runtime.fileSystem.all()),
+          () => Object.values(props.runtime.fileSystem.all()),
           file => {
             // Initialize models for all Files in FileSystem
             // Object.entries(runtime.fileSystem.all()).forEach(([path, value]) => {
@@ -109,11 +108,11 @@ export function createMonaco(props: {
       // Sync monaco-editor's virtual file-system with type-registry's sources
       createEffect(
         mapArray(
-          () => Object.keys(runtime.typeRegistry.sources),
+          () => Object.keys(props.runtime.typeRegistry.sources),
           virtualPath => {
             createEffect(
               whenever(
-                () => runtime.typeRegistry.sources[virtualPath],
+                () => props.runtime.typeRegistry.sources[virtualPath],
                 source =>
                   monaco.languages.typescript.typescriptDefaults.addExtraLib(
                     source,
@@ -136,13 +135,16 @@ export function createMonaco(props: {
 
       // Sync monaco-editor's tsconfig with repl's typescript-prop and type-registry's alias-property.
       createEffect(() => {
+        console.log(props?.tsconfig)
         // add virtual path to monaco's tsconfig's `path`-property
         const tsCompilerOptions = unwrap({
           ...props?.tsconfig,
           paths: {
             ...(props?.tsconfig?.paths ? wrapPaths(props.tsconfig.paths) : undefined),
-            ...runtime.typeRegistry.alias,
-            ...(runtime.fileSystem.alias ? wrapPaths(runtime.fileSystem.alias) : undefined),
+            ...props.runtime.typeRegistry.alias,
+            ...(props.runtime.fileSystem.alias
+              ? wrapPaths(props.runtime.fileSystem.alias)
+              : undefined),
           },
         })
 
@@ -154,7 +156,7 @@ export function createMonaco(props: {
 
   createEffect(() => {
     const monaco = resources()?.[0]
-    if (!runtime.config.debug) return
+    if (!props.runtime.config.debug) return
     if (!monaco) return
     console.info(...formatInfo('monaco loaded', monaco))
   })

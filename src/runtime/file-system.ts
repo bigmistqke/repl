@@ -110,6 +110,11 @@ export class FileSystem {
     return this.#files[path]
   }
 
+  /** Retrieves a file from the file system by its path.  */
+  getOrCreate(path: string) {
+    return this.runtime.fileSystem.get(path) || this.runtime.fileSystem.create(path)
+  }
+
   /**
    * Resolves a file path according to TypeScript resolution rules, including handling of various module formats.
    * This method searches for file instances across supported extensions and directories based on TypeScript's module resolution logic.
