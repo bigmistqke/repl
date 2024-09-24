@@ -181,12 +181,6 @@ export class Runtime {
     return this.fs.get(path) || untrack(() => (autocreate ? this.fs.create(path) : undefined))
   }
 
-  /** Set file from virtual file-system and create if it does not exist. */
-  setFile(path: string, source: string): VirtualFile
-  /** Set file from virtual file-system and create if it does not exist. */
-  setFile(path: string, source: string, autocreate: true): VirtualFile
-  /** Set file from virtual file-system only if it exist. */
-  setFile(path: string, source: string, autocreate: boolean): VirtualFile | undefined
   setFile(path: string, source: string, autocreate?: boolean) {
     return this.getFile(path, autocreate)?.set(source)
   }
