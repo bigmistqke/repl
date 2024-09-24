@@ -1,6 +1,6 @@
 {
   "name": "@bigmistqke/repl",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Runtime and headless component for composing REPLs.",
   "license": "MIT",
   "author": "bigmistqke",
@@ -106,16 +106,40 @@
         "default": "./dist/index.js"
       }
     },
-    "./editor/monaco": {
+    "./element": {
       "import": {
-        "types": "./dist/editor/monaco.d.ts",
-        "default": "./dist/editor/monaco.js"
+        "types": "./dist/element.d.ts",
+        "default": "./dist/element.js"
       }
     },
-    "./editor/tm": {
+    "./element/monaco-editor": {
       "import": {
-        "types": "./dist/editor/tm.d.ts",
-        "default": "./dist/editor/tm.js"
+        "types": "./dist/element/monaco-editor.d.ts",
+        "default": "./dist/element/monaco-editor.js"
+      }
+    },
+    "./element/tm-editor": {
+      "import": {
+        "types": "./dist/element/tm-editor.d.ts",
+        "default": "./dist/element/tm-editor.js"
+      }
+    },
+    "./solid": {
+      "import": {
+        "types": "./dist/solid.d.ts",
+        "default": "./dist/solid.js"
+      }
+    },
+    "./solid/monaco-editor": {
+      "import": {
+        "types": "./dist/solid/monaco-editor.d.ts",
+        "default": "./dist/solid/monaco-editor.js"
+      }
+    },
+    "./solid/tm-editor": {
+      "import": {
+        "types": "./dist/solid/tm-editor.d.ts",
+        "default": "./dist/solid/tm-editor.js"
       }
     },
     "./plugins/rollup-service-worker": {
@@ -152,6 +176,18 @@
       "import": {
         "types": "./dist/transform-module-paths/typescript.d.ts",
         "default": "./dist/transform-module-paths/typescript.js"
+      }
+    },
+    "./extensions/css-module": {
+      "import": {
+        "types": "./dist/extensions/css-modules.d.ts",
+        "default": "./dist/extensions/css-modules.js"
+      }
+    },
+    "./extensions/wat": {
+      "import": {
+        "types": "./dist/extensions/wats.d.ts",
+        "default": "./dist/extensions/wats.js"
       }
     }
   },
