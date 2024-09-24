@@ -40,7 +40,7 @@ const App: Component = () => {
     ])
 
     const runtime = new Runtime({
-      importExternalTypes: true,
+      importExternalTypes: false,
       transformModulePaths,
       transform,
       files: {
@@ -100,11 +100,7 @@ dispose('src/index.tsx', render(() => <App />, document.body));`,
         overflow: 'hidden',
       }}
     >
-      <repl-runtime
-        ref={element => {
-          createEffect(() => (element.value = runtime()))
-        }}
-      >
+      <repl-runtime value={runtime()}>
         <repl-frame style={{ flex: '1' }} />
         <repl-tm-editor
           path="src/index.tsx"
