@@ -1,4 +1,4 @@
-import { rollupServiceWorkerPlugin } from '@bigmistqke/repl/plugins/rollup-service-worker'
+/* import { rollupServiceWorkerPlugin } from '@bigmistqke/repl/plugins/rollup-service-worker' */
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill'
 import { defineConfig } from 'vite'
 import solid from 'vite-plugin-solid'
@@ -32,7 +32,7 @@ export default defineConfig({
       },
     },
     wasmPlugin(),
-    rollupServiceWorkerPlugin(),
+    /* rollupServiceWorkerPlugin(), */
   ],
   optimizeDeps: {
     esbuildOptions: {
