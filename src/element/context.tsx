@@ -1,9 +1,9 @@
 import { css, element, Element, ElementAttributes } from '@lume/element'
 import { signal } from 'classy-solid'
 
-export type ContextAttributes<T> = ElementAttributes<ReplContextBase<T>, 'value'>
+export type ContextAttributes<T> = ElementAttributes<ContextBase<T>, 'value'>
 
-class ReplContextBase<T> extends Element {
+class ContextBase<T> extends Element {
   @signal value: T | undefined = undefined
   template = () => <slot />
   static css = css`
@@ -13,17 +13,22 @@ class ReplContextBase<T> extends Element {
   `
 }
 
-export function createContext<T>(name: string) {
+// export function createContext<T>(name: string): (element: Element) => Accessor<T | null>
+// export function createContext<T>(name: string, fallback: () => T): (element: Element) => Accessor<T>
+export function createContext<T>(name: string, fallback?: () => T) {
   @element(name)
-  class ReplContext extends ReplContextBase<T> {}
-  return function useRuntime(element: Element) {
+  class Context extends ContextBase<T> {}
+  return function useContext(element: Element) {
     let current = element.parentElement
     while (current) {
-      if (current instanceof ReplContext) {
-        return () => (current as ReplContext).value
+      if (current instanceof Context) {
+        return () => (current as Context).value
       }
       current = current.parentElement
     }
-    return null
+    if (fallback) {
+      return fallback
+    }
+    throw `Should use ${element.tagName} inside ${name} tag`
   }
 }

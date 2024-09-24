@@ -1,9 +1,15 @@
 import { onCleanup } from 'solid-js'
 import { SetStoreFunction, createStore } from 'solid-js/store'
+import { TypedEventTarget } from 'src/utils/typed-event-target'
 import std from '../std/index?raw'
 import { VirtualFile } from './file/virtual'
 import { Runtime } from './runtime'
 
+class FileEvent extends Event {
+  constructor(public file: VirtualFile) {
+    super('file')
+  }
+}
 export interface FileSystemState {
   sources: Record<string, string>
   alias: Record<string, string>
@@ -19,7 +25,7 @@ export type CompilationHandler = (event: CompilationEvent) => void
  * Manages the virtual file system of code sources.
  * @class FileSystem
  */
-export class FileSystem {
+export class FileSystem extends TypedEventTarget<{ file: FileEvent }> {
   /** Aliases for modules. */
   alias: Record<string, string>
   /** Store setter for aliases. */
@@ -39,6 +45,7 @@ export class FileSystem {
   #cleanups: (() => void)[] = []
 
   constructor(public runtime: Runtime) {
+    super()
     const [files, setFiles] = createStore<Record<string, VirtualFile>>({})
     this.#files = files
     this.#setFiles = setFiles
@@ -97,6 +104,10 @@ export class FileSystem {
 
     const file = new this.runtime.extensions[extension]!(this.runtime, path)
     this.#setFiles(path, file)
+
+    console.log('dispatch file event!', file.path)
+    this.dispatchEvent(new FileEvent(file))
+
     return file as T
   }
 

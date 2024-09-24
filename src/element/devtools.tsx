@@ -37,11 +37,14 @@ declare global {
 export class ReplDevtools extends Element {
   @stringAttribute name = 'default'
 
-  template = () => (
-    <Show when={useRuntime(this)?.()}>
-      {runtime => <DevTools.Standalone name={this.name} runtime={runtime()} />}
-    </Show>
-  )
+  template = () => {
+    const runtime = useRuntime(this)
+    return (
+      <Show when={runtime()}>
+        {runtime => <DevTools.Standalone name={this.name} runtime={runtime()} />}
+      </Show>
+    )
+  }
 }
 
 export function registerDevtools() {

@@ -6,7 +6,7 @@ import { when } from 'src/utils/conditionals'
  * Represents an individual `<iframe/>` within the application.
  * It offers method to inject and execute Javascript and CSS code into its `Window`.
  *
- * @class Frame
+ * @class FrameApi
  */
 export class Frame {
   constructor(
@@ -19,13 +19,13 @@ export class Frame {
     script.type = 'module'
     script.src = moduleUrl
     this.contentWindow.document.head.appendChild(script)
-    onCleanup(() => {
+
+    return () => {
       // On cleanup we remove the script-tag
       this.contentWindow.document.head.removeChild(script)
       // And we dispose of the created module-url.
       URL.revokeObjectURL(moduleUrl)
-    })
-    return script
+    }
   }
 
   /**
@@ -70,5 +70,13 @@ export class Frame {
     if (typeof disposeFn === 'function') {
       return disposeFn(id)
     }
+  }
+
+  reload() {
+    this.contentWindow.location.reload()
+  }
+
+  clearBody() {
+    this.contentWindow.document.body.innerHTML = ''
   }
 }

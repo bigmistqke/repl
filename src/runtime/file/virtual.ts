@@ -1,11 +1,18 @@
 import { Runtime } from '@bigmistqke/repl'
 import { Accessor, Setter, createSignal } from 'solid-js'
+import { TypedEventTarget } from 'src/utils/typed-event-target'
+
+export class UrlEvent extends Event {
+  constructor(public url: string) {
+    super('url')
+  }
+}
 
 /**
  * Represents a generic file within the virtual file system, providing methods to manipulate and access the file's source code.
  * This is an abstract class and should be extended to handle specific types of files.
  */
-export abstract class VirtualFile {
+export abstract class VirtualFile extends TypedEventTarget<{ url: UrlEvent }> {
   /**
    * Generates a new URL for an ES Module based on the current source code. This URL is not cached,
    * ensuring that each call provides a fresh module.
@@ -33,6 +40,7 @@ export abstract class VirtualFile {
     /** If undefined controlled state will be derived from Runtime.config.controlled */
     controlled?: boolean,
   ) {
+    super()
     ;[this.#source, this.#setSource] = createSignal<string>('')
     this.#controlled = () => (controlled !== undefined ? controlled : !!runtime.config.controlled)
   }

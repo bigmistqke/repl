@@ -1,3 +1,4 @@
+import { Frame as FrameApi } from '@bigmistqke/repl'
 import clsx from 'clsx'
 import {
   ComponentProps,
@@ -26,6 +27,7 @@ export interface FrameProps extends ComponentProps<'iframe'> {
    */
   bodyStyle?: JSX.CSSProperties | string | undefined
   runtime: Runtime
+  onReady?: (frame: FrameApi) => void
 }
 
 /**
@@ -50,8 +52,6 @@ Frame.Standalone = function (props: FrameProps) {
   const [, rest] = splitProps(props, ['class', 'bodyStyle', 'name'])
   const config = mergeProps({ name: 'default' }, props)
 
-  createEffect(() => console.log('props.runtime', props.runtime))
-
   const iframe = (
     <iframe
       src={html`<!doctype html>
@@ -73,13 +73,18 @@ Frame.Standalone = function (props: FrameProps) {
       return
     }
 
+    const frame = new FrameApi(iframe.contentWindow!)
+
     const onReady = () => {
       if (props.runtime.frames.has(config.name)) {
         console.warn(`A frame with the same name already exist: ${config.name}`)
         return
       }
-      props.runtime.frames.add(config.name, iframe.contentWindow!)
+      props.runtime.frames.add(config.name, frame)
       iframe.contentWindow?.removeEventListener('DOMContentLoaded', onReady)
+
+      console.log('frame is ', frame)
+      props.onReady?.(frame)
     }
 
     iframe.contentWindow.addEventListener('DOMContentLoaded', onReady)

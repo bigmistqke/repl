@@ -1,5 +1,7 @@
+import { Runtime } from '@bigmistqke/repl'
 import { useRuntime } from '@bigmistqke/repl/element/runtime'
 import { element, Element, ElementAttributes, stringAttribute } from '@lume/element'
+import { signal } from 'classy-solid'
 import { createMemo, Show } from 'solid-js'
 import { last } from 'src/utils/last'
 import { register } from 'tm-textarea'
@@ -13,7 +15,10 @@ register()
 /*                                                                                */
 /**********************************************************************************/
 
-type TmTextareaAttributes = ElementAttributes<ReplTmEditor, 'path' | 'theme' | 'oninput' | 'value'>
+type TmTextareaAttributes = ElementAttributes<
+  ReplTmEditor,
+  'path' | 'theme' | 'oninput' | 'value' | 'runtime'
+>
 
 declare module 'solid-js/jsx-runtime' {
   namespace JSX {
@@ -62,6 +67,7 @@ function getGrammarName(path: string) {
 class ReplTmEditor extends Element {
   @stringAttribute path = ''
   @stringAttribute theme: Theme = 'andromeeda'
+  @signal runtime: Runtime | null = null
 
   css = /* css */ `
     :host {
@@ -73,24 +79,25 @@ class ReplTmEditor extends Element {
     }
   `
 
-  template = () => (
-    <Show when={useRuntime(this)?.()}>
-      {runtime => {
-        const file = createMemo(() => runtime().fs.getOrCreate(this.path))
-        console.log('THIS HAPPENS!!')
-        this.createEffect(() => console.log('file content', file()?.get()))
-        return (
-          <tm-textarea
-            class="tm-textarea"
-            value={file().get()}
-            onInput={e => file().set(e.currentTarget.value)}
-            grammar={getGrammarName(file().path) as Grammar}
-            theme={this.theme}
-          />
-        )
-      }}
-    </Show>
-  )
+  template = () => {
+    const runtime = useRuntime(this)
+    return (
+      <Show when={this.runtime || runtime()}>
+        {runtime => {
+          const file = createMemo(() => runtime().fs.getOrCreate(this.path))
+          return (
+            <tm-textarea
+              class="tm-textarea"
+              value={file().get()}
+              onInput={e => file().set(e.currentTarget.value)}
+              grammar={getGrammarName(file().path) as Grammar}
+              theme={this.theme}
+            />
+          )
+        }}
+      </Show>
+    )
+  }
 
   get value() {
     return ''

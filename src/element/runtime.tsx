@@ -45,4 +45,4 @@ declare global {
 /*                                                                                */
 /**********************************************************************************/
 
-export const useRuntime = createContext<Runtime>('repl-runtime')
+export const useRuntime = createContext('repl-runtime', runtime)

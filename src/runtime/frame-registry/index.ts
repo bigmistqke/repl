@@ -23,8 +23,8 @@ export class FrameRegistry {
    * @param name - The name to associate with the frame.
    * @param window - The window object of the frame.
    */
-  add(name: string, window: Window) {
-    this.#setFrames(name, new Frame(window))
+  add(name: string, frame: Frame) {
+    this.#setFrames(name, frame)
   }
 
   /**

@@ -12,7 +12,7 @@ import {
 } from 'solid-js'
 import { when } from 'src/utils/conditionals'
 import { isRelativePath, isUrl, relativeToAbsolutePath } from 'src/utils/path'
-import { VirtualFile } from './virtual'
+import { UrlEvent, VirtualFile } from './virtual'
 
 type StaleDependencyHandler = (file: VirtualFile) => void
 
@@ -134,7 +134,10 @@ export class JsFile extends VirtualFile {
     this.#getUrl = createMemo(previous =>
       when(
         this.generate.bind(this),
-        esm => esm,
+        esm => {
+          this.dispatchEvent(new UrlEvent(esm))
+          return esm
+        },
         () => previous,
       ),
     )

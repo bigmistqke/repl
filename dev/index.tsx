@@ -5,7 +5,7 @@ import { CssModuleFile } from '@bigmistqke/repl/extensions/css-module'
 import { typescriptTransformModulePaths } from '@bigmistqke/repl/transform-module-paths/typescript'
 import { babelTransform } from '@bigmistqke/repl/transform/babel'
 import { typescriptTransform } from '@bigmistqke/repl/transform/typescript'
-import { createEffect, createResource, type Component } from 'solid-js'
+import { createResource, Show, type Component } from 'solid-js'
 import { render } from 'solid-js/web'
 import './styles.css'
 
@@ -39,7 +39,7 @@ const App: Component = () => {
       ]),
     ])
 
-    const runtime = new Runtime({
+    return new Runtime({
       importExternalTypes: false,
       transformModulePaths,
       transform,
@@ -71,24 +71,6 @@ dispose('src/index.tsx', render(() => <App />, document.body));`,
         'module.css': CssModuleFile,
       },
     }).initialize()
-
-    // set global monaco
-    // setMonaco({ tsconfig, theme: vs_dark as any, monaco: loader.init() })
-
-    createEffect(() => {
-      const frame = runtime.frames.get('default')
-
-      if (!frame) return
-
-      const entry = runtime.fs.get('src/index.tsx')
-
-      createEffect(() => {
-        if (!entry) return
-        // inject entry's module-url into frame's window
-        frame.injectFile(entry)
-      })
-    })
-    return runtime
   })
 
   return (
@@ -100,18 +82,37 @@ dispose('src/index.tsx', render(() => <App />, document.body));`,
         overflow: 'hidden',
       }}
     >
-      <repl-runtime value={runtime()}>
-        <repl-frame style={{ flex: '1' }} />
-        <repl-tm-editor
-          path="src/index.tsx"
-          theme="andromeeda"
-          style={{
-            padding: '20px',
-            overflow: 'auto',
-            flex: '1',
-          }}
-        />
-      </repl-runtime>
+      <Show when={runtime()}>
+        {runtime => (
+          <>
+            <repl-frame
+              style={{ flex: '1' }}
+              onReady={({ frame }) => {
+                const file = runtime().fs.get('src/index.tsx')!
+                let cleanup: undefined | (() => void)
+                function injectUrl({ url }: { url?: string }) {
+                  cleanup?.()
+                  if (!url) return
+                  frame.clearBody()
+                  cleanup = frame.injectModuleUrl(url)
+                }
+                file.addEventListener('url', injectUrl)
+                injectUrl(file)
+              }}
+            />
+            <tm-textarea
+              value={runtime().fs.get('src/index.tsx')?.get() || ''}
+              onInput={e => runtime().fs.get('src/index.tsx')?.set(e.currentTarget.value)}
+              theme="andromeeda"
+              style={{
+                padding: '20px',
+                overflow: 'auto',
+                flex: '1',
+              }}
+            />
+          </>
+        )}
+      </Show>
     </div>
   )
 }

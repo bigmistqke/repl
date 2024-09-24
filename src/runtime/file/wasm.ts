@@ -3,7 +3,7 @@ import { createScheduled, debounce } from '@solid-primitives/scheduled'
 import { Accessor, createEffect, createMemo } from 'solid-js'
 import { whenever } from 'src/utils/conditionals'
 import { javascript } from 'src/utils/object-url-literal'
-import { VirtualFile } from './virtual'
+import { UrlEvent, VirtualFile } from './virtual'
 
 export class WasmFile extends VirtualFile {
   #getUrl: Accessor<string | undefined>
@@ -32,7 +32,17 @@ export default (imports) =>  WebAssembly.instantiate(wasmCode, imports).then(res
 
     // Create a Blob URL for the JS wrapper
     // return URL.createObjectURL(new Blob([jsWrapper], { type: 'application/javascript' }))
-    this.#getUrl = createMemo(previous => (!scheduled() ? previous : this.generate() || previous))
+    this.#getUrl = createMemo(previous => {
+      if (!scheduled()) {
+        return previous
+      }
+      const url = this.generate()
+      if (!url) {
+        return previous
+      }
+      this.dispatchEvent(new UrlEvent(url))
+      return url
+    })
   }
 
   /**

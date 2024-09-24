@@ -74,8 +74,9 @@ class ReplMonacoEditor extends Element {
   @stringAttribute theme: MonacoTheme | undefined = undefined
 
   template = () => {
+    const runtime = useRuntime(this)
     return (
-      <Show when={useRuntime(this)?.()}>
+      <Show when={runtime()}>
         {runtime => (
           <Show when={monaco()}>
             {monaco => (
