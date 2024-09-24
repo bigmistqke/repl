@@ -161,5 +161,6 @@
         "./dist/plugins.d.ts"
       ]
     }
-  }
+  },
+  "packageManager": "pnpm@9.1.1"
 }
