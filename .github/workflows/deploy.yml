@@ -23,6 +23,9 @@ jobs:
         run: pnpm install
 
       - name: Build project
+        run: pnpm build
+
+      - name: Build dev
         run: pnpm build:dev
 
       - name: Deploy to GitHub Pages
