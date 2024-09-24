@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
     <title>Repl</title>
-    <script type="module" crossorigin src="./assets/index-f88a3644.js"></script>
-    <link rel="stylesheet" href="./assets/index-c630aae3.css">
+    <script type="module" crossorigin src="./assets/index-c912d846.js"></script>
+    <link rel="stylesheet" href="./assets/index-f609cfd9.css">
   </head>
 
   <body>
@@ -14,5 +14,16 @@
     <div id="root"></div>
 
     
-  </body>
+  <script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/repl-service-worker.js')
+    .then(registration => {
+      console.info('Service Worker registered with scope:', registration.scope);
+    })
+    .catch(error => {
+      console.info('Service Worker registration failed:', error);
+    });
+}
+</script>
+</body>
 </html>
