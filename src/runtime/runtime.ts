@@ -1,5 +1,5 @@
 import { CssFile, JsFile, VirtualFile, WasmFile } from '@bigmistqke/repl'
-import { mergeProps } from 'solid-js'
+import { mergeProps, untrack } from 'solid-js'
 import type { Mandatory } from 'src/utils/type'
 import { FileSystem, FileSystemState } from './file-system'
 import { FrameRegistry } from './frame-registry'
@@ -169,5 +169,25 @@ export class Runtime {
 
     link.dispatchEvent(evt)
     link.remove()
+  }
+
+  /** Get file from virtual file-system and create if it does not exist. */
+  getFile(path: string): VirtualFile
+  /** Get file from virtual file-system and create if it does not exist. */
+  getFile(path: string, autocreate: true): VirtualFile
+  /** Get file from virtual file-system only if it exist. */
+  getFile(path: string, autocreate?: boolean): VirtualFile | undefined
+  getFile(path: string, autocreate = true) {
+    return this.fs.get(path) || untrack(() => (autocreate ? this.fs.create(path) : undefined))
+  }
+
+  /** Set file from virtual file-system and create if it does not exist. */
+  setFile(path: string, source: string): VirtualFile
+  /** Set file from virtual file-system and create if it does not exist. */
+  setFile(path: string, source: string, autocreate: true): VirtualFile
+  /** Set file from virtual file-system only if it exist. */
+  setFile(path: string, source: string, autocreate: boolean): VirtualFile | undefined
+  setFile(path: string, source: string, autocreate?: boolean) {
+    return this.getFile(path, autocreate)?.set(source)
   }
 }

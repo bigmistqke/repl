@@ -105,7 +105,6 @@ export class FileSystem extends TypedEventTarget<{ file: FileEvent }> {
     const file = new this.runtime.extensions[extension]!(this.runtime, path)
     this.#setFiles(path, file)
 
-    console.log('dispatch file event!', file.path)
     this.dispatchEvent(new FileEvent(file))
 
     return file as T

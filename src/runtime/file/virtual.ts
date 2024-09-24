@@ -72,6 +72,14 @@ export abstract class VirtualFile extends TypedEventTarget<{ url: UrlEvent }> {
     return this.#controlled() ? this.runtime.config.files![this.path]! : this.#source()
   }
 
+  /**
+   * Retrieves the current source code of the file.
+   * @returns The current source code.
+   */
+  get source() {
+    return this.#controlled() ? this.runtime.config.files![this.path]! : this.#source()
+  }
+
   moduleTransform(): string | null {
     const url = this.url
     if (!url) throw `Currently module-url of ${this.path} is undefined.`

@@ -88,7 +88,7 @@ dispose('src/index.tsx', render(() => <App />, document.body));`,
             <repl-frame
               style={{ flex: '1' }}
               onReady={({ frame }) => {
-                const file = runtime().fs.get('src/index.tsx')!
+                const file = runtime().getFile('src/index.tsx')!
                 let cleanup: undefined | (() => void)
                 function injectUrl({ url }: { url?: string }) {
                   cleanup?.()
@@ -101,8 +101,8 @@ dispose('src/index.tsx', render(() => <App />, document.body));`,
               }}
             />
             <tm-textarea
-              value={runtime().fs.get('src/index.tsx')?.get() || ''}
-              onInput={e => runtime().fs.get('src/index.tsx')?.set(e.currentTarget.value)}
+              value={runtime().getFile('src/index.tsx').source}
+              onInput={e => runtime().setFile('src/index.tsx', e.currentTarget.value)}
               theme="andromeeda"
               style={{
                 padding: '20px',
