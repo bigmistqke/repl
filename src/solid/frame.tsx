@@ -74,18 +74,18 @@ Frame.Standalone = function (props: FrameProps) {
     }
 
     const onReady = () => {
-      if (props.runtime.frameRegistry.has(config.name)) {
+      if (props.runtime.frames.has(config.name)) {
         console.warn(`A frame with the same name already exist: ${config.name}`)
         return
       }
-      props.runtime.frameRegistry.add(config.name, iframe.contentWindow!)
+      props.runtime.frames.add(config.name, iframe.contentWindow!)
       iframe.contentWindow?.removeEventListener('DOMContentLoaded', onReady)
     }
 
     iframe.contentWindow.addEventListener('DOMContentLoaded', onReady)
 
     onCleanup(() => {
-      props.runtime.frameRegistry.delete(config.name)
+      props.runtime.frames.delete(config.name)
     })
 
     createEffect(() => {

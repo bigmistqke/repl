@@ -1,9 +1,6 @@
+import { createStyleLoaderSource, JsFile, Runtime, VirtualFile } from '@bigmistqke/repl'
 import { createEffect } from 'solid-js'
 import zeptoid from 'zeptoid'
-import { createStyleLoaderSource } from '../runtime/file/css'
-import { JsFile } from '../runtime/file/js'
-import { AbstractFile } from '../runtime/file/virtual'
-import { Runtime } from '../runtime/runtime'
 
 /**
  * Represents a CSS module file that transforms CSS class names and generates a corresponding JavaScript file to inject the stylesheet.
@@ -15,11 +12,11 @@ import { Runtime } from '../runtime/runtime'
  * const repl = <Repl extensions={{ "module.css": CssModuleFile }} />
  * ```
  */
-export class CssModuleFile extends AbstractFile {
+export class CssModuleFile extends VirtualFile {
   jsFile: JsFile
   constructor(runtime: Runtime, path: string) {
     super(runtime, path)
-    this.jsFile = runtime.fileSystem.create(`${path}.ts`)
+    this.jsFile = runtime.fs.create(`${path}.ts`)
 
     createEffect(() => {
       const aliases = {} as Record<string, string>

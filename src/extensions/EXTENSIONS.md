@@ -1,4 +1,4 @@
-# FILE-EXTRA.md
+# EXTENSIONS.md
 
 Additional, Derived File-Types
 These are not included in the main bundle but are available under @bigmistqke/repl/file-extra/....

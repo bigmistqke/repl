@@ -46,15 +46,15 @@
     "@solid-primitives/scheduled": "^1.4.3",
     "@types/babel__standalone": "^7.1.7",
     "babel-preset-solid": "^1.8.19",
+    "classy-solid": "^0.3.9",
     "clsx": "^2.1.0",
     "monaco-editor-textmate": "^4.0.0",
     "monaco-textmate": "^3.0.1",
     "onigasm": "^2.2.5",
-    "solid-shiki-textarea": "^0.1.6",
+    "tm-textarea": "https://pkg.pr.new/bigmistqke/tm-textarea@97f17fc",
     "zeptoid": "^1.0.1"
   },
   "peerDependencies": {
-    "shiki": "^1.4.0",
     "solid-js": "^1.6.0"
   },
   "devDependencies": {
@@ -112,10 +112,10 @@
         "default": "./dist/editor/monaco.js"
       }
     },
-    "./editor/shiki": {
+    "./editor/tm": {
       "import": {
-        "types": "./dist/editor/shiki.d.ts",
-        "default": "./dist/editor/shiki.js"
+        "types": "./dist/editor/tm.d.ts",
+        "default": "./dist/editor/tm.js"
       }
     },
     "./plugins/rollup-service-worker": {

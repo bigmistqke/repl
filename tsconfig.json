@@ -23,18 +23,21 @@
     "types": ["vite/client"],
     "paths": {
       "src": ["./src"],
-      "@bigmistqke/repl": ["./src/solid"],
-      "@bigmistqke/repl/runtime": ["./src/runtime"],
-      "@bigmistqke/repl/custom-element": ["./src/custom-element"],
-      "@bigmistqke/repl/custom-element/*": ["./src/custom-element/*"],
+      "@bigmistqke/repl": ["./src/runtime"],
+      "@bigmistqke/repl/solid": ["./src/solid"],
+      "@bigmistqke/repl/element": ["./src/element"],
+      "@bigmistqke/repl/element/*": ["./src/element/*"],
+      "@bigmistqke/repl/element/tm-editor": ["./src/element/editor/tm.tsx"],
+      "@bigmistqke/repl/element/monaco-editor": ["./src/element/editor/monaco.tsx"],
       "@bigmistqke/repl/plugins/*": ["./src/plugins/*"],
       "@bigmistqke/repl/editor/monaco": ["src/solid/editor/monaco"],
       "@bigmistqke/repl/editor/monaco/themes/*": ["src/solid/editor/monaco/themes/*"],
-      "@bigmistqke/repl/editor/shiki": ["src/solid/editor/shiki"],
+      "@bigmistqke/repl/editor/shiki": ["src/solid/editor/textmate"],
       "@bigmistqke/repl/transform/*": ["src/transform/*"],
       "@bigmistqke/repl/transform-module-paths/*": ["./src/transform-module-paths/*"],
-      "@bigmistqke/repl/file-extra/css-module": ["src/file-extra/css-module"],
-      "@bigmistqke/repl/file-extra/wat": ["src/file-extra/wat"]
+      "@bigmistqke/repl/extensions/css-module": ["src/extensions/css-module"],
+      "@bigmistqke/repl/extensions/wat": ["src/extensions/wat"],
+      "@bigmistqke/repl/std/*": ["src/std/*"]
     }
   },
   "include": ["src", "dist"]

@@ -1,4 +1,4 @@
-import { Runtime, RuntimeConfig } from '@bigmistqke/repl/runtime'
+import { Runtime, RuntimeConfig } from '@bigmistqke/repl'
 import { until } from '@solid-primitives/promise'
 import clsx from 'clsx'
 import {
@@ -12,9 +12,9 @@ import {
   splitProps,
 } from 'solid-js'
 import { Transform, TransformModulePaths } from 'src/runtime/runtime'
+import { runtimeContext } from 'src/solid'
 import { every, whenever } from 'src/utils/conditionals'
 import { formatInfo } from 'src/utils/format-log'
-import { runtimeContext } from '../'
 import styles from './repl.module.css'
 
 type ReplPropsBase = ComponentProps<'div'> &
@@ -77,7 +77,7 @@ export function Repl(props: ReplProps) {
           mapArray(
             () => Object.keys(files),
             key => {
-              const file = runtime.fileSystem.get(key) ?? runtime.fileSystem.create(key)
+              const file = runtime.fs.get(key) ?? runtime.fs.create(key)
               createRenderEffect(() => {
                 file.set(files[key]!)
               })

@@ -29,6 +29,9 @@ importers:
       babel-preset-solid:
         specifier: ^1.8.19
         version: 1.8.22(@babel/core@7.25.2)
+      classy-solid:
+        specifier: ^0.3.9
+        version: 0.3.9
       clsx:
         specifier: ^2.1.0
         version: 2.1.1
@@ -41,15 +44,12 @@ importers:
       onigasm:
         specifier: ^2.2.5
         version: 2.2.5
-      shiki:
-        specifier: ^1.4.0
-        version: 1.16.3
       solid-js:
         specifier: ^1.6.0
         version: 1.8.22
-      solid-shiki-textarea:
-        specifier: ^0.1.6
-        version: 0.1.6(@babel/core@7.25.2)(@types/react@18.3.5)(shiki@1.16.3)(solid-js@1.8.22)
+      tm-textarea:
+        specifier: https://pkg.pr.new/bigmistqke/tm-textarea@97f17fc
+        version: https://pkg.pr.new/bigmistqke/tm-textarea@97f17fc(@babel/core@7.25.2)(@types/react@18.3.5)(solid-js@1.8.22)
       zeptoid:
         specifier: ^1.0.1
         version: 1.0.1
@@ -553,11 +553,6 @@ packages:
   '@jridgewell/trace-mapping@0.3.25':
     resolution: {integrity: sha512-vNk6aEwybGtawWmy/PzwnGDOjCkLWSD2wqvjGGAgOAwCGWySYXfYoxt00IJkTF+8Lb57DwOb3Aa0o9CApepiYQ==}
 
-  '@lume/element@0.11.9':
-    resolution: {integrity: sha512-YR4sLA8vCu1bZo5jN4sua2AB66RrDUisMMWOV79KRfLiM8Q3Nxxmb3S1Kocdy56XWz/eZr1scITMiAQNqpN+dg==}
-    peerDependencies:
-      '@types/react': '*'
-
   '@lume/element@0.12.0':
     resolution: {integrity: sha512-djgAR4EiSIaPmrG3m4DWpB/Wt3qp99Mj876T7vxN26QBJA3f03m7a+AcUZri3J11Jzl0moiWCFxonsTLiV+l1g==}
     peerDependencies:
@@ -606,12 +601,6 @@ packages:
     peerDependenciesMeta:
       rollup:
         optional: true
-
-  '@shikijs/core@1.16.3':
-    resolution: {integrity: sha512-yETIvrETCeC39gSPIiSADmjri9FwKmxz0QvONMtTIUYlKZe90CJkvcjPksayC2VQOtzOJonEiULUa8v8crUQvA==}
-
-  '@shikijs/vscode-textmate@9.2.2':
-    resolution: {integrity: sha512-TMp15K+GGYrWlZM8+Lnj9EaHEFmOen0WJBrfa17hF7taDOYthuPPV0GWzfd/9iMij0akS/8Yw2ikquH7uVi/fg==}
 
   '@sinclair/typebox@0.27.8':
     resolution: {integrity: sha512-+Fj43pSMwJs4KRrH/938Uf+uAELIgVBmQzg/q1YG10djyfA3TnrU8N8XzqCh/okZdszqBQTZf96idMfE5lnwTA==}
@@ -674,9 +663,6 @@ packages:
   '@types/estree@1.0.5':
     resolution: {integrity: sha512-/kYRxGDLWzHOB7q+wtSUQlFrtcdUccpfy+X+9iMBpHK8QLLhx2wIPYuS5DYtR9Wa/YlZAbIovy7qVdB1Aq6Lyw==}
 
-  '@types/hast@3.0.4':
-    resolution: {integrity: sha512-WPs+bbQw5aCj+x6laNGWLH3wviHtoCv/P3+otBhbOhJgG8qtpdAMlTCxLtsTWA7LH1Oh/bFCHsBn0TPS5m30EQ==}
-
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
 
@@ -691,9 +677,6 @@ packages:
 
   '@types/semver@7.5.8':
     resolution: {integrity: sha512-I8EUhyrgfLrcTkzV3TSsGyl1tSuPrEDzr0yd5m90UgNxQkyDXULk3b6MlQqTCpZpNtWe1K0hzclnZkTcLBe2UQ==}
-
-  '@types/unist@3.0.3':
-    resolution: {integrity: sha512-ko/gIFJRv177XgZsZcBwnqJN5x/Gien8qNOn0D5bQU/zAzVf9Zt3BlcUiLqhV9y4ARk0GbT3tnUiPNgnTXzc/Q==}
 
   '@typescript-eslint/eslint-plugin@6.21.0':
     resolution: {integrity: sha512-oy9+hTPCUFpngkEZUSzbf9MxI65wbKFoQYsgPdILTfbUldp5ovUuphZVe4i30emU9M/kP+T64Di0mxl7dSw3MA==}
@@ -959,8 +942,8 @@ packages:
     resolution: {integrity: sha512-rNjApaLzuwaOTjCiT8lSDdGN1APCiqkChLMJxJPWLunPAt5fy8xgU9/jNOchV84wfIxrA0lRQB7oCT8jrn/wrQ==}
     engines: {node: '>=6.0'}
 
-  classy-solid@0.3.7:
-    resolution: {integrity: sha512-0faSW+AQG6OSRm2s3JW6jH2Ti25Wjc9JBB3+Ka0PmUX0JGBSuiWSyRI0Vt4GVja+xCrsXwaJyQjgQZj62lDYfw==}
+  classy-solid@0.3.9:
+    resolution: {integrity: sha512-QVAERy8PtkA2eozU/XCCeLamaokprPlCYS5Q7gK05eeE5/gCmIuiGV1F9SMurLpnVy9w6ZKSnNjxUd69btorzQ==}
 
   cliui@8.0.1:
     resolution: {integrity: sha512-BSeNnyus75C4//NQ9gQt1/csTXyo/8Sb+afLAkzAptFuMsod9HFokGNudZpi/oQV73hnVK+sR+5PVRMd+Dr7YQ==}
@@ -1422,6 +1405,9 @@ packages:
   lowclass@7.0.1:
     resolution: {integrity: sha512-MUCYry/VsWP3jfShf0TUyQ9tnmo6qsNUGnxbRo02GHtnyz1pq12ZlI7ep+H1s+FqpoDgA/TVrGqSScrvYhaWAQ==}
 
+  lowclass@8.0.1:
+    resolution: {integrity: sha512-E3PL/doaVdgh4iufl5WABDfZF7EwaKukvoNnoU6CvMotPmCWVRzZE/5Sxj12BYq/m8uclHygsB8FOBSaYNXeNA==}
+
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
 
@@ -1504,9 +1490,6 @@ packages:
 
   onigasm@2.2.5:
     resolution: {integrity: sha512-F+th54mPc0l1lp1ZcFMyL/jTs2Tlq4SqIHKIXGZOR/VkHkF9A7Fr5rRr5+ZG/lWeRsyrClLYRq7s/yFQ/XhWCA==}
-
-  oniguruma-to-js@0.3.3:
-    resolution: {integrity: sha512-m90/WEhgs8g4BxG37+Nu3YrMfJDs2YXtYtIllhsEPR+wP3+K4EZk6dDUvy2v2K4MNFDDOYKL4/yqYPXDqyozTQ==}
 
   optionator@0.9.4:
     resolution: {integrity: sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g==}
@@ -1606,9 +1589,6 @@ packages:
   regenerator-runtime@0.14.1:
     resolution: {integrity: sha512-dYnhHh0nJoMfnkZs6GmmhFknAGRrLznOu5nc9ML+EJxGvrx6H7teuevqVqCuPcPK//3eDrrjQhehXVx9cnkGdw==}
 
-  regex@4.3.2:
-    resolution: {integrity: sha512-kK/AA3A9K6q2js89+VMymcboLOlF5lZRCYJv3gzszXFHBr6kO6qLGzbm+UIugBEV8SMMKCTR59txoY6ctRHYVw==}
-
   require-directory@2.1.1:
     resolution: {integrity: sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==}
     engines: {node: '>=0.10.0'}
@@ -1697,9 +1677,6 @@ packages:
   shell-quote@1.8.1:
     resolution: {integrity: sha512-6j1W9l1iAs/4xYBI1SYOVZyFcCis9b4KCLQ8fgAGG07QvzaRLVVRQvAy85yNmmZSjYjg4MWh4gNvlPujU/5LpA==}
 
-  shiki@1.16.3:
-    resolution: {integrity: sha512-GypUE+fEd06FqDs63LSAVlmq7WsahhPQU62cgZxGF+TJT5LjD2k7HTxXj4/CKOVuMM3+wWQ1t4Y5oooeJFRRBQ==}
-
   siginfo@2.0.0:
     resolution: {integrity: sha512-ybx0WO1/8bSBLEWXZvEd7gMW3Sn3JFlW3TvX1nREbDLRNQNaeNN8WK0meBwPdAaOI7TtRRRJn/Es1zhrrCHu7g==}
 
@@ -1729,13 +1706,6 @@ packages:
     resolution: {integrity: sha512-F3aPsX6hVw9ttm5LYlth8Q15x6MlI/J3Dn+o3EQyRTtTxidepSTwAYdozt01/YA+7ObcciagGEyXIopGZzQtbA==}
     peerDependencies:
       solid-js: ^1.3
-
-  solid-shiki-textarea@0.1.6:
-    resolution: {integrity: sha512-SyXGpQ/zlMy0LDPBcPeMapSI/Oyo1WgYe84MSTcxyOdE5UJB+5eLucyyXRX/riDBUS6WS08sR9h86HL3aX/0hQ==}
-    engines: {node: '>=18', pnpm: '>=9.0.0'}
-    peerDependencies:
-      shiki: ^1.6.2
-      solid-js: ^1.6.0
 
   solid-transition-size@0.1.4:
     resolution: {integrity: sha512-ocHVnbfy23CgfaH4cEUR/AFg0Y3CEL8Oh3n9Qv8OHFJgPh+zkmERKZQfi/xH5XvxDCizg8VjPrVUhiHB1Gza8g==}
@@ -1842,6 +1812,13 @@ packages:
   tinyspy@2.2.1:
     resolution: {integrity: sha512-KYad6Vy5VDWV4GH3fjpseMQ/XU2BhIYP7Vzd0LG44qRWm/Yt2WCOTicFdvmgo6gWaqooMQCawTtILVQJupKu7A==}
     engines: {node: '>=14.0.0'}
+
+  tm-textarea@https://pkg.pr.new/bigmistqke/tm-textarea@97f17fc:
+    resolution: {tarball: https://pkg.pr.new/bigmistqke/tm-textarea@97f17fc}
+    version: 0.1.0
+    engines: {node: '>=18', pnpm: '>=9.0.0'}
+    peerDependencies:
+      solid-js: ^1.6.0
 
   to-fast-properties@2.0.0:
     resolution: {integrity: sha512-/OaKK0xYrs3DmxRYqL/yDc+FxFUVYhDlXMhRmv3z915w2HF1tnN1omB354j8VUGO/hbRzyD6Y3sA7v7GS/ceog==}
@@ -2041,6 +2018,12 @@ packages:
         optional: true
       webdriverio:
         optional: true
+
+  vscode-oniguruma@2.0.1:
+    resolution: {integrity: sha512-poJU8iHIWnC3vgphJnrLZyI3YdqRlR27xzqDmpPXYzA93R4Gk8z7T6oqDzDoHjoikA2aS82crdXFkjELCdJsjQ==}
+
+  vscode-textmate@9.1.0:
+    resolution: {integrity: sha512-lxKSVp2DkFOx9RDAvpiYUrB9/KT1fAfi1aE8CBGstP8N7rLF+Seifj8kDA198X0mYj1CjQUC+81+nQf8CO0nVA==}
 
   w3c-xmlserializer@4.0.0:
     resolution: {integrity: sha512-d+BFHzbiCx6zGfz0HyQ6Rg69w9k19nviJspaj4yNscGjrHu94sVP+aRm75yEbCh+r2/yR+7q6hux9LVtbuTGBw==}
@@ -2540,21 +2523,11 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.0
 
-  '@lume/element@0.11.9(@babel/core@7.25.2)(@types/react@18.3.5)':
-    dependencies:
-      '@types/react': 18.3.5
-      babel-preset-solid: 1.8.22(@babel/core@7.25.2)
-      classy-solid: 0.3.7
-      lowclass: 7.0.1
-      solid-js: 1.8.22
-    transitivePeerDependencies:
-      - '@babel/core'
-
   '@lume/element@0.12.0(@babel/core@7.25.2)(@types/react@18.3.5)':
     dependencies:
       '@types/react': 18.3.5
       babel-preset-solid: 1.8.22(@babel/core@7.25.2)
-      classy-solid: 0.3.7
+      classy-solid: 0.3.9
       lowclass: 7.0.1
       solid-js: 1.8.22
     transitivePeerDependencies:
@@ -2596,15 +2569,6 @@ snapshots:
       picomatch: 2.3.1
     optionalDependencies:
       rollup: 3.29.4
-
-  '@shikijs/core@1.16.3':
-    dependencies:
-      '@shikijs/vscode-textmate': 9.2.2
-      '@types/hast': 3.0.4
-      oniguruma-to-js: 0.3.3
-      regex: 4.3.2
-
-  '@shikijs/vscode-textmate@9.2.2': {}
 
   '@sinclair/typebox@0.27.8': {}
 
@@ -2670,10 +2634,6 @@ snapshots:
 
   '@types/estree@1.0.5': {}
 
-  '@types/hast@3.0.4':
-    dependencies:
-      '@types/unist': 3.0.3
-
   '@types/json-schema@7.0.15': {}
 
   '@types/node@22.5.4':
@@ -2688,8 +2648,6 @@ snapshots:
       csstype: 3.1.3
 
   '@types/semver@7.5.8': {}
-
-  '@types/unist@3.0.3': {}
 
   '@typescript-eslint/eslint-plugin@6.21.0(@typescript-eslint/parser@6.21.0(eslint@8.57.0)(typescript@5.6.2))(eslint@8.57.0)(typescript@5.6.2)':
     dependencies:
@@ -3030,9 +2988,9 @@ snapshots:
 
   chrome-trace-event@1.0.4: {}
 
-  classy-solid@0.3.7:
+  classy-solid@0.3.9:
     dependencies:
-      lowclass: 7.0.1
+      lowclass: 8.0.1
       solid-js: 1.8.22
 
   cliui@8.0.1:
@@ -3534,6 +3492,8 @@ snapshots:
 
   lowclass@7.0.1: {}
 
+  lowclass@8.0.1: {}
+
   lru-cache@5.1.1:
     dependencies:
       yallist: 3.1.1
@@ -3609,8 +3569,6 @@ snapshots:
   onigasm@2.2.5:
     dependencies:
       lru-cache: 5.1.1
-
-  oniguruma-to-js@0.3.3: {}
 
   optionator@0.9.4:
     dependencies:
@@ -3699,8 +3657,6 @@ snapshots:
 
   regenerator-runtime@0.14.1: {}
 
-  regex@4.3.2: {}
-
   require-directory@2.1.1: {}
 
   requires-port@1.0.0: {}
@@ -3771,12 +3727,6 @@ snapshots:
 
   shell-quote@1.8.1: {}
 
-  shiki@1.16.3:
-    dependencies:
-      '@shikijs/core': 1.16.3
-      '@shikijs/vscode-textmate': 9.2.2
-      '@types/hast': 3.0.4
-
   siginfo@2.0.0: {}
 
   slash@3.0.0: {}
@@ -3810,17 +3760,6 @@ snapshots:
       solid-js: 1.8.22
     transitivePeerDependencies:
       - supports-color
-
-  solid-shiki-textarea@0.1.6(@babel/core@7.25.2)(@types/react@18.3.5)(shiki@1.16.3)(solid-js@1.8.22):
-    dependencies:
-      '@lume/element': 0.11.9(@babel/core@7.25.2)(@types/react@18.3.5)
-      '@solid-primitives/list': 0.0.100(solid-js@1.8.22)
-      clsx: 2.1.1
-      shiki: 1.16.3
-      solid-js: 1.8.22
-    transitivePeerDependencies:
-      - '@babel/core'
-      - '@types/react'
 
   solid-transition-size@0.1.4(solid-js@1.8.22):
     dependencies:
@@ -3907,6 +3846,19 @@ snapshots:
   tinypool@0.6.0: {}
 
   tinyspy@2.2.1: {}
+
+  tm-textarea@https://pkg.pr.new/bigmistqke/tm-textarea@97f17fc(@babel/core@7.25.2)(@types/react@18.3.5)(solid-js@1.8.22):
+    dependencies:
+      '@lume/element': 0.12.0(@babel/core@7.25.2)(@types/react@18.3.5)
+      '@solid-primitives/memo': 1.3.9(solid-js@1.8.22)
+      classy-solid: 0.3.9
+      clsx: 2.1.1
+      solid-js: 1.8.22
+      vscode-oniguruma: 2.0.1
+      vscode-textmate: 9.1.0
+    transitivePeerDependencies:
+      - '@babel/core'
+      - '@types/react'
 
   to-fast-properties@2.0.0: {}
 
@@ -4092,6 +4044,10 @@ snapshots:
       - sugarss
       - supports-color
       - terser
+
+  vscode-oniguruma@2.0.1: {}
+
+  vscode-textmate@9.1.0: {}
 
   w3c-xmlserializer@4.0.0:
     dependencies:

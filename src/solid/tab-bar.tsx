@@ -32,7 +32,7 @@ export function TabBar(props: TabBarProps) {
   const runtime = useRuntime()
 
   const entries = () => {
-    const files = runtime.fileSystem.all()
+    const files = runtime.fs.all()
     if (props.paths) {
       return props.paths.map(path => [path, files[path]] as const)
     }

@@ -1,10 +1,7 @@
+import { CssFile, JsFile, VirtualFile, WasmFile } from '@bigmistqke/repl'
 import { mergeProps } from 'solid-js'
 import type { Mandatory } from 'src/utils/type'
 import { FileSystem, FileSystemState } from './file-system'
-import { CssFile } from './file/css'
-import { JsFile } from './file/js'
-import { AbstractFile } from './file/virtual'
-import { WasmFile } from './file/wasm'
 import { FrameRegistry } from './frame-registry'
 import { ImportUtils } from './import-utils'
 import { TypeRegistry, TypeRegistryState } from './type-registry'
@@ -53,7 +50,7 @@ interface RuntimeConfigBase {
   /** Optional event that runs after a file's source is updated. */
   onFileChange?: (path: string, src: string) => void
   /** Additional extensions besides .js and .css */
-  extensions?: Record<string, typeof AbstractFile>
+  extensions?: Record<string, typeof VirtualFile>
 }
 
 interface RuntimeConfigControlled extends RuntimeConfigBase {
@@ -84,7 +81,7 @@ interface DefinedExtensions {
 
 // Use an index signature for all other keys
 interface GenericFileMethods {
-  [key: string]: new (runtime: any, path: string) => AbstractFile
+  [key: string]: new (runtime: any, path: string) => VirtualFile
 }
 
 // Combine the specific and generic file methods into one type
@@ -99,11 +96,11 @@ export class Runtime {
   /** Configurations for the runtime environment. Ensures mandatory settings like 'cdn' are always included. */
   config: Mandatory<RuntimeConfig, 'cdn'>
   /** Manages file operations within the virtual file system. */
-  fileSystem: FileSystem
+  fs: FileSystem
   /** Handles the registration and management of iframe containers for isolated code execution. */
-  frameRegistry: FrameRegistry
+  frames: FrameRegistry
   /** Manages TypeScript declaration files and other type-related functionality. */
-  typeRegistry: TypeRegistry
+  types: TypeRegistry
   /** Utility class for handling imports from URLS pointing to non-esm packages. */
   import: ImportUtils
   /**  */
@@ -125,10 +122,10 @@ export class Runtime {
     config: RuntimeConfig,
   ) {
     this.config = mergeProps({ cdn: 'https://esm.sh' }, config)
-    this.fileSystem = new FileSystem(this)
-    this.frameRegistry = new FrameRegistry()
+    this.fs = new FileSystem(this)
+    this.frames = new FrameRegistry()
     this.import = new ImportUtils(this)
-    this.typeRegistry = new TypeRegistry(this)
+    this.types = new TypeRegistry(this)
   }
 
   /**
@@ -137,17 +134,18 @@ export class Runtime {
    */
   toJSON(): RuntimeState {
     return {
-      files: this.fileSystem.toJSON(),
-      types: this.typeRegistry.toJSON(),
+      files: this.fs.toJSON(),
+      types: this.types.toJSON(),
     }
   }
 
   /** Initializes the file system based on provided initial configuration, setting up files and types. */
   initialize() {
     if (this.config.files) {
-      this.fileSystem.initialize(this.config.files)
+      this.fs.initialize(this.config.files)
     }
     this.initialized = true
+    return this
   }
 
   /**

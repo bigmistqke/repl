@@ -4,7 +4,7 @@
 
 <h1 id="title">@bigmistqke/repl</h1>
 
-`@bigmistqke/repl` provides unstyled building blocks to create TypeScript playgrounds directly in the browser, featuring adaptable editor integration. Currently, it supports both the feature-rich [`Monaco Editor`](#monaco-editor-integration) and the lighter [`Shiki Editor`](#shiki-editor-integration). It supports real-time transpilation of TypeScript into ECMAScript Modules (ESM) and facilitates seamless imports of external dependencies, including their type definitions, making it ideal for both quick prototyping and complex browser-based IDE development.
+`@bigmistqke/repl` provides unstyled building blocks to create TypeScript playgrounds directly in the browser, featuring adaptable editor integration. Currently, it supports both the feature-rich [`Monaco Editor`](#monaco-editor-integration) and the lighter [`Tm Editor`](#tm-editor-integration). It supports real-time transpilation of TypeScript into ECMAScript Modules (ESM) and facilitates seamless imports of external dependencies, including their type definitions, making it ideal for both quick prototyping and complex browser-based IDE development.
 
 https://github.com/bigmistqke/repl/assets/10504064/50195cb6-f3aa-4dea-a40a-d04f2d32479d
 
@@ -12,7 +12,7 @@ https://github.com/bigmistqke/repl/assets/10504064/50195cb6-f3aa-4dea-a40a-d04f2
 
 ## Features
 
-- **Modular Editor Integration**: Start with [`Monaco Editor`](#monaco-editor-integration) for a fully featured IDE-like experience or [`Shiki Editor`](#shiki-editor-integration) for a more minimal editor. The architecture is designed to accommodate additional editors as needed.
+- **Modular Editor Integration**: Start with [`Monaco Editor`](#monaco-editor-integration) for a fully featured IDE-like experience or [`Tm Editor`](#tm-editor-integration) for a more minimal editor. The architecture is designed to accommodate additional editors as needed.
 - **Real-time Transpilation**: Transpile TypeScript into ESM on-the-fly, enabling immediate feedback and iteration.
 - **Automatic Dependency Management**: Effortlessly manage imports of external libraries and their associated types, streamlining the development process.
 - **Configurable and Extensible**: Tailor the setup to your needs with configurable TypeScript compiler settings, and easily extend functionalities through a flexible API.
@@ -28,9 +28,9 @@ https://github.com/bigmistqke/repl/assets/10504064/50195cb6-f3aa-4dea-a40a-d04f2
   - [DevTools Component](#devtools-component)
   - [useRuntime Hook](#useruntime-hook)
 - [Editors](#editors)
-  - [___@bigmistqke/repl/editor/monaco___](#bigmistqkerepleditormonaco)
-  - [___@bigmistqke/repl/editor/shiki___](#bigmistqkerepleditorshiki)
-- [___@bigmistqke/repl/runtime___](#bigmistqkereplruntime)
+  - [___@bigmistqke/repl/solid/monaco___-editor](#bigmistqkerepleditormonaco)
+  - [___@bigmistqke/repl/solid/tm-editor___](#bigmistqkerepleditorshiki)
+- [___@bigmistqke/repl___](#bigmistqkereplruntime)
   - [Exports](#exports)
   - [Runtime Class](#runtime-class)
   - [File Abstract Class](#file-abstract-class)
@@ -72,9 +72,9 @@ pnpm install `@bigmistqke/repl`
 The `@bigmistqke/repl` library is designed to be modular, allowing users to import only the parts they need for their project from a CDN if they would like to. Below is a list of all available modules within the `@bigmistqke/repl` ecosystem:
 
 - **[@bigmistqke/repl](#bigmistqkerepl)**: The main entry point that includes the primary repl component and foundational utilities.
-- **[@bigmistqke/repl/editor/monaco](#bigmistqkerepleditormonaco)**: Integrates the Monaco editor, providing a rich coding environment.
-- **[@bigmistqke/repl/editor/shiki](#bigmistqkerepleditorshiki)**: Adds syntax highlighting through the Shiki library.
-- **[@bigmistqke/repl/runtime](#bigmistqkereplruntime)**: Contains core runtime functionalities necessary for creating and managing the virtual environment within the repl.
+- **[@bigmistqke/repl/solid/monaco-editor](#bigmistqkerepleditormonaco)**: Integrates the Monaco editor, providing a rich coding environment.
+- **[@bigmistqke/repl/solid/tm-editor](#bigmistqkerepleditorshiki)**: Adds syntax highlighting through the Tm library.
+- **[@bigmistqke/repl](#bigmistqkereplruntime)**: Contains core runtime functionalities necessary for creating and managing the virtual environment within the repl.
 - **[@bigmistqke/repl/plugins/rollup-service-worker](#bigmistqkereplpluginsrollup-service-worker)**: Enhances the repl with service worker capabilities to efficiently manage caching.
 - **[@bigmistqke/repl/plugins/babel-solid-repl](#bigmistqkereplpluginsbabel-solid-repl)**: Provides plugins for Babel that are optimized for SolidJS applications.
 - **[@bigmistqke/repl/transform/babel](#bigmistqkerepltransformbabel)**: Supports the integration of Babel for dynamic JavaScript code transformation.
@@ -82,7 +82,7 @@ The `@bigmistqke/repl` library is designed to be modular, allowing users to impo
 - **[@bigmistqke/repl/transform-module-paths/typescript](#bigmistqkerepltransform-module-pathstypescript)**: Offers utilities for managing and transforming module paths in TypeScript files, crucial for resolving imports and integrating external modules.
 
 
-# @bigmistqke/repl
+# @bigmistqke/repl/solid
 
 ## Exports
 
@@ -250,7 +250,7 @@ The @bigmistqke/repl package offers integrations with various code editors, whic
 1. [`monaco-editor`](https://microsoft.github.io/monaco-editor/)
 2. minimal, homemade editor built on top of [`shiki`](https://shiki.style/): [`solid-shiki-textarea`](https://github.com/bigmistqke/solid-shiki-textarea). Originally built for this project, now abstracted into its own package.
 
-## @bigmistqke/repl/editor/monaco
+## @bigmistqke/repl/solid/monaco-editor
 
 This package exports both the `MonacoEditor` and `MonacoProvider` component.
 
@@ -294,9 +294,9 @@ When using `MonacoProvider`, multiple `MonacoEditor` components can share the sa
 
 ```tsx
 import { Repl } from '@bigmistqke/repl'
-import { MonacoProvider, MonacoEditor } from '@bigmistqke/repl/editor/monaco'
+import { MonacoProvider, MonacoEditor } from '@bigmistqke/repl/solid/monaco-editor'
 import loader from '@monaco-editor/loader'
-import vs_dark from '@bigmistqke/repl/editor/monaco/themes/vs_dark_good.json'
+import vs_dark from '@bigmistqke/repl/solid/monaco-editor/themes/vs_dark_good.json'
 import { createSignal } from 'solid-js'
 
 const repl = (
@@ -319,9 +319,9 @@ If you use `MonacoEditor` outside of a `MonacoProvider`, it will instantiate its
 
 ```tsx
 import { Repl } from '@bigmistqke/repl'
-import { MonacoEditor } from '@bigmistqke/repl/editor/monaco'
+import { MonacoEditor } from '@bigmistqke/repl/solid/monaco-editor'
 import loader from '@monaco-editor/loader'
-import vs_dark from '@bigmistqke/repl/editor/monaco/themes/vs_dark_good.json'
+import vs_dark from '@bigmistqke/repl/solid/monaco-editor/themes/vs_dark_good.json'
 import { createSignal } from 'solid-js'
 
 const repl = (
@@ -335,14 +335,14 @@ const repl = (
 )
 ```
 
-## @bigmistqke/repl/editor/shiki
+## @bigmistqke/repl/solid/tm-editor
 
-`ShikiEditor` is a tiny, minimal text editor built on the [`shiki`](https://github.com/shikijs/shiki) syntax highlighting library, which utilizes [`TextMate`](https://github.com/microsoft/vscode-textmate) grammar. Internally, it is composed of a standard `<textarea/>` with syntax-highlighted HTML rendered underneath.
+`TmEditor` is a tiny, minimal text editor built on the [`shiki`](https://github.com/shikijs/shiki) syntax highlighting library, which utilizes [`TextMate`](https://github.com/microsoft/vscode-textmate) grammar. Internally, it is composed of a standard `<textarea/>` with syntax-highlighted HTML rendered underneath.
 
-In contrast to the [`MonacoEditor`](#monacoprovider-and-monacoeditor-component), `ShikiEditor` lacks type-checking and type-information capabilities, and it does not modify any existing key-bindings. As such, it is not ideal for full-featured playgrounds, but is well-suited for simpler applications such as articles and documentation.
+In contrast to the [`MonacoEditor`](#monacoprovider-and-monacoeditor-component), `TmEditor` lacks type-checking and type-information capabilities, and it does not modify any existing key-bindings. As such, it is not ideal for full-featured playgrounds, but is well-suited for simpler applications such as articles and documentation.
 
 ```tsx
-interface ShikiEditorProps extends ComponentProps<'div'> {
+interface TmEditorProps extends ComponentProps<'div'> {
   /** The default source code to initialize the editor with. */
   defaultValue?: string
   /** The programming language of the source code for syntax highlighting. */
@@ -365,13 +365,13 @@ interface ShikiEditorProps extends ComponentProps<'div'> {
 
 ```tsx
 import { Repl } from '@bigmistqke/repl'
-import { ShikiEditor } from '@bigmistqke/repl/editor/shiki'
+import { TmEditor } from '@bigmistqke/repl/solid/tm-editor'
 import andromeeda from "shiki/themes/andromeeda.mjs"
 import tsx from "shiki/langs/tsx.mjs"
 
 const repl = (
   <Repl>
-    <ShikiEditor 
+    <TmEditor 
       style={{ flex: 1 }} 
       path={currentPath()} 
       lang={tsx} 
@@ -381,7 +381,7 @@ const repl = (
 )
 ```
 
-# @bigmistqke/repl/runtime
+# @bigmistqke/repl
 
 This module provides a separate export for the runtime of @bigmistqke/repl. While the `Runtime` class coordinates all internal operations, we also export internal classes to offer greater flexibility for users who need more granular control.
 
@@ -466,10 +466,10 @@ interface RuntimeConfig {
 
 ### Usage
 
-You can import and initialize the `Runtime` class from `@bigmistqke/repl/runtime`.
+You can import and initialize the `Runtime` class from `@bigmistqke/repl`.
 
 ```ts
-import { Runtime } from '@bigmistqke/repl/runtime'
+import { Runtime } from '@bigmistqke/repl'
 
 const runtimeConfig = {
   cdn: 'https://esm.sh',
@@ -947,9 +947,9 @@ This advanced example demonstrates how to setup a [solid](https://github.com/sol
 
 ```tsx
 import { DevTools, Frame, Repl } from '@bigmistqke/repl'
-import { MonacoEditor, MonacoTheme } from '@bigmistqke/repl/editor/monaco'
+import { MonacoEditor, MonacoTheme } from '@bigmistqke/repl/solid/monaco-editor'
 import { babelSolidReplPlugin } from '@bigmistqke/repl/plugins/babel-solid-repl'
-import vs_dark from '@bigmistqke/repl/editor/monaco/themes/vs_dark_good.json'
+import vs_dark from '@bigmistqke/repl/solid/monaco-editor/themes/vs_dark_good.json'
 import { typescriptTransformModulePaths } from '@bigmistqke/repl/transform-module-paths/typescript'
 import { babelTransform } from '@bigmistqke/repl/transform/babel'
 import loader from '@monaco-editor/loader'

@@ -1,7 +1,7 @@
 import { onCleanup } from 'solid-js'
 import { SetStoreFunction, createStore } from 'solid-js/store'
 import std from '../std/index?raw'
-import { AbstractFile } from './file/virtual'
+import { VirtualFile } from './file/virtual'
 import { Runtime } from './runtime'
 
 export interface FileSystemState {
@@ -25,12 +25,12 @@ export class FileSystem {
   /** Store setter for aliases. */
   setAlias: SetStoreFunction<Record<string, string>>
   /** Stores file instances by path. */
-  #files: Record<string, AbstractFile>
+  #files: Record<string, VirtualFile>
   /**
    * Store setter for files.
    * @private
    */
-  #setFiles: SetStoreFunction<Record<string, AbstractFile>>
+  #setFiles: SetStoreFunction<Record<string, VirtualFile>>
 
   /**
    * List of cleanup functions to be called on instance disposal.
@@ -39,7 +39,7 @@ export class FileSystem {
   #cleanups: (() => void)[] = []
 
   constructor(public runtime: Runtime) {
-    const [files, setFiles] = createStore<Record<string, AbstractFile>>({})
+    const [files, setFiles] = createStore<Record<string, VirtualFile>>({})
     this.#files = files
     this.#setFiles = setFiles
     ;[this.alias, this.setAlias] = createStore<Record<string, string>>({
@@ -78,7 +78,7 @@ export class FileSystem {
   }
 
   /** Creates a new file in the file system at the specified path. */
-  create<T extends AbstractFile>(path: string) {
+  create<T extends VirtualFile>(path: string) {
     let extension: string | null = null
 
     for (const key in this.runtime.extensions) {
@@ -112,7 +112,7 @@ export class FileSystem {
 
   /** Retrieves a file from the file system by its path.  */
   getOrCreate(path: string) {
-    return this.runtime.fileSystem.get(path) || this.runtime.fileSystem.create(path)
+    return this.runtime.fs.get(path) || this.runtime.fs.create(path)
   }
 
   /**

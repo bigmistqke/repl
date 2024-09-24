@@ -1,11 +1,11 @@
+import { Runtime } from '@bigmistqke/repl'
 import { Accessor, Setter, createSignal } from 'solid-js'
-import { Runtime } from '../runtime'
 
 /**
  * Represents a generic file within the virtual file system, providing methods to manipulate and access the file's source code.
  * This is an abstract class and should be extended to handle specific types of files.
  */
-export abstract class AbstractFile {
+export abstract class VirtualFile {
   /**
    * Generates a new URL for an ES Module based on the current source code. This URL is not cached,
    * ensuring that each call provides a fresh module.

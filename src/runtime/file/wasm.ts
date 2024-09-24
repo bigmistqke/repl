@@ -1,11 +1,11 @@
+import { Runtime } from '@bigmistqke/repl'
 import { createScheduled, debounce } from '@solid-primitives/scheduled'
 import { Accessor, createEffect, createMemo } from 'solid-js'
 import { whenever } from 'src/utils/conditionals'
 import { javascript } from 'src/utils/object-url-literal'
-import { Runtime } from '../runtime'
-import { AbstractFile } from './virtual'
+import { VirtualFile } from './virtual'
 
-export class WasmFile extends AbstractFile {
+export class WasmFile extends VirtualFile {
   #getUrl: Accessor<string | undefined>
   generate: Accessor<string | undefined>
   /**
@@ -44,7 +44,7 @@ export default (imports) =>  WebAssembly.instantiate(wasmCode, imports).then(res
   }
 }
 
-export class WasmTarget extends AbstractFile {
+export class WasmTarget extends VirtualFile {
   private wasmFile: WasmFile
   constructor(runtime: Runtime, path: string, wasm: (source: string) => string | undefined) {
     super(runtime, path)

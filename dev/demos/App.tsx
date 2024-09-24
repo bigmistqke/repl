@@ -1,6 +1,4 @@
-import { Frame, Repl, TabBar } from '@bigmistqke/repl'
-import { CssModuleFile } from '@bigmistqke/repl/file-extra/css-module'
-import { JsFile } from '@bigmistqke/repl/runtime'
+import { Frame, JsFile, Repl, TabBar } from '@bigmistqke/repl'
 import { typescriptTransformModulePaths } from '@bigmistqke/repl/transform-module-paths/typescript'
 import { babelTransform } from '@bigmistqke/repl/transform/babel'
 import { typescriptTransform } from '@bigmistqke/repl/transform/typescript'
@@ -8,6 +6,7 @@ import loader from '@monaco-editor/loader'
 import { Resizable } from 'corvu/resizable'
 import { createEffect, createSignal, on, onCleanup, type Component } from 'solid-js'
 import { createStore } from 'solid-js/store'
+import { CssModuleFile } from 'src/extensions/css-module'
 import { MonacoEditor, MonacoProvider, MonacoTheme } from 'src/solid/editor/monaco'
 import vs_dark from 'src/solid/editor/monaco/themes/vs_dark_good.json'
 import styles from './App.module.css'
@@ -81,7 +80,7 @@ dispose('src/index.tsx', render(() => <App />, document.body));
         files={files}
         class={styles.repl}
         onFileChange={(path, source) => setFiles(path, source)}
-        onSetup={async ({ fileSystem, frameRegistry }) => {
+        onSetup={async ({ fs: fileSystem, frames: frameRegistry }) => {
           createEffect(() => {
             const frame = frameRegistry.get('default')
             if (!frame) return

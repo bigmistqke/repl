@@ -2,7 +2,7 @@ import type * as Babel from '@babel/standalone'
 import { Transform } from 'src/runtime/runtime'
 
 export interface BabelConfig {
-  babel: typeof Babel | Promise<typeof Babel>
+  babel?: typeof Babel | Promise<typeof Babel>
   presets?: string[]
   plugins?: (string | babel.PluginItem)[]
   cdn?: string
@@ -12,7 +12,8 @@ export async function babelTransform(config: BabelConfig): Promise<Transform> {
   const cdn = config.cdn || 'https://esm.sh'
 
   const [babel, presets, plugins] = await Promise.all([
-    config.babel,
+    config.babel ||
+      (import(/* @vite-ignore */ `${cdn}/@babel/standalone`) as Promise<typeof Babel>),
     Promise.all(
       config.presets?.map(preset =>
         import(/* @vite-ignore */ `${cdn}/${preset}`).then(module => module.default),

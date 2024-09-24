@@ -55,21 +55,21 @@ export class ImportUtils {
       }
       await resolvePath(scriptUrl)
 
-      this.runtime.fileSystem.setAlias(packageName, `node_modules${getVirtualPath(scriptUrl)}`)
+      this.runtime.fs.setAlias(packageName, `node_modules${getVirtualPath(scriptUrl)}`)
 
       return project
     })
 
     createEffect(
       whenever(packageJson, ({ typesUrl, packageName }) => {
-        if (typesUrl) this.runtime.typeRegistry.import.fromUrl(typesUrl, packageName)
+        if (typesUrl) this.runtime.types.import.fromUrl(typesUrl, packageName)
       }),
     )
 
     createEffect(
       whenever(project, project =>
         Object.entries(project).forEach(([path, value]) => {
-          this.runtime.fileSystem.create(`node_modules${path}`).set(value)
+          this.runtime.fs.create(`node_modules${path}`).set(value)
         }),
       ),
     )

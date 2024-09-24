@@ -1,9 +1,10 @@
 import type TS from 'typescript'
 
-export async function typescriptTransformModulePaths(config: {
-  typescript: Promise<typeof TS> | typeof TS
+export async function typescriptTransformModulePaths(config?: {
+  typescript?: Promise<typeof TS> | typeof TS
 }) {
-  const ts = await config.typescript
+  // @ts-expect-error
+  const ts = (await (config?.typescript || import('https://esm.sh/typescript'))) as typeof TS
   return function (
     code: string,
     //** Callback to modify module-declaration node. Return `false` to remove node from code. `Throw` to break execution. */

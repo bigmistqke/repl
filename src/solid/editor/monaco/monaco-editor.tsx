@@ -76,7 +76,7 @@ MonacoEditor.Standalone = function (
 
   // Get or create file
   const file = createMemo(
-    () => props.runtime.fileSystem.get(props.path) || props.runtime.fileSystem.create(props.path),
+    () => props.runtime.fs.get(props.path) || props.runtime.fs.create(props.path),
   )
 
   const model = createMemo(

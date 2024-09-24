@@ -1,11 +1,11 @@
 import { MonacoEditor } from '@bigmistqke/repl/editor/monaco'
+import { runtime, useRuntime } from '@bigmistqke/repl/element/runtime'
 import { Element, element, ElementAttributes, stringAttribute } from '@lume/element'
 import { Monaco } from '@monaco-editor/loader'
 import { createMemo, createRoot, createSignal, Show } from 'solid-js'
 import { createMonaco, MonacoTheme } from 'src/solid/editor/monaco/create-monaco'
 import { every, when } from 'src/utils/conditionals'
 import ts from 'typescript'
-import { runtime } from './'
 
 /**********************************************************************************/
 /*                                                                                */
@@ -75,14 +75,18 @@ class ReplMonacoEditor extends Element {
 
   template = () => {
     return (
-      <Show when={every(monaco, runtime)()} keyed>
-        {([monaco, runtime]) => (
-          <MonacoEditor.Standalone
-            style={{ height: '100%' }}
-            monaco={monaco}
-            path={this.path}
-            runtime={runtime}
-          />
+      <Show when={useRuntime(this)?.()}>
+        {runtime => (
+          <Show when={monaco()}>
+            {monaco => (
+              <MonacoEditor.Standalone
+                style={{ height: '100%' }}
+                monaco={monaco()}
+                path={this.path}
+                runtime={runtime()}
+              />
+            )}
+          </Show>
         )}
       </Show>
     )

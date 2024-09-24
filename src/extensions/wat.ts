@@ -1,9 +1,7 @@
+import { Runtime, VirtualFile, WasmFile } from '@bigmistqke/repl'
 import { createEffect, createResource } from 'solid-js'
 import { every, whenever } from 'src/utils/conditionals'
 import WABT from 'wabt'
-import { AbstractFile } from '../runtime/file/virtual'
-import { WasmFile } from '../runtime/file/wasm'
-import { Runtime } from '../runtime/runtime'
 
 const [wabt] = createResource(() => WABT())
 
@@ -17,7 +15,7 @@ const [wabt] = createResource(() => WABT())
  * const repl = <Repl extensions={{ "wat": WatFile }} />
  * ```
  */
-export class WatFile extends AbstractFile {
+export class WatFile extends VirtualFile {
   private wasmFile: WasmFile
 
   constructor(runtime: Runtime, path: string) {

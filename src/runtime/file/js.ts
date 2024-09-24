@@ -1,3 +1,4 @@
+import { Runtime } from '@bigmistqke/repl'
 import { createScheduled, debounce } from '@solid-primitives/scheduled'
 import {
   Accessor,
@@ -11,19 +12,18 @@ import {
 } from 'solid-js'
 import { when } from 'src/utils/conditionals'
 import { isRelativePath, isUrl, relativeToAbsolutePath } from 'src/utils/path'
-import { Runtime } from '../runtime'
-import { AbstractFile } from './virtual'
+import { VirtualFile } from './virtual'
 
-type StaleDependencyHandler = (file: AbstractFile) => void
+type StaleDependencyHandler = (file: VirtualFile) => void
 
 /**
  * Represents a JavaScript file within the system. Extends the generic File class.
  */
-export class JsFile extends AbstractFile {
+export class JsFile extends VirtualFile {
   /** An array of imported `VirtualFiles` found referred to in the source. */
-  directDependencies: Accessor<AbstractFile[]>
+  directDependencies: Accessor<VirtualFile[]>
   /** Internal setter for the imported `VirtualFiles`. */
-  #setDirectDependencies: Setter<AbstractFile[]>
+  #setDirectDependencies: Setter<VirtualFile[]>
   /** Internal callback to get current module-url. */
   #getUrl: Accessor<string | undefined>
   /** Internal callback to get the esm output of the current source. */
@@ -37,7 +37,7 @@ export class JsFile extends AbstractFile {
     public path: string,
   ) {
     super(runtime, path)
-    ;[this.directDependencies, this.#setDirectDependencies] = createSignal<AbstractFile[]>([])
+    ;[this.directDependencies, this.#setDirectDependencies] = createSignal<VirtualFile[]>([])
     ;[this.#dependencyRemovedHandlers, this.#setDependencyRemovedHandlers] = createSignal<
       StaleDependencyHandler[]
     >([])
@@ -73,18 +73,18 @@ export class JsFile extends AbstractFile {
       when(
         intermediary,
         value => {
-          const imports: AbstractFile[] = []
+          const imports: VirtualFile[] = []
           const removedImports = new Set(untrack(this.directDependencies))
           try {
             return batch(() =>
               runtime.config.transformModulePaths(value, modulePath => {
                 if (isUrl(modulePath)) return modulePath
 
-                const alias = runtime.fileSystem.alias[modulePath]
+                const alias = runtime.fs.alias[modulePath]
                 // If the module-path is either an aliased path or a relative path
                 if (alias || isRelativePath(modulePath)) {
                   // We resolve the path to a File
-                  const file = runtime.fileSystem.resolve(
+                  const file = runtime.fs.resolve(
                     // If path is aliased we resolve the aliased path
                     alias ||
                       // Else the path must be a relative path
@@ -110,7 +110,7 @@ export class JsFile extends AbstractFile {
                 else {
                   // We transform this package-name to a cdn-url.
                   if (runtime.config.importExternalTypes) {
-                    runtime.typeRegistry.import.fromPackageName(modulePath)
+                    runtime.types.import.fromPackageName(modulePath)
                   }
                   return `${runtime.config.cdn}/${modulePath}`
                 }
@@ -154,7 +154,7 @@ export class JsFile extends AbstractFile {
     })
   }
 
-  #callDependencyRemovedHandlers(file: AbstractFile) {
+  #callDependencyRemovedHandlers(file: VirtualFile) {
     for (const handler of this.#dependencyRemovedHandlers()) {
       handler(file)
     }
@@ -167,7 +167,7 @@ export class JsFile extends AbstractFile {
    * @returns A set of all unique import files.
    */
   resolveDependencies() {
-    const set = new Set<AbstractFile>()
+    const set = new Set<VirtualFile>()
     const stack = [...this.directDependencies()] // Initialize the stack with direct imports
 
     while (stack.length > 0) {

@@ -82,7 +82,7 @@ export interface MonacoProviderProps {
 }
 
 export function MonacoProvider(props: ParentProps<MonacoProviderProps>) {
-  const monaco = createMonaco(props)
+  const monaco = createMonaco(props as any)
   return (
     <Suspense>
       <monacoContext.Provider

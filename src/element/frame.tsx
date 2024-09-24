@@ -1,7 +1,7 @@
-import { DevTools } from '@bigmistqke/repl'
+import { useRuntime } from '@bigmistqke/repl/element/runtime'
+import { Frame } from '@bigmistqke/repl/solid'
 import { element, Element, ElementAttributes, stringAttribute } from '@lume/element'
 import { Show } from 'solid-js'
-import { runtime } from './'
 
 /**********************************************************************************/
 /*                                                                                */
@@ -9,12 +9,12 @@ import { runtime } from './'
 /*                                                                                */
 /**********************************************************************************/
 
-type ShikiTextareaAttributes = ElementAttributes<ReplDevtools, 'name'>
+type ShikiTextareaAttributes = ElementAttributes<ReplFrame, 'name'>
 
 declare module 'solid-js/jsx-runtime' {
   namespace JSX {
     interface IntrinsicElements {
-      'repl-devtools': ShikiTextareaAttributes
+      'repl-frame': ShikiTextareaAttributes
     }
   }
 }
@@ -22,26 +22,37 @@ declare module 'solid-js/jsx-runtime' {
 declare global {
   namespace JSX {
     interface IntrinsicElements {
-      'repl-devtools': ShikiTextareaAttributes
+      'repl-frame': ShikiTextareaAttributes
     }
   }
 }
 
 /**********************************************************************************/
 /*                                                                                */
-/*                                  Repl Devtools                                 */
+/*                                   Repl Frame                                   */
 /*                                                                                */
 /**********************************************************************************/
-
-@element('repl-devtools')
-export class ReplDevtools extends Element {
+@element('repl-frame')
+export class ReplFrame extends Element {
   @stringAttribute name = 'default'
 
   template = () => {
     return (
-      <Show when={runtime()}>
-        {runtime => <DevTools.Standalone name={this.name} runtime={runtime()} />}
+      <Show when={useRuntime(this)?.()}>
+        {runtime => (
+          <Frame.Standalone
+            name={this.name}
+            runtime={runtime()}
+            style={{ width: '100%', height: '100%', border: 'inherit' }}
+          />
+        )}
       </Show>
     )
+  }
+}
+
+export function registerFrame() {
+  if (!customElements.get('repl-frame')) {
+    customElements.define('repl-frame', ReplFrame)
   }
 }

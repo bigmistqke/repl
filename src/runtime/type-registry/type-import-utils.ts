@@ -1,3 +1,4 @@
+import { Runtime } from '@bigmistqke/repl'
 import { when } from 'src/utils/conditionals'
 import { formatError } from 'src/utils/format-log'
 import {
@@ -7,7 +8,6 @@ import {
   relativeToAbsolutePath,
 } from 'src/utils/path'
 import { TypeRegistry, TypeRegistryState } from '.'
-import { Runtime } from '../runtime'
 
 export class TypeImportUtils {
   private cachedUrls = new Set<string>()

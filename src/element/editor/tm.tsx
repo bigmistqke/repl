@@ -1,9 +1,11 @@
+import { useRuntime } from '@bigmistqke/repl/element/runtime'
 import { element, Element, ElementAttributes, stringAttribute } from '@lume/element'
 import { createMemo, Show } from 'solid-js'
-import 'solid-shiki-textarea/custom-element'
-import { whenever } from 'src/utils/conditionals'
 import { last } from 'src/utils/last'
-import { runtime } from './'
+import { register } from 'tm-textarea'
+import { Grammar, Theme } from 'tm-textarea/tm'
+
+register()
 
 /**********************************************************************************/
 /*                                                                                */
@@ -11,12 +13,12 @@ import { runtime } from './'
 /*                                                                                */
 /**********************************************************************************/
 
-type ShikiTextareaAttributes = ElementAttributes<ReplShikiEditor, 'path' | 'theme'>
+type TmTextareaAttributes = ElementAttributes<ReplTmEditor, 'path' | 'theme' | 'oninput' | 'value'>
 
 declare module 'solid-js/jsx-runtime' {
   namespace JSX {
     interface IntrinsicElements {
-      'repl-shiki-editor': ShikiTextareaAttributes
+      'repl-tm-editor': TmTextareaAttributes
     }
   }
 }
@@ -24,7 +26,7 @@ declare module 'solid-js/jsx-runtime' {
 declare global {
   namespace JSX {
     interface IntrinsicElements {
-      'repl-shiki-editor': ShikiTextareaAttributes
+      'repl-tm-editor': TmTextareaAttributes
     }
   }
 }
@@ -35,8 +37,9 @@ declare global {
 /*                                                                                */
 /**********************************************************************************/
 
-const MAP: Record<string, string> = {
+const MAP: Record<string, Grammar | string> = {
   ts: 'typescript',
+  'module.css': 'css',
   tsx: 'tsx',
   jsx: 'jsx',
   wat: 'wat',
@@ -44,45 +47,52 @@ const MAP: Record<string, string> = {
   js: 'javascript',
 }
 
-function getLangName(path: string) {
+function getGrammarName(path: string) {
   const extension = last(path.split('.'))
   return extension && MAP[extension]
 }
 
 /**********************************************************************************/
 /*                                                                                */
-/*                                Repl Shiki Editor                               */
+/*                                Repl Tm Editor                               */
 /*                                                                                */
 /**********************************************************************************/
 
-@element('repl-shiki-editor')
-class ReplShikiEditor extends Element {
+@element('repl-tm-editor')
+class ReplTmEditor extends Element {
   @stringAttribute path = ''
-  @stringAttribute theme = 'andromeeda'
+  @stringAttribute theme: Theme = 'andromeeda'
 
   css = /* css */ `
-    .shiki-textarea {
-      height: 100%;
-      width: 100%;
+    :host {
+      display: contents;
+    }
+
+    .tm-textarea {
+      all: inherit;
     }
   `
 
-  template = () => {
-    // Get or create file
-    const file = createMemo(whenever(runtime, runtime => runtime.fileSystem.getOrCreate(this.path)))
-
-    return (
-      <Show when={file()}>
-        {file => (
-          <shiki-textarea
-            class="shiki-textarea"
+  template = () => (
+    <Show when={useRuntime(this)?.()}>
+      {runtime => {
+        const file = createMemo(() => runtime().fs.getOrCreate(this.path))
+        console.log('THIS HAPPENS!!')
+        this.createEffect(() => console.log('file content', file()?.get()))
+        return (
+          <tm-textarea
+            class="tm-textarea"
             value={file().get()}
-            onInput={e => file().set(e.target.value)}
-            lang={getLangName(file().path)}
+            onInput={e => file().set(e.currentTarget.value)}
+            grammar={getGrammarName(file().path) as Grammar}
             theme={this.theme}
           />
-        )}
-      </Show>
-    )
+        )
+      }}
+    </Show>
+  )
+
+  get value() {
+    return ''
   }
 }

@@ -3,7 +3,6 @@ import { defineConfig } from 'vite'
 import dtsBundleGenerator from 'vite-plugin-dts-bundle-generator'
 import { libInjectCss } from 'vite-plugin-lib-inject-css'
 import solid from 'vite-plugin-solid'
-import { viteStaticCopy } from 'vite-plugin-static-copy'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineConfig({
@@ -20,10 +19,8 @@ export default defineConfig({
         fileName: name => `${name}.d.ts`,
         libraries: {
           importedLibraries: [
-            'shiki',
             'solid-js',
             'typescript',
-            'solid-shiki-textarea',
             '@monaco-editor/loader',
             '@babel/standalone',
           ],
@@ -36,25 +33,21 @@ export default defineConfig({
         preferredConfigPath: './tsconfig.json',
       },
     ),
-    viteStaticCopy({
-      targets: [
-        {
-          src: 'src/components/monaco/themes/*.json',
-          dest: 'monaco-themes',
-        },
-      ],
-    }),
   ],
   server: { port: 3000 },
   build: {
     lib: {
       entry: {
-        index: resolve(__dirname, 'src/solid/index.ts'),
-        runtime: resolve(__dirname, 'src/runtime/index.ts'),
-        'editor/monaco': resolve(__dirname, 'src/editor/monaco/index.ts'),
-        'editor/shiki': resolve(__dirname, 'src/editor/shiki/index.tsx'),
-        'file-extra/css-module': resolve(__dirname, 'src/file-extra/css-module.ts'),
-        'file-extra/wat': resolve(__dirname, 'src/file-extra/wat.ts'),
+        index: resolve(__dirname, 'src/runtime/index.ts'),
+        element: resolve(__dirname, 'src/element/index.ts'),
+        'element/tm-editor': resolve(__dirname, 'src/element/editor/tm.tsx'),
+        'element/monaco-editor': resolve(__dirname, 'src/element/editor/monaco.tsx'),
+        solid: resolve(__dirname, 'src/solid/index.ts'),
+        'solid/monaco-editor': resolve(__dirname, 'src/solid/editor/monaco/index.ts'),
+        'solid/tm-editor': resolve(__dirname, 'src/solid/editor/tm.tsx'),
+        std: resolve(__dirname, 'src/std/index.ts'),
+        'extensions/css-module': resolve(__dirname, 'src/extensions/css-module.ts'),
+        'extensions/wat': resolve(__dirname, 'src/extensions/wat.ts'),
         'plugins/babel-solid-repl': resolve(__dirname, 'src/plugins/babel-solid-repl.ts'),
         'plugins/rollup-service-worker': resolve(
           __dirname,
@@ -72,11 +65,10 @@ export default defineConfig({
       formats: ['es'],
     },
     rollupOptions: {
-      external: ['solid-js', 'shiki', '@monaco-editor/loader'],
+      external: ['solid-js', '@monaco-editor/loader'],
       output: {
         globals: {
           'solid-js': 'solidjs',
-          shiki: 'shiki',
         },
       },
     },

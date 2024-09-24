@@ -1,8 +1,8 @@
+import { Runtime } from '@bigmistqke/repl'
 import { createScheduled, debounce } from '@solid-primitives/scheduled'
 import { createEffect } from 'solid-js'
-import { Runtime } from '../runtime'
 import { JsFile } from './js'
-import { AbstractFile } from './virtual'
+import { VirtualFile } from './virtual'
 
 export function createStyleLoaderSource(path: string, source: string) {
   return `
@@ -24,7 +24,7 @@ import { dispose } from "@repl/std"
 /**
  * Represents a CSS file within the system. Extends the generic File class.
  */
-export class CssFile extends AbstractFile {
+export class CssFile extends VirtualFile {
   jsFile: JsFile
 
   /**
@@ -34,7 +34,7 @@ export class CssFile extends AbstractFile {
   constructor(runtime: Runtime, path: string) {
     super(runtime, path)
 
-    this.jsFile = runtime.fileSystem.create<JsFile>(path.replace('.css', '.js'))
+    this.jsFile = runtime.fs.create<JsFile>(path.replace('.css', '.js'))
 
     const scheduled = createScheduled(fn => debounce(fn, 250))
 

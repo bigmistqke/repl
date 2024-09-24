@@ -1,6 +1,6 @@
-import { onCleanup } from 'solid-js'
+import { JsFile, VirtualFile } from '@bigmistqke/repl'
+import { createEffect, on, onCleanup } from 'solid-js'
 import { when } from 'src/utils/conditionals'
-import { AbstractFile } from '../file/virtual'
 
 /**
  * Represents an individual `<iframe/>` within the application.
@@ -9,11 +9,6 @@ import { AbstractFile } from '../file/virtual'
  * @class Frame
  */
 export class Frame {
-  /**
-   * Constructs a Frame instance associated with a given window.
-   *
-   * @param contentWindow - The window object associated with this frame.
-   */
   constructor(
     /** The window object associated with this frame, typically an iframe's window. */
     public contentWindow: Window,
@@ -37,12 +32,22 @@ export class Frame {
    * Injects and executes the esm-module of the given `VirtualFile` into the frame's window.
    * Returns the injected script-element.
    *
-   * @param file - The file to inject, which could be a `VirtualFile`.
+   * @param entry - The file to inject, which could be a `VirtualFile`.
    * @returns The script element that was injected.
    */
-  injectFile(file: AbstractFile) {
+  injectFile(entry: VirtualFile) {
+    // Dispose
+    createEffect(
+      on(
+        () => entry.url,
+        () => onCleanup(() => this.dispose(entry.path)),
+      ),
+    )
+    if (entry instanceof JsFile) {
+      entry.onDependencyRemoved(file => this.dispose(file.path))
+    }
     // We need to generate a new module-url everytime we inject a file, to ensure the body is executed.
-    return when(file.generate(), url => {
+    return when(entry.generate(), url => {
       return this.injectModuleUrl(url)
     })
   }
@@ -61,8 +66,6 @@ export class Frame {
    * ```
    */
   dispose(id?: string) {
-    // TODO: if we don't ignore we get error when building declaration files.
-    // @ts-expect-error
     const disposeFn = this.contentWindow.repl?.dispose
     if (typeof disposeFn === 'function') {
       return disposeFn(id)

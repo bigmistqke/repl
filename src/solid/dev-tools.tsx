@@ -10,7 +10,7 @@ import {
 import { Frame, Runtime } from 'src/runtime'
 import { whenever } from 'src/utils/conditionals'
 import { html, javascript } from 'src/utils/object-url-literal'
-import { useRuntime } from '../'
+import { useRuntime } from './'
 import styles from './repl.module.css'
 
 export interface DevToolsProps extends ComponentProps<'iframe'> {
@@ -117,7 +117,7 @@ DevTools.Standalone = function (props: DevToolsProps & { runtime: Runtime }) {
   ) as HTMLIFrameElement
 
   const [targetFrame] = createResource(
-    () => props.runtime.frameRegistry.get(config.name),
+    () => props.runtime.frames.get(config.name),
     frame => {
       if (frame.contentWindow.document.readyState === 'interactive') return frame
       return new Promise<Frame>(resolve => {

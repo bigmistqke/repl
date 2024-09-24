@@ -1,4 +1,4 @@
-import { CssFile, Runtime } from '@bigmistqke/repl/runtime'
+import { CssFile, Runtime } from '@bigmistqke/repl'
 import { type Monaco } from '@monaco-editor/loader'
 import { wireTmGrammars } from 'monaco-editor-textmate'
 import { Registry } from 'monaco-textmate'
@@ -75,7 +75,7 @@ export function createMonaco(props: {
     whenever(monaco, monaco => {
       createEffect(
         mapArray(
-          () => Object.values(props.runtime.fileSystem.all()),
+          () => Object.values(props.runtime.fs.all()),
           file => {
             // Initialize models for all Files in FileSystem
             // Object.entries(runtime.fileSystem.all()).forEach(([path, value]) => {
@@ -108,11 +108,11 @@ export function createMonaco(props: {
       // Sync monaco-editor's virtual file-system with type-registry's sources
       createEffect(
         mapArray(
-          () => Object.keys(props.runtime.typeRegistry.sources),
+          () => Object.keys(props.runtime.types.sources),
           virtualPath => {
             createEffect(
               whenever(
-                () => props.runtime.typeRegistry.sources[virtualPath],
+                () => props.runtime.types.sources[virtualPath],
                 source =>
                   monaco.languages.typescript.typescriptDefaults.addExtraLib(
                     source,
@@ -141,10 +141,8 @@ export function createMonaco(props: {
           ...props?.tsconfig,
           paths: {
             ...(props?.tsconfig?.paths ? wrapPaths(props.tsconfig.paths) : undefined),
-            ...props.runtime.typeRegistry.alias,
-            ...(props.runtime.fileSystem.alias
-              ? wrapPaths(props.runtime.fileSystem.alias)
-              : undefined),
+            ...props.runtime.types.alias,
+            ...(props.runtime.fs.alias ? wrapPaths(props.runtime.fs.alias) : undefined),
           },
         })
 

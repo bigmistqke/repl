@@ -1,5 +1,4 @@
-import { Frame, Repl, TabBar } from '@bigmistqke/repl'
-import { JsFile, Runtime, VirtualFile, WasmFile } from '@bigmistqke/repl/runtime'
+import { Frame, JsFile, Repl, Runtime, TabBar, VirtualFile, WasmFile } from '@bigmistqke/repl'
 import { typescriptTransformModulePaths } from '@bigmistqke/repl/transform-module-paths/typescript'
 import { babelTransform } from '@bigmistqke/repl/transform/babel'
 import { typescriptTransform } from '@bigmistqke/repl/transform/typescript'
@@ -133,7 +132,7 @@ class CssModuleFile extends VirtualFile {
   jsFile: JsFile
   constructor(runtime: Runtime, path: string) {
     super(runtime, path)
-    this.jsFile = runtime.fileSystem.create(`${path}.ts`)
+    this.jsFile = runtime.fs.create(`${path}.ts`)
 
     createEffect(() => {
       const aliases = {} as Record<string, string>
@@ -284,7 +283,7 @@ dispose('src/index.tsx', render(() => <App />, document.body));
       files={files}
       class={styles.repl}
       onFileChange={(path, source) => setFiles(path, source)}
-      onSetup={async ({ fileSystem, frameRegistry }) => {
+      onSetup={async ({ fs: fileSystem, frames: frameRegistry }) => {
         createEffect(() => {
           const frame = frameRegistry.get('default')
           if (!frame) return

@@ -1,6 +1,6 @@
+import { Runtime } from '@bigmistqke/repl'
 import { batch } from 'solid-js'
 import { SetStoreFunction, createStore } from 'solid-js/store'
-import { Runtime } from '../runtime'
 import { TypeImportUtils } from './type-import-utils'
 
 export interface TypeRegistryState {
