@@ -1,12 +1,15 @@
 import { Runtime } from '@bigmistqke/repl'
 import '@bigmistqke/repl/element'
-import '@bigmistqke/repl/element/tm-editor'
-import { CssModuleFile } from '@bigmistqke/repl/extensions/css-module'
 import { typescriptTransformModulePaths } from '@bigmistqke/repl/transform-module-paths/typescript'
 import { babelTransform } from '@bigmistqke/repl/transform/babel'
 import { typescriptTransform } from '@bigmistqke/repl/transform/typescript'
+import {
+  compressToEncodedURIComponent as compress,
+  decompressFromEncodedURIComponent as decompress,
+} from 'lz-string'
 import { createResource, Show, type Component } from 'solid-js'
 import { render } from 'solid-js/web'
+import 'tm-textarea'
 import './styles.css'
 
 const tsconfig = {
@@ -40,37 +43,40 @@ const App: Component = () => {
       ]),
     ])
 
-    return new Runtime({
-      importExternalTypes: false,
-      transformModulePaths,
-      transform,
-      files: {
-        'src/index.module.css': `body {
+    const files = location.hash
+      ? JSON.parse(decompress(location.hash.slice(1)))
+      : {
+          'src/index.css': `body {
 background: blue;
 }
 /* .test */
 .button {
-  background: red;
+background: red;
 }
-    `,
-        'src/index.tsx': `import { render } from "solid-js/web";
+  `,
+          'src/index.tsx': `import { render } from "solid-js/web";
 import { dispose } from "@repl/std";
 import "solid-js/jsx-runtime";
-import styles from "./index.module.css";
+import "./index.css";
 
 function App() {
-  return (
-    <button class={styles.button} >
-      hello
-    </button>
-  );
+return (
+  <button class="button" >
+    hello
+  </button>
+);
 }
 
 dispose('src/index.tsx', render(() => <App />, document.body));`,
-      },
-      extensions: {
-        'module.css': CssModuleFile,
-      },
+        }
+
+    console.log(files)
+
+    return new Runtime({
+      importExternalTypes: false,
+      transformModulePaths,
+      transform,
+      files,
     }).initialize()
   })
 
@@ -86,6 +92,19 @@ dispose('src/index.tsx', render(() => <App />, document.body));`,
       <Show when={runtime()}>
         {runtime => (
           <>
+            <tm-textarea
+              value={runtime().getFile('src/index.tsx').source}
+              onInput={e => {
+                runtime().setFile('src/index.tsx', e.currentTarget.value)
+                location.hash = compress(JSON.stringify(runtime().fs.toJSON().sources))
+              }}
+              theme="andromeeda"
+              style={{
+                padding: '20px',
+                overflow: 'auto',
+                flex: '1',
+              }}
+            />
             <repl-frame
               style={{ flex: '1' }}
               onReady={({ frame }) => {
@@ -99,16 +118,6 @@ dispose('src/index.tsx', render(() => <App />, document.body));`,
                 }
                 file.addEventListener('url', injectUrl)
                 injectUrl(file)
-              }}
-            />
-            <tm-textarea
-              value={runtime().getFile('src/index.tsx').source}
-              onInput={e => runtime().setFile('src/index.tsx', e.currentTarget.value)}
-              theme="andromeeda"
-              style={{
-                padding: '20px',
-                overflow: 'auto',
-                flex: '1',
               }}
             />
           </>
