@@ -8,24 +8,55 @@ export interface BabelConfig {
   cdn?: string
 }
 
+function resolveItems({
+  cdn,
+  babel,
+  items,
+  type,
+}: {
+  cdn: string
+  babel: typeof Babel
+  items?: (string | [string, unknown] | unknown)[]
+  type: 'plugins' | 'presets'
+}): Promise<any[]> {
+  if (!items) return Promise.resolve([])
+  const availableItems = type === 'plugins' ? babel.availablePlugins : babel.availablePresets
+  return Promise.all(
+    items.map(async function resolveItem(item: string | [string, unknown] | unknown) {
+      let name: string
+      let options: unknown = undefined
+
+      // Handle both string and array types
+      if (typeof item === 'string') {
+        name = item
+      } else if (Array.isArray(item) && typeof item[0] === 'string') {
+        ;[name, options] = item
+      } else {
+        return item // Return non-string, non-array items directly
+      }
+
+      // Check for item in available items or import from CDN
+      if (name in availableItems) {
+        return options !== undefined ? [availableItems[name], options] : availableItems[name]
+      } else {
+        const module = await import(/* @vite-ignore */ `${cdn}/${name}`).then(
+          module => module.default,
+        )
+        return options !== undefined ? [module, options] : module
+      }
+    }),
+  )
+}
+
 export async function babelTransform(config: BabelConfig): Promise<Transform> {
   const cdn = config.cdn || 'https://esm.sh'
 
-  const [babel, presets, plugins] = await Promise.all([
-    config.babel ||
-      (import(/* @vite-ignore */ `${cdn}/@babel/standalone`) as Promise<typeof Babel>),
-    Promise.all(
-      config.presets?.map(preset =>
-        import(/* @vite-ignore */ `${cdn}/${preset}`).then(module => module.default),
-      ) || [],
-    ),
-    Promise.all(
-      config.plugins?.map(plugin =>
-        typeof plugin === 'string'
-          ? import(/* @vite-ignore */ `${cdn}/${plugin}`).then(module => module.default)
-          : plugin,
-      ) || [],
-    ),
+  const babel = await (config.babel ||
+    (import(/* @vite-ignore */ `${cdn}/@babel/standalone`) as Promise<typeof Babel>))
+
+  const [presets, plugins] = await Promise.all([
+    resolveItems({ cdn, babel, items: config.presets, type: 'presets' }),
+    resolveItems({ cdn, babel, items: config.plugins, type: 'plugins' }),
   ])
 
   return (source: string, path: string) => {
