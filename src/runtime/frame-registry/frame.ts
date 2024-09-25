@@ -9,10 +9,17 @@ import { when } from 'src/utils/conditionals'
  * @class FrameApi
  */
 export class Frame {
+  contentWindow: Window
   constructor(
     /** The window object associated with this frame, typically an iframe's window. */
-    public contentWindow: Window,
-  ) {}
+    public iframe: HTMLIFrameElement,
+  ) {
+    const contentWindow = iframe.contentWindow
+    if (!contentWindow) {
+      throw `contentWindow is not defined!`
+    }
+    this.contentWindow = contentWindow
+  }
 
   injectModuleUrl(moduleUrl: string) {
     const script = this.contentWindow.document.createElement('script')
@@ -74,6 +81,13 @@ export class Frame {
 
   reload() {
     this.contentWindow.location.reload()
+    return new Promise<void>(resolve => {
+      const onLoad = () => {
+        this.iframe.removeEventListener('load', onLoad)
+        resolve()
+      }
+      this.iframe.addEventListener('load', onLoad)
+    })
   }
 
   clearBody() {

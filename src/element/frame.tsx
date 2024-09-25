@@ -72,7 +72,7 @@ export class ReplFrame extends Element {
               return
             }
             const onReady = () => {
-              this.frame = new Frame(iframe.contentWindow!)
+              this.frame = new Frame(iframe)
               iframe.contentWindow?.removeEventListener('DOMContentLoaded', onReady)
               this.dispatchEvent(new FrameReadyEvent(this.frame))
             }
