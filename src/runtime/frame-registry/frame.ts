@@ -10,6 +10,8 @@ import { when } from 'src/utils/conditionals'
  */
 export class Frame {
   contentWindow: Window
+  reloading = false
+
   constructor(
     /** The window object associated with this frame, typically an iframe's window. */
     public iframe: HTMLIFrameElement,
@@ -81,10 +83,11 @@ export class Frame {
 
   reload() {
     this.contentWindow.location.reload()
+    this.reloading = true
     return new Promise<void>(resolve => {
       const onLoad = () => {
         this.iframe.removeEventListener('load', onLoad)
-        resolve()
+        this.reloading = false
       }
       this.iframe.addEventListener('load', onLoad)
     })
