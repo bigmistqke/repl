@@ -142,22 +142,16 @@
         "default": "./dist/solid/tm-editor.js"
       }
     },
-    "./plugins/rollup-service-worker": {
+    "./extensions/css-module": {
       "import": {
-        "types": "./dist/plugins/rollup-service-worker.d.ts",
-        "default": "./dist/plugins/rollup-service-worker.js"
+        "types": "./dist/extensions/css-modules.d.ts",
+        "default": "./dist/extensions/css-modules.js"
       }
     },
-    "./plugins/babel-solid-repl": {
+    "./extensions/wat": {
       "import": {
-        "types": "./dist/plugins.d.ts",
-        "default": "./dist/plugins.js"
-      }
-    },
-    "./runtime": {
-      "import": {
-        "types": "./dist/runtime.d.ts",
-        "default": "./dist/runtime.js"
+        "types": "./dist/extensions/wats.d.ts",
+        "default": "./dist/extensions/wats.js"
       }
     },
     "./transform/babel": {
@@ -178,16 +172,16 @@
         "default": "./dist/transform-module-paths/typescript.js"
       }
     },
-    "./extensions/css-module": {
+    "./plugins/rollup-service-worker": {
       "import": {
-        "types": "./dist/extensions/css-modules.d.ts",
-        "default": "./dist/extensions/css-modules.js"
+        "types": "./dist/plugins/rollup-service-worker.d.ts",
+        "default": "./dist/plugins/rollup-service-worker.js"
       }
     },
-    "./extensions/wat": {
+    "./plugins/babel-solid-repl": {
       "import": {
-        "types": "./dist/extensions/wats.d.ts",
-        "default": "./dist/extensions/wats.js"
+        "types": "./dist/plugins.d.ts",
+        "default": "./dist/plugins.js"
       }
     }
   },
