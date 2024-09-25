@@ -51,7 +51,7 @@
     "monaco-editor-textmate": "^4.0.0",
     "monaco-textmate": "^3.0.1",
     "onigasm": "^2.2.5",
-    "tm-textarea": "https://pkg.pr.new/bigmistqke/tm-textarea@97f17fc",
+    "tm-textarea": "^0.1.0",
     "zeptoid": "^1.0.1"
   },
   "peerDependencies": {

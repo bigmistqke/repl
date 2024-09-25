@@ -48,7 +48,7 @@ importers:
         specifier: ^1.6.0
         version: 1.8.22
       tm-textarea:
-        specifier: https://pkg.pr.new/bigmistqke/tm-textarea@97f17fc
+        specifier: ^0.1.0
         version: https://pkg.pr.new/bigmistqke/tm-textarea@97f17fc(@babel/core@7.25.2)(@types/react@18.3.5)(solid-js@1.8.22)
       zeptoid:
         specifier: ^1.0.1
