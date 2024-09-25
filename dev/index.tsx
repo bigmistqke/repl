@@ -9,8 +9,10 @@ import {
 } from 'lz-string'
 import { createResource, Show, type Component } from 'solid-js'
 import { render } from 'solid-js/web'
-import 'tm-textarea'
+import { register } from 'tm-textarea'
 import './styles.css'
+
+register()
 
 const tsconfig = {
   target: 2,
