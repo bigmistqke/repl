@@ -246,28 +246,24 @@ Accessed ${v} from ${s}.`),v=v.replace(I,p),m=m.replace(I,p)),!0):!1))break}),f.
 export default ${JSON.stringify(r)} as const
         `)})}generate(){return this.jsFile.generate()}get url(){return this.jsFile.url}moduleTransform(){const e=this.generate();if(!e)throw"Module not loaded";return e}}function yc(t,e){const n=/\.([a-zA-Z_][\w-]*)\b/g,r={};{const a=t.replace(/\/\*[^*]*\*+(?:[^/*][^*]*\*+)*\//g,f=>" ".repeat(f.length)).replace(/(["'])(?:(?=(\\?))\2.)*?\1/g,f=>" ".repeat(f.length));let o;for(;(o=n.exec(a))!==null;){const f=o[1];f&&(r[f]||(r[f]=[]),r[f].push([o.index+1,o.index+1+f.length]))}}const c=[];let s=0;{for(const a in r){const o=e(a);for(const[f,u]of r[a])c.push(t.slice(s,f)),c.push(o),s=u}c.push(t.slice(s))}return c.join("")}const _c="modulepreload",bc=function(t,e){return new URL(t,e).href},Ur={},ln=function(e,n,r){if(!n||n.length===0)return e();const c=document.getElementsByTagName("link");return Promise.all(n.map(s=>{if(s=bc(s,r),s in Ur)return;Ur[s]=!0;const a=s.endsWith(".css"),o=a?'[rel="stylesheet"]':"";if(!!r)for(let v=c.length-1;v>=0;v--){const m=c[v];if(m.href===s&&(!a||m.rel==="stylesheet"))return}else if(document.querySelector(`link[href="${s}"]${o}`))return;const u=document.createElement("link");if(u.rel=a?"stylesheet":_c,a||(u.as="script",u.crossOrigin=""),u.href=s,document.head.appendChild(u),a)return new Promise((v,m)=>{u.addEventListener("load",v),u.addEventListener("error",()=>m(new Error(`Unable to preload CSS for ${s}`)))})})).then(()=>e()).catch(s=>{const a=new Event("vite:preloadError",{cancelable:!0});if(a.payload=s,window.dispatchEvent(a),!a.defaultPrevented)throw s})};async function vc(t){const e=await(t?.typescript||ln(()=>import("https://esm.sh/typescript"),[],import.meta.url));return function(n,r){const c=e.createSourceFile("",n,e.ScriptTarget.Latest,!0,e.ScriptKind.TS);let s=!1;const a=e.transform(c,[f=>{const u=v=>{if((e.isImportDeclaration(v)||e.isExportDeclaration(v))&&v.moduleSpecifier&&e.isStringLiteral(v.moduleSpecifier)){const m=e.isImportDeclaration(v),w=v.moduleSpecifier.text,I=r(v.moduleSpecifier.text);if(I===null){s=!0;return}if(v.moduleSpecifier.text=I,w!==v.moduleSpecifier.text)return s=!0,m?e.factory.updateImportDeclaration(v,v.modifiers,v.importClause,e.factory.createStringLiteral(I),v.assertClause):e.factory.updateExportDeclaration(v,v.modifiers,!1,v.exportClause,e.factory.createStringLiteral(I),v.assertClause)}return e.visitEachChild(v,u,f)};return v=>e.visitNode(v,u)}]);return a.transformed[0]?s?e.createPrinter({newLine:e.NewLineKind.LineFeed}).printFile(a.transformed[0]):n:void 0}}function zr({cdn:t,babel:e,items:n,type:r}){if(!n)return Promise.resolve([]);const c=r==="plugins"?e.availablePlugins:e.availablePresets;return Promise.all(n.map(async function(a){let o,f;if(typeof a=="string")o=a;else if(Array.isArray(a)&&typeof a[0]=="string")[o,f]=a;else return a;if(o in c)return f!==void 0?[c[o],f]:c[o];{const u=await ln(()=>import(`${t}/${o}`),[],import.meta.url).then(v=>v.default);return f!==void 0?[u,f]:u}}))}async function wc(t){const e=t.cdn||"https://esm.sh",n=await(t.babel||ln(()=>import(`${e}/@babel/standalone`),[],import.meta.url)),[r,c]=await Promise.all([zr({cdn:e,babel:n,items:t.presets,type:"presets"}),zr({cdn:e,babel:n,items:t.plugins,type:"plugins"})]);return(s,a)=>{const o=n.transform(s,{presets:r,plugins:c}).code;if(!o)throw`Babel transform failed for file ${a} with source: 
 
- ${s}`;return o}}async function Sc(t){const e=await(t?.typescript||ln(()=>import("https://esm.sh/typescript"),[],import.meta.url));return(n,r)=>r.endsWith("ts")||r.endsWith("tsx")?e.transpile(n,t?.tsconfig):n}var Ac=$e("<div>"),Tc=$e("<repl-frame>",!0,!1),Cc=$e("<tm-textarea theme=andromeeda>",!0,!1);const Ec={target:2,module:5,jsx:1,jsxImportSource:"solid-js",esModuleInterop:!0,allowSyntheticDefaultImports:!0,forceConsistentCasingInFileNames:!0,isolatedModules:!0,resolveJsonModule:!0,skipLibCheck:!0,strict:!0,noEmit:!1,outDir:"./dist"},Pc=()=>{const[t]=Be(async()=>{const[e,n]=await Promise.all([vc(),Promise.all([Sc({tsconfig:Ec}),wc({plugins:[["proposal-decorators",{version:"2023-11"}]]})])]);return new Hi({importExternalTypes:!1,transformModulePaths:e,transform:n,files:{"src/index.module.css":`body {
+ ${s}`;return o}}async function Sc(t){const e=await(t?.typescript||ln(()=>import("https://esm.sh/typescript"),[],import.meta.url));return(n,r)=>r.endsWith("ts")||r.endsWith("tsx")?e.transpile(n,t?.tsconfig):n}var Ac=$e("<div>"),Tc=$e("<repl-frame>",!0,!1),Cc=$e("<tm-textarea theme=andromeeda>",!0,!1);const Ec={target:2,module:5,jsx:1,jsxImportSource:"solid-js",esModuleInterop:!0,allowSyntheticDefaultImports:!0,forceConsistentCasingInFileNames:!0,isolatedModules:!0,resolveJsonModule:!0,skipLibCheck:!0,strict:!0,noEmit:!1,outDir:"./dist"},Pc=()=>{const[t]=Be(async()=>{const[e,n]=await Promise.all([vc(),Promise.all([Sc({tsconfig:Ec}),wc({plugins:[["proposal-decorators",{version:"2023-11"}]],presets:["babel-preset-solid@1.8.22"]})])]);return new Hi({importExternalTypes:!1,transformModulePaths:e,transform:n,files:{"src/index.module.css":`body {
 background: blue;
 }
 /* .test */
 .button {
   background: red;
 }
-    `,"src/index.tsx":`import { createEffect } from "solid-js@1.8.22";
-import { signalify } from "classy-solid";
+    `,"src/index.tsx":`import { render } from "solid-js/web";
+import { dispose } from "@repl/std";
+import "solid-js/jsx-runtime";
+import styles from "./index.module.css";
 
-
-class Test {
-  value = false 
-  constructor(){
-    signalify(this, 'value')
-  }
+function App() {
+  return (
+    <button class={styles.button} >
+      hello
+    </button>
+  );
 }
 
-const test = new Test()
-
-createEffect(() => {
-    console.log("test.value:", test.value)
-})
-
-setTimeout(() => test.value = true, 1000)`},extensions:{"module.css":mc}}).initialize()});return(()=>{var e=Ac();return e.style.setProperty("display","flex"),e.style.setProperty("flex-direction","row"),e.style.setProperty("height","100%"),e.style.setProperty("overflow","hidden"),Wn(e,we(St,{get when(){return t()},children:n=>[(()=>{var r=Tc();return r.addEventListener("ready",({frame:c})=>{const s=n().getFile("src/index.tsx");let a;function o({url:f}){a?.(),f&&(c.clearBody(),a=c.injectModuleUrl(f))}s.addEventListener("url",o),o(s)}),r.style.setProperty("flex","1"),r._$owner=Ie(),r})(),(()=>{var r=Cc();return r.$$input=c=>n().setFile("src/index.tsx",c.currentTarget.value),r.style.setProperty("padding","20px"),r.style.setProperty("overflow","auto"),r.style.setProperty("flex","1"),r._$owner=Ie(),me(()=>r.value=n().getFile("src/index.tsx").source),r})()]})),e})()};Fn(()=>we(Pc,{}),document.getElementById("root"));rn(["input"]);
+dispose('src/index.tsx', render(() => <App />, document.body));`},extensions:{"module.css":mc}}).initialize()});return(()=>{var e=Ac();return e.style.setProperty("display","flex"),e.style.setProperty("flex-direction","row"),e.style.setProperty("height","100%"),e.style.setProperty("overflow","hidden"),Wn(e,we(St,{get when(){return t()},children:n=>[(()=>{var r=Tc();return r.addEventListener("ready",({frame:c})=>{const s=n().getFile("src/index.tsx");let a;function o({url:f}){a?.(),f&&(c.clearBody(),a=c.injectModuleUrl(f))}s.addEventListener("url",o),o(s)}),r.style.setProperty("flex","1"),r._$owner=Ie(),r})(),(()=>{var r=Cc();return r.$$input=c=>n().setFile("src/index.tsx",c.currentTarget.value),r.style.setProperty("padding","20px"),r.style.setProperty("overflow","auto"),r.style.setProperty("flex","1"),r._$owner=Ie(),me(()=>r.value=n().getFile("src/index.tsx").source),r})()]})),e})()};Fn(()=>we(Pc,{}),document.getElementById("root"));rn(["input"]);
