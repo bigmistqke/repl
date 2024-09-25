@@ -73,7 +73,7 @@ Frame.Standalone = function (props: FrameProps) {
       return
     }
 
-    const frame = new FrameApi(iframe.contentWindow!)
+    const frame = new FrameApi(iframe)
 
     const onReady = () => {
       if (props.runtime.frames.has(config.name)) {
