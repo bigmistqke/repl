@@ -50,6 +50,7 @@ export class ReplFrame extends Element {
   static css = /* css */ `
     :host {
       display: block;
+      position: relative;
 
       & iframe {
         border: none;
