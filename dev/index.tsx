@@ -34,7 +34,7 @@ const App: Component = () => {
           tsconfig,
         }),
         babelTransform({
-          presets: ['babel-preset-solid'],
+          plugins: [['proposal-decorators', { version: '2023-11' }]],
         }),
       ]),
     ])
@@ -52,20 +52,24 @@ background: blue;
   background: red;
 }
     `,
-        'src/index.tsx': `import { render } from "solid-js/web";
-import { dispose } from "@repl/std";
-import "solid-js/jsx-runtime";
-import styles from "./index.module.css";
+        'src/index.tsx': `import { createEffect } from "solid-js@1.8.22";
+import { signalify } from "classy-solid";
 
-function App() {
-  return (
-    <button class={styles.button} >
-      hello
-    </button>
-  );
+
+class Test {
+  value = false 
+  constructor(){
+    signalify(this, 'value')
+  }
 }
 
-dispose('src/index.tsx', render(() => <App />, document.body));`,
+const test = new Test()
+
+createEffect(() => {
+    console.log("test.value:", test.value)
+})
+
+setTimeout(() => test.value = true, 1000)`,
       },
       extensions: {
         'module.css': CssModuleFile,
