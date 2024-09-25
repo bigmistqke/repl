@@ -1,6 +1,6 @@
 {
   "name": "@bigmistqke/repl",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Runtime and headless component for composing REPLs.",
   "license": "MIT",
   "author": "bigmistqke",
