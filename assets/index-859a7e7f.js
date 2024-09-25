@@ -128,6 +128,7 @@ Accessed ${v} from ${s}.`),v=v.replace(I,p),m=m.replace(I,p)),!0):!1))break}),f.
           </html>`),r})()}},{e:[Cr,Er,Pr],c:[xn,Tr]}=Uo(_n,[[Zt,0,"name"],[ft,0,"runtime"],[ft,0,"frame"]],Ts,0,void 0,ke),_n)];css=`
     :host {
       display: block;
+      position: relative;
 
       & iframe {
         border: none;
