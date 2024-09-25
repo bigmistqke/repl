@@ -21,4 +21,16 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - run: pnpx pkg-pr-new publish
+      - name: Check commit message for #publish
+        id: check_message
+        run: |
+          echo "Commit message: ${{ github.event.head_commit.message }}"
+          if echo "${{ github.event.head_commit.message }}" | grep -Fq "#publish"; then
+            echo "::set-output name=should_publish::true"
+          else
+            echo "::set-output name=should_publish::false"
+          fi
+
+      - name: Publish
+        if: steps.check_message.outputs.should_publish == 'true'
+        run: pnpx pkg-pr-new publish
