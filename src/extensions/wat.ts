@@ -1,6 +1,6 @@
 import { Runtime, VirtualFile, WasmFile } from '@bigmistqke/repl'
-import { createEffect, createResource } from 'solid-js'
-import { every, whenever } from 'src/utils/conditionals'
+import { createResource } from 'solid-js'
+import { every, whenEffect } from 'src/utils/conditionals'
 import WABT from 'wabt'
 
 const [wabt] = createResource(() => WABT())
@@ -26,13 +26,11 @@ export class WatFile extends VirtualFile {
       wabt.parseWat(path, source),
     )
 
-    createEffect(
-      whenever(wasm, wasm => {
-        const { buffer } = wasm.toBinary({})
-        const base64String = btoa(String.fromCharCode(...new Uint8Array(buffer)))
-        this.wasmFile.set(base64String)
-      }),
-    )
+    whenEffect(wasm, wasm => {
+      const { buffer } = wasm.toBinary({})
+      const base64String = btoa(String.fromCharCode(...new Uint8Array(buffer)))
+      this.wasmFile.set(base64String)
+    })
   }
 
   generate() {

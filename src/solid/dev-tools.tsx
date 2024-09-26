@@ -1,14 +1,7 @@
 import clsx from 'clsx'
-import {
-  ComponentProps,
-  createEffect,
-  createResource,
-  mergeProps,
-  onCleanup,
-  splitProps,
-} from 'solid-js'
+import { ComponentProps, createResource, mergeProps, onCleanup, splitProps } from 'solid-js'
 import { Frame, Runtime } from 'src/runtime'
-import { whenever } from 'src/utils/conditionals'
+import { whenEffect } from 'src/utils/conditionals'
 import { html, javascript } from 'src/utils/object-url-literal'
 import { useRuntime } from './'
 import styles from './repl.module.css'
@@ -130,22 +123,20 @@ DevTools.Standalone = function (props: DevToolsProps & { runtime: Runtime }) {
     },
   )
 
-  createEffect(
-    whenever(targetFrame, targetFrame => {
-      const messageListener = (event: MessageEvent) => {
-        if (event.source === targetFrame.contentWindow) {
-          iframe.contentWindow!.postMessage(event.data, '*')
-        }
-        if (event.source === iframe.contentWindow) {
-          targetFrame.contentWindow!.postMessage({ event: 'DEV', data: event.data }, '*')
-        }
+  whenEffect(targetFrame, targetFrame => {
+    const messageListener = (event: MessageEvent) => {
+      if (event.source === targetFrame.contentWindow) {
+        iframe.contentWindow!.postMessage(event.data, '*')
       }
-      window.addEventListener('message', messageListener)
-      onCleanup(() => window.removeEventListener('message', messageListener))
-    }),
-  )
+      if (event.source === iframe.contentWindow) {
+        targetFrame.contentWindow!.postMessage({ event: 'DEV', data: event.data }, '*')
+      }
+    }
+    window.addEventListener('message', messageListener)
+    onCleanup(() => window.removeEventListener('message', messageListener))
+  })
 
-  createEffect(whenever(targetFrame, targetFrame => targetFrame.injectModuleUrl(chobitsuModule)))
+  whenEffect(targetFrame, targetFrame => targetFrame.injectModuleUrl(chobitsuModule))
 
   return iframe
 }

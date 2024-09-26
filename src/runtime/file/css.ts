@@ -57,4 +57,8 @@ export class CssFile extends VirtualFile {
   get url() {
     return this.jsFile.generate()
   }
+
+  getType() {
+    return 'css'
+  }
 }

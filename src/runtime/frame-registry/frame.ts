@@ -1,6 +1,6 @@
 import { JsFile, VirtualFile } from '@bigmistqke/repl'
 import { createEffect, on, onCleanup } from 'solid-js'
-import { when } from 'src/utils/conditionals'
+import { check } from 'src/utils/conditionals'
 
 /**
  * Represents an individual `<iframe/>` within the application.
@@ -56,7 +56,7 @@ export class Frame {
       entry.onDependencyRemoved(file => this.dispose(file.path))
     }
     // We need to generate a new module-url everytime we inject a file, to ensure the body is executed.
-    return when(entry.generate(), url => {
+    return check(entry.generate(), url => {
       return this.injectModuleUrl(url)
     })
   }

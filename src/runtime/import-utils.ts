@@ -1,6 +1,6 @@
-import { createEffect, createResource } from 'solid-js'
+import { createResource } from 'solid-js'
 import { PackageJsonParser } from 'src/runtime'
-import { whenever } from 'src/utils/conditionals'
+import { whenEffect } from 'src/utils/conditionals'
 import { isRelativePath, isUrl, relativeToAbsolutePath } from 'src/utils/path'
 import { Runtime } from './runtime'
 
@@ -60,18 +60,14 @@ export class ImportUtils {
       return project
     })
 
-    createEffect(
-      whenever(packageJson, ({ typesUrl, packageName }) => {
-        if (typesUrl) this.runtime.types.import.fromUrl(typesUrl, packageName)
-      }),
-    )
+    whenEffect(packageJson, ({ typesUrl, packageName }) => {
+      if (typesUrl) this.runtime.types.import.fromUrl(typesUrl, packageName)
+    })
 
-    createEffect(
-      whenever(project, project =>
-        Object.entries(project).forEach(([path, value]) => {
-          this.runtime.fs.create(`node_modules${path}`).set(value)
-        }),
-      ),
+    whenEffect(project, project =>
+      Object.entries(project).forEach(([path, value]) => {
+        this.runtime.fs.create(`node_modules${path}`).set(value)
+      }),
     )
   }
 }

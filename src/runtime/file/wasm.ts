@@ -1,7 +1,7 @@
 import { Runtime } from '@bigmistqke/repl'
 import { createScheduled, debounce } from '@solid-primitives/scheduled'
-import { Accessor, createEffect, createMemo } from 'solid-js'
-import { whenever } from 'src/utils/conditionals'
+import { Accessor, createMemo } from 'solid-js'
+import { whenEffect } from 'src/utils/conditionals'
 import { javascript } from 'src/utils/object-url-literal'
 import { UrlEvent, VirtualFile } from './virtual'
 
@@ -52,6 +52,10 @@ export default (imports) =>  WebAssembly.instantiate(wasmCode, imports).then(res
   get url() {
     return this.#getUrl()
   }
+
+  getType() {
+    return 'wasm'
+  }
 }
 
 export class WasmTarget extends VirtualFile {
@@ -59,11 +63,9 @@ export class WasmTarget extends VirtualFile {
   constructor(runtime: Runtime, path: string, wasm: (source: string) => string | undefined) {
     super(runtime, path)
     this.wasmFile = new WasmFile(runtime, path.replace('.wat', '.wasm'))
-    createEffect(
-      whenever(
-        () => wasm(this.get()),
-        wasm => this.wasmFile.set(wasm),
-      ),
+    whenEffect(
+      () => wasm(this.get()),
+      wasm => this.wasmFile.set(wasm),
     )
   }
 
@@ -73,5 +75,9 @@ export class WasmTarget extends VirtualFile {
 
   get url() {
     return this.wasmFile.url // Use the URL from WasmFile
+  }
+
+  getType() {
+    return 'wasm'
   }
 }

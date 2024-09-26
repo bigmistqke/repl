@@ -82,7 +82,7 @@ class ReplTmEditor extends Element {
   template = () => {
     const runtime = useRuntime(this)
     return (
-      <Show when={this.runtime || runtime()}>
+      <Show when={runtime()}>
         {runtime => {
           const file = createMemo(() => runtime().fs.getOrCreate(this.path))
           return (

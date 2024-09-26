@@ -1,14 +1,14 @@
 import { Runtime } from '@bigmistqke/repl'
 import '@bigmistqke/repl/element'
-import '@bigmistqke/repl/element/monaco-editor'
 import { typescriptTransformModulePaths } from '@bigmistqke/repl/transform-module-paths/typescript'
 import { babelTransform } from '@bigmistqke/repl/transform/babel'
 import { typescriptTransform } from '@bigmistqke/repl/transform/typescript'
-import loader from '@monaco-editor/loader'
-import { decompressFromEncodedURIComponent as decompress } from 'lz-string'
+import {
+  compressToEncodedURIComponent as compress,
+  decompressFromEncodedURIComponent as decompress,
+} from 'lz-string'
 import { createResource, Show, type Component } from 'solid-js'
 import { render } from 'solid-js/web'
-import vs_dark from 'src/solid/editor/monaco/themes/vs_dark_good.json'
 import { register } from 'tm-textarea'
 import './styles.css'
 
@@ -19,14 +19,9 @@ const tsconfig = {
   module: 5,
   jsx: 1,
   jsxImportSource: 'solid-js',
-  esModuleInterop: true,
-  allowSyntheticDefaultImports: true,
-  forceConsistentCasingInFileNames: true,
-  isolatedModules: true,
   resolveJsonModule: true,
   skipLibCheck: true,
   strict: true,
-  noEmit: false,
   outDir: './dist',
 }
 
@@ -75,7 +70,7 @@ dispose('src/index.tsx', render(() => <App />, document.body));`,
     console.log(files)
 
     return new Runtime({
-      importExternalTypes: true,
+      importExternalTypes: false,
       transformModulePaths,
       transform,
       files,
@@ -94,13 +89,16 @@ dispose('src/index.tsx', render(() => <App />, document.body));`,
       <Show when={runtime()}>
         {runtime => (
           <>
-            <repl-monaco-editor
-              monaco={loader.init()}
-              tsconfig={tsconfig}
-              runtime={runtime()}
-              path="src/index.tsx"
-              theme={vs_dark}
+            <tm-textarea
+              value={runtime().getFile('src/index.tsx').source}
+              onInput={e => {
+                runtime().setFile('src/index.tsx', e.currentTarget.value)
+                location.hash = compress(JSON.stringify(runtime().fs.toJSON().sources))
+              }}
+              theme="andromeeda"
               style={{
+                padding: '20px',
+                overflow: 'auto',
                 flex: '1',
               }}
             />

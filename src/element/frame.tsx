@@ -62,8 +62,7 @@ export class ReplFrame extends Element {
   `
 
   template = () => {
-    const _runtime = useRuntime(this)
-    const runtime = () => (this.runtime === null ? _runtime() : this.runtime)
+    const runtime = useRuntime(this)
     return (
       <iframe
         ref={iframe => {

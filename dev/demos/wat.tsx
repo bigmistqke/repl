@@ -17,7 +17,7 @@ import {
 import { createStore } from 'solid-js/store'
 import { MonacoEditor, MonacoProvider, MonacoTheme } from 'src/solid/editor/monaco'
 import vs_dark from 'src/solid/editor/monaco/themes/vs_dark_good.json'
-import { every, whenever } from 'src/utils/conditionals'
+import { every, whenEffect } from 'src/utils/conditionals'
 import WABT from 'wabt'
 import zeptoid from 'zeptoid'
 import styles from './App.module.css'
@@ -58,13 +58,11 @@ class WatFile extends VirtualFile {
       wabt.parseWat(path, source),
     )
 
-    createEffect(
-      whenever(wasm, wasm => {
-        const { buffer } = wasm.toBinary({})
-        const base64String = btoa(String.fromCharCode(...new Uint8Array(buffer)))
-        this.wasmFile.set(base64String)
-      }),
-    )
+    whenEffect(wasm, wasm => {
+      const { buffer } = wasm.toBinary({})
+      const base64String = btoa(String.fromCharCode(...new Uint8Array(buffer)))
+      this.wasmFile.set(base64String)
+    })
   }
 
   generate() {

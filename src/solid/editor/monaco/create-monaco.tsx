@@ -6,7 +6,7 @@ import { loadWASM } from 'onigasm'
 import onigasm from 'onigasm/lib/onigasm.wasm?url'
 import { Resource, createEffect, createResource, mapArray } from 'solid-js'
 import { unwrap } from 'solid-js/store'
-import { every, whenever } from 'src/utils/conditionals'
+import { every, whenEffect } from 'src/utils/conditionals'
 import { formatInfo } from 'src/utils/format-log'
 import ts from 'typescript'
 
@@ -35,122 +35,113 @@ export function createMonaco(props: {
   )
   const [theme] = createResource(() => props.theme)
 
-  createEffect(
-    whenever(every(monaco, theme), ([monaco, theme]) => {
-      monaco.editor.defineTheme('current-theme', theme)
-      monaco.editor.setTheme('current-theme')
-    }),
-  )
+  whenEffect(every(monaco, theme), ([monaco, theme]) => {
+    monaco.editor.defineTheme('current-theme', theme)
+    monaco.editor.setTheme('current-theme')
+  })
 
   // Initialise syntax highlighting
-  createEffect(
-    whenever(every(monaco, resources), async ([monaco, [tsTextMate, cssTextMate]]) => {
-      // Initialise text-mate registry
-      const registry = new Registry({
-        async getGrammarDefinition(scopeName) {
-          return {
-            format: 'json',
-            content: scopeName === 'source.tsx' ? tsTextMate.default : cssTextMate.default,
-          }
+  whenEffect(every(monaco, resources), async ([monaco, [tsTextMate, cssTextMate]]) => {
+    // Initialise text-mate registry
+    const registry = new Registry({
+      async getGrammarDefinition(scopeName) {
+        return {
+          format: 'json',
+          content: scopeName === 'source.tsx' ? tsTextMate.default : cssTextMate.default,
+        }
+      },
+    })
+
+    // Load text-mate grammars
+    let hasLoadedOnigasm: boolean | Promise<void> = false
+    const setLanguageConfiguration = monaco.languages.setLanguageConfiguration
+    monaco.languages.setLanguageConfiguration = (languageId, configuration) => {
+      initialiseGrammars()
+      return setLanguageConfiguration(languageId, configuration)
+    }
+    async function initialiseGrammars(): Promise<void> {
+      if (!hasLoadedOnigasm) hasLoadedOnigasm = loadWASM(onigasm)
+      if (hasLoadedOnigasm instanceof Promise) await hasLoadedOnigasm
+      hasLoadedOnigasm = true
+      await wireTmGrammars(monaco, registry, GRAMMARS)
+    }
+  })
+
+  whenEffect(monaco, monaco => {
+    createEffect(
+      mapArray(
+        () => Object.values(props.runtime.fs.all()),
+        file => {
+          // Initialize models for all Files in FileSystem
+          // Object.entries(runtime.fileSystem.all()).forEach(([path, value]) => {
+          const uri = monaco.Uri.parse(`file:///${file.path}`)
+
+          const model =
+            monaco.editor.getModel(uri) ||
+            monaco.editor.createModel(
+              file.get(),
+              file instanceof CssFile ? 'css' : 'typescript',
+              uri,
+            )
+
+          createEffect(() => {
+            if (model.getValue() !== file.get()) {
+              model.setValue(file.get())
+            }
+          })
+        },
+      ),
+    )
+
+    // Initialize typescript-services with empty editor
+    monaco.editor
+      .create(document.createElement('div'), {
+        language: 'typescript',
+      })
+      .dispose()
+
+    // Sync monaco-editor's virtual file-system with type-registry's sources
+    createEffect(
+      mapArray(
+        () => Object.keys(props.runtime.types.sources),
+        virtualPath => {
+          whenEffect(
+            () => props.runtime.types.sources[virtualPath],
+            source =>
+              monaco.languages.typescript.typescriptDefaults.addExtraLib(
+                source,
+                `file:///node_modules/${virtualPath}`,
+              ),
+          )
+        },
+      ),
+    )
+
+    function wrapPaths(paths: Record<string, string[] | string>): Record<string, string[]> {
+      return Object.fromEntries(
+        Object.entries(paths).map(([key, paths]) => [
+          key,
+          (Array.isArray(paths) ? paths : [paths]).map(path => `file:///${path}`),
+        ]),
+      )
+    }
+
+    // Sync monaco-editor's tsconfig with repl's typescript-prop and type-registry's alias-property.
+    createEffect(() => {
+      // add virtual path to monaco's tsconfig's `path`-property
+      const tsCompilerOptions = unwrap({
+        ...props?.tsconfig,
+        paths: {
+          ...(props?.tsconfig?.paths ? wrapPaths(props.tsconfig.paths) : undefined),
+          ...props.runtime.types.alias,
+          ...(props.runtime.fs.alias ? wrapPaths(props.runtime.fs.alias) : undefined),
         },
       })
 
-      // Load text-mate grammars
-      let hasLoadedOnigasm: boolean | Promise<void> = false
-      const setLanguageConfiguration = monaco.languages.setLanguageConfiguration
-      monaco.languages.setLanguageConfiguration = (languageId, configuration) => {
-        initialiseGrammars()
-        return setLanguageConfiguration(languageId, configuration)
-      }
-      async function initialiseGrammars(): Promise<void> {
-        if (!hasLoadedOnigasm) hasLoadedOnigasm = loadWASM(onigasm)
-        if (hasLoadedOnigasm instanceof Promise) await hasLoadedOnigasm
-        hasLoadedOnigasm = true
-        await wireTmGrammars(monaco, registry, GRAMMARS)
-      }
-    }),
-  )
-
-  createEffect(
-    whenever(monaco, monaco => {
-      createEffect(
-        mapArray(
-          () => Object.values(props.runtime.fs.all()),
-          file => {
-            // Initialize models for all Files in FileSystem
-            // Object.entries(runtime.fileSystem.all()).forEach(([path, value]) => {
-            const uri = monaco.Uri.parse(`file:///${file.path}`)
-
-            const model =
-              monaco.editor.getModel(uri) ||
-              monaco.editor.createModel(
-                file.get(),
-                file instanceof CssFile ? 'css' : 'typescript',
-                uri,
-              )
-
-            createEffect(() => {
-              if (model.getValue() !== file.get()) {
-                model.setValue(file.get())
-              }
-            })
-          },
-        ),
-      )
-
-      // Initialize typescript-services with empty editor
-      monaco.editor
-        .create(document.createElement('div'), {
-          language: 'typescript',
-        })
-        .dispose()
-
-      // Sync monaco-editor's virtual file-system with type-registry's sources
-      createEffect(
-        mapArray(
-          () => Object.keys(props.runtime.types.sources),
-          virtualPath => {
-            createEffect(
-              whenever(
-                () => props.runtime.types.sources[virtualPath],
-                source =>
-                  monaco.languages.typescript.typescriptDefaults.addExtraLib(
-                    source,
-                    `file:///node_modules/${virtualPath}`,
-                  ),
-              ),
-            )
-          },
-        ),
-      )
-
-      function wrapPaths(paths: Record<string, string[] | string>): Record<string, string[]> {
-        return Object.fromEntries(
-          Object.entries(paths).map(([key, paths]) => [
-            key,
-            (Array.isArray(paths) ? paths : [paths]).map(path => `file:///${path}`),
-          ]),
-        )
-      }
-
-      // Sync monaco-editor's tsconfig with repl's typescript-prop and type-registry's alias-property.
-      createEffect(() => {
-        console.log(props?.tsconfig)
-        // add virtual path to monaco's tsconfig's `path`-property
-        const tsCompilerOptions = unwrap({
-          ...props?.tsconfig,
-          paths: {
-            ...(props?.tsconfig?.paths ? wrapPaths(props.tsconfig.paths) : undefined),
-            ...props.runtime.types.alias,
-            ...(props.runtime.fs.alias ? wrapPaths(props.runtime.fs.alias) : undefined),
-          },
-        })
-
-        monaco.languages.typescript.typescriptDefaults.setCompilerOptions(tsCompilerOptions as any)
-        monaco.languages.typescript.javascriptDefaults.setCompilerOptions(tsCompilerOptions as any)
-      })
-    }),
-  )
+      monaco.languages.typescript.typescriptDefaults.setCompilerOptions(tsCompilerOptions as any)
+      monaco.languages.typescript.javascriptDefaults.setCompilerOptions(tsCompilerOptions as any)
+    })
+  })
 
   createEffect(() => {
     const monaco = resources()?.[0]

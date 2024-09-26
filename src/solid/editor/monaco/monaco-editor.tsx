@@ -10,7 +10,7 @@ import {
 } from 'solid-js'
 import { CssFile, Runtime } from 'src/runtime'
 import { useRuntime } from 'src/solid/use-runtime'
-import { every, whenever } from 'src/utils/conditionals'
+import { every, when, whenEffect } from 'src/utils/conditionals'
 import { Without } from 'src/utils/type-utils'
 import { MonacoProviderProps, useMonacoContext } from './monaco-provider'
 
@@ -80,7 +80,7 @@ MonacoEditor.Standalone = function (
   )
 
   const model = createMemo(
-    whenever(every(props.monaco, file), ([monaco, file]) => {
+    when(every(props.monaco, file), ([monaco, file]) => {
       const uri = monaco.Uri.parse(`file:///${file.path}`)
       const source = untrack(file.get.bind(file))
       const type = file instanceof CssFile ? 'css' : 'typescript'
@@ -89,19 +89,17 @@ MonacoEditor.Standalone = function (
   )
 
   createEffect(
-    whenever(every(props.monaco, editor), ([monaco, editor]) => {
+    when(every(props.monaco, editor), ([monaco, editor]) => {
       // Call onMount-prop
       props.onMount?.(editor)
 
       // Link model with file in file-system
-      createEffect(
-        whenever(model, model => {
-          // Update monaco-editor's model to current file's model
-          editor.setModel(model)
-          // Update the file when the model changes content
-          model.onDidChangeContent(() => file().set(model.getValue()))
-        }),
-      )
+      whenEffect(model, model => {
+        // Update monaco-editor's model to current file's model
+        editor.setModel(model)
+        // Update the file when the model changes content
+        model.onDidChangeContent(() => file().set(model.getValue()))
+      })
 
       // Dispose monaco-editor after cleanup
       onCleanup(() => editor.dispose())

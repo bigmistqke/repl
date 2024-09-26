@@ -1,4 +1,5 @@
 import { Runtime } from '@bigmistqke/repl'
+import { Element } from '@lume/element'
 import { createRoot, createSignal } from 'solid-js'
 import { ContextAttributes, createContext } from './context'
 
@@ -8,12 +9,12 @@ import { ContextAttributes, createContext } from './context'
 /*                                                                                */
 /**********************************************************************************/
 
-export const [runtime, setRuntime] = createRoot(() => {
+const [runtime, _setRuntime] = createRoot(() => {
   const [runtime, setRuntime] = createSignal<Runtime>()
   return [runtime, setRuntime]
 })
 
-export default { setRuntime }
+export const setRuntime = _setRuntime
 
 /**********************************************************************************/
 /*                                                                                */
@@ -45,4 +46,8 @@ declare global {
 /*                                                                                */
 /**********************************************************************************/
 
-export const useRuntime = createContext('repl-runtime', runtime)
+const useContext = createContext('repl-runtime', runtime)
+export function useRuntime(element: Element & { runtime: Runtime | undefined | null }) {
+  const runtime = useContext(element)
+  return () => (element.runtime === null ? runtime() : element.runtime)
+}

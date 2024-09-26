@@ -10,7 +10,7 @@ import {
   onCleanup,
   untrack,
 } from 'solid-js'
-import { when } from 'src/utils/conditionals'
+import { check } from 'src/utils/conditionals'
 import { isRelativePath, isUrl, relativeToAbsolutePath } from 'src/utils/path'
 import { UrlEvent, VirtualFile } from './virtual'
 
@@ -52,10 +52,11 @@ export class JsFile extends VirtualFile {
         initialized = true
         try {
           if (Array.isArray(runtime.config.transform)) {
-            return runtime.config.transform.reduce(
-              (source, transform) => transform(source, path),
-              source,
-            )
+            return runtime.config.transform.reduce((source, transform) => {
+              const intermediary = transform(source, path)
+              console.log(intermediary)
+              return intermediary
+            }, source)
           }
           return runtime.config.transform(this.get(), this.path)
         } catch (error) {
@@ -70,7 +71,7 @@ export class JsFile extends VirtualFile {
     // - Transform package-names to cdn-url
     // NOTE:  possible optimisation would be to memo the holes and swap them out with .slice
     this.#esm = createMemo<string | undefined>(previous =>
-      when(
+      check(
         intermediary,
         value => {
           const imports: VirtualFile[] = []
@@ -132,7 +133,7 @@ export class JsFile extends VirtualFile {
 
     // Get latest module-url from esm-module
     this.#getUrl = createMemo(previous =>
-      when(
+      check(
         this.generate.bind(this),
         esm => {
           this.dispatchEvent(new UrlEvent(esm))
@@ -191,7 +192,7 @@ export class JsFile extends VirtualFile {
   }
 
   generate() {
-    return when(this.#esm.bind(this), esm =>
+    return check(this.#esm.bind(this), esm =>
       URL.createObjectURL(
         new Blob([esm], {
           type: 'application/javascript',
@@ -206,5 +207,20 @@ export class JsFile extends VirtualFile {
    */
   get url() {
     return this.#getUrl()
+  }
+
+  getType() {
+    switch (this.extension) {
+      case 'js':
+        return 'javascript'
+      case 'jsx':
+        return 'javascript'
+      case 'ts':
+        return 'typescript'
+      case 'tsx':
+        return 'typescript'
+      default:
+        throw `Unknown extension ${this.extension}`
+    }
   }
 }

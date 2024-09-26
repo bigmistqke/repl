@@ -13,7 +13,7 @@ import {
 } from 'solid-js'
 import { Transform, TransformModulePaths } from 'src/runtime/runtime'
 import { runtimeContext } from 'src/solid'
-import { every, whenever } from 'src/utils/conditionals'
+import { every, whenEffect } from 'src/utils/conditionals'
 import { formatInfo } from 'src/utils/format-log'
 import styles from './repl.module.css'
 
@@ -69,23 +69,21 @@ export function Repl(props: ReplProps) {
     runtime.initialize()
     return runtime
   })
-  createRenderEffect(
-    whenever(
-      every(runtime, () => config.files),
-      ([runtime, files]) => {
-        createRenderEffect(
-          mapArray(
-            () => Object.keys(files),
-            key => {
-              const file = runtime.fs.get(key) ?? runtime.fs.create(key)
-              createRenderEffect(() => {
-                file.set(files[key]!)
-              })
-            },
-          ),
-        )
-      },
-    ),
+  whenEffect(
+    every(runtime, () => config.files),
+    ([runtime, files]) => {
+      createRenderEffect(
+        mapArray(
+          () => Object.keys(files),
+          key => {
+            const file = runtime.fs.get(key) ?? runtime.fs.create(key)
+            createRenderEffect(() => {
+              file.set(files[key]!)
+            })
+          },
+        ),
+      )
+    },
   )
 
   createEffect(() => {

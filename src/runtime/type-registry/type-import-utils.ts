@@ -1,5 +1,5 @@
 import { Runtime } from '@bigmistqke/repl'
-import { when } from 'src/utils/conditionals'
+import { check } from 'src/utils/conditionals'
 import { formatError } from 'src/utils/format-log'
 import {
   isRelativePath,
@@ -78,9 +78,9 @@ export class TypeImportUtils {
           }
         } else if (isUrl(modulePath)) {
           let virtualPath = this.getVirtualPath(modulePath)
-          when(pathToPackageNameAndVersion(virtualPath), ([packageName, version]) => {
+          check(pathToPackageNameAndVersion(virtualPath), ([packageName, version]) => {
             for (const key of Object.keys(this.typeRegistry.sources)) {
-              const foundSamePackageName = when(
+              const foundSamePackageName = check(
                 pathToPackageNameAndVersion(key),
                 ([otherPackagename, otherVersion]) => {
                   if (otherPackagename === packageName) {

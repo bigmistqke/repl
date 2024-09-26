@@ -1,5 +1,6 @@
 import { Runtime } from '@bigmistqke/repl'
 import { Accessor, Setter, createSignal } from 'solid-js'
+import { getExtensionFromPath } from 'src/utils/get-extension-from-path'
 import { TypedEventTarget } from 'src/utils/typed-event-target'
 
 export class UrlEvent extends Event {
@@ -46,6 +47,18 @@ export abstract class VirtualFile extends TypedEventTarget<{ url: UrlEvent }> {
   }
 
   /**
+   * Retrieves the current source code of the file.
+   * @returns The current source code.
+   */
+  get source() {
+    return this.#controlled() ? this.runtime.config.files![this.path]! : this.#source()
+  }
+
+  get extension() {
+    return getExtensionFromPath(this.path)
+  }
+
+  /**
    * Serializes the file's current state to a JSON-compatible string.
    * @returns The current source code of the file.
    */
@@ -69,14 +82,6 @@ export abstract class VirtualFile extends TypedEventTarget<{ url: UrlEvent }> {
    * @returns The current source code.
    */
   get() {
-    return this.#controlled() ? this.runtime.config.files![this.path]! : this.#source()
-  }
-
-  /**
-   * Retrieves the current source code of the file.
-   * @returns The current source code.
-   */
-  get source() {
     return this.#controlled() ? this.runtime.config.files![this.path]! : this.#source()
   }
 
