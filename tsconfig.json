@@ -24,7 +24,6 @@
     "paths": {
       "src": ["./src"],
       "@bigmistqke/repl": ["./src/runtime"],
-      "@bigmistqke/repl/solid": ["./src/solid"],
       "@bigmistqke/repl/element": ["./src/element"],
       "@bigmistqke/repl/element/*": ["./src/element/*"],
       "@bigmistqke/repl/element/tm-editor": ["./src/element/editor/tm.tsx"],

@@ -124,24 +124,6 @@
         "default": "./dist/element/tm-editor.js"
       }
     },
-    "./solid": {
-      "import": {
-        "types": "./dist/solid.d.ts",
-        "default": "./dist/solid.js"
-      }
-    },
-    "./solid/monaco-editor": {
-      "import": {
-        "types": "./dist/solid/monaco-editor.d.ts",
-        "default": "./dist/solid/monaco-editor.js"
-      }
-    },
-    "./solid/tm-editor": {
-      "import": {
-        "types": "./dist/solid/tm-editor.d.ts",
-        "default": "./dist/solid/tm-editor.js"
-      }
-    },
     "./extensions/css-module": {
       "import": {
         "types": "./dist/extensions/css-modules.d.ts",

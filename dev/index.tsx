@@ -8,7 +8,7 @@ import loader from '@monaco-editor/loader'
 import { decompressFromEncodedURIComponent as decompress } from 'lz-string'
 import { createResource, Show, type Component } from 'solid-js'
 import { render } from 'solid-js/web'
-import vs_dark from 'src/solid/editor/monaco/themes/vs_dark_good.json'
+import vs_dark from 'src/element/editor/themes/vs_dark_good.json'
 import { register } from 'tm-textarea'
 import './styles.css'
 

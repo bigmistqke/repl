@@ -1,5 +1,4 @@
 import { Runtime } from '@bigmistqke/repl'
-import { MonacoTheme } from '@bigmistqke/repl/editor/monaco'
 import { useRuntime } from '@bigmistqke/repl/element/runtime'
 import { Element, element, ElementAttributes, stringAttribute } from '@lume/element'
 import { type Monaco } from '@monaco-editor/loader'
@@ -17,6 +16,8 @@ import { every, when, whenEffect } from 'src/utils/conditionals'
 /*                                      Types                                     */
 /*                                                                                */
 /**********************************************************************************/
+
+export type MonacoTheme = Parameters<Monaco['editor']['defineTheme']>[1]
 
 type ReplMonacoAttributes = ElementAttributes<
   ReplMonacoEditor,
