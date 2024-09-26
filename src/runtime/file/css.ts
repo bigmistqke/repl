@@ -27,6 +27,8 @@ import { dispose } from "@repl/std"
 export class CssFile extends VirtualFile {
   jsFile: JsFile
 
+  type = 'css'
+
   /**
    * Constructs an instance of a CSS module associated with a specific CSS file.
    * @param file The CSS file managed by this module.
@@ -56,9 +58,5 @@ export class CssFile extends VirtualFile {
    */
   get url() {
     return this.jsFile.generate()
-  }
-
-  getType() {
-    return 'css'
   }
 }

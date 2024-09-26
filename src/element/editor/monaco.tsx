@@ -156,7 +156,7 @@ export class ReplMonacoEditor extends Element {
 
                 const model =
                   monaco.editor.getModel(uri) ||
-                  monaco.editor.createModel(file.source, file.getType(), uri)
+                  monaco.editor.createModel(file.source, file.type, uri)
 
                 createEffect(() => {
                   if (model.getValue() !== file.get()) {
@@ -228,7 +228,7 @@ export class ReplMonacoEditor extends Element {
                   monaco.editor.getModel(uri) ||
                   monaco.editor.createModel(
                     untrack(() => file.source),
-                    file.getType(),
+                    file.type,
                     uri,
                   )
                 )

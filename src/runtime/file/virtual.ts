@@ -23,6 +23,8 @@ export abstract class VirtualFile extends TypedEventTarget<{ url: UrlEvent }> {
   /** The current URL of the loaded module, if available. */
   abstract url: string | undefined
 
+  abstract type: string
+
   /** Source code of the file as a reactive state. */
   #source: Accessor<string>
   /** Setter for the source state. */
@@ -45,8 +47,6 @@ export abstract class VirtualFile extends TypedEventTarget<{ url: UrlEvent }> {
     ;[this.#source, this.#setSource] = createSignal<string>('')
     this.#controlled = () => (controlled !== undefined ? controlled : !!runtime.config.controlled)
   }
-
-  abstract getType(): string
 
   /**
    * Retrieves the current source code of the file.

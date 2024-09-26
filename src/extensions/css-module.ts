@@ -14,6 +14,9 @@ import zeptoid from 'zeptoid'
  */
 export class CssModuleFile extends VirtualFile {
   jsFile: JsFile
+
+  type = 'css'
+
   constructor(runtime: Runtime, path: string) {
     super(runtime, path)
     this.jsFile = runtime.fs.create(`${path}.ts`)

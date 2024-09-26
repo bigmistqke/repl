@@ -32,6 +32,21 @@ export class JsFile extends VirtualFile {
   #dependencyRemovedHandlers: Accessor<StaleDependencyHandler[]>
   #setDependencyRemovedHandlers: Setter<StaleDependencyHandler[]>
 
+  get type() {
+    switch (this.extension) {
+      case 'js':
+        return 'javascript'
+      case 'jsx':
+        return 'javascript'
+      case 'ts':
+        return 'typescript'
+      case 'tsx':
+        return 'typescript'
+      default:
+        throw `Unknown extension ${this.extension}`
+    }
+  }
+
   constructor(
     public runtime: Runtime,
     public path: string,
@@ -207,20 +222,5 @@ export class JsFile extends VirtualFile {
    */
   get url() {
     return this.#getUrl()
-  }
-
-  getType() {
-    switch (this.extension) {
-      case 'js':
-        return 'javascript'
-      case 'jsx':
-        return 'javascript'
-      case 'ts':
-        return 'typescript'
-      case 'tsx':
-        return 'typescript'
-      default:
-        throw `Unknown extension ${this.extension}`
-    }
   }
 }

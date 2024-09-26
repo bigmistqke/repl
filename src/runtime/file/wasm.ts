@@ -8,6 +8,9 @@ import { UrlEvent, VirtualFile } from './virtual'
 export class WasmFile extends VirtualFile {
   #getUrl: Accessor<string | undefined>
   generate: Accessor<string | undefined>
+
+  type = 'wasm'
+
   /**
    * Constructs an instance of a WASM module associated with a specific WASM file.
    * @param path - The path to the WASM file within the virtual file system.
@@ -52,14 +55,13 @@ export default (imports) =>  WebAssembly.instantiate(wasmCode, imports).then(res
   get url() {
     return this.#getUrl()
   }
-
-  getType() {
-    return 'wasm'
-  }
 }
 
 export class WasmTarget extends VirtualFile {
   private wasmFile: WasmFile
+
+  type = 'wasm'
+
   constructor(runtime: Runtime, path: string, wasm: (source: string) => string | undefined) {
     super(runtime, path)
     this.wasmFile = new WasmFile(runtime, path.replace('.wat', '.wasm'))
@@ -75,9 +77,5 @@ export class WasmTarget extends VirtualFile {
 
   get url() {
     return this.wasmFile.url // Use the URL from WasmFile
-  }
-
-  getType() {
-    return 'wasm'
   }
 }

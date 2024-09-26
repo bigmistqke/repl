@@ -18,6 +18,8 @@ const [wabt] = createResource(() => WABT())
 export class WatFile extends VirtualFile {
   private wasmFile: WasmFile
 
+  type = 'wat'
+
   constructor(runtime: Runtime, path: string) {
     super(runtime, path)
 
