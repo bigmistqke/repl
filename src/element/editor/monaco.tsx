@@ -11,7 +11,6 @@ import onigasm from 'onigasm/lib/onigasm.wasm?url'
 import { createEffect, createMemo, createResource, mapArray, onCleanup, untrack } from 'solid-js'
 import { unwrap } from 'solid-js/store'
 import { every, when, whenEffect } from 'src/utils/conditionals'
-import { CompilerOptions } from 'typescript'
 
 /**********************************************************************************/
 /*                                                                                */
@@ -21,7 +20,7 @@ import { CompilerOptions } from 'typescript'
 
 type ReplMonacoAttributes = ElementAttributes<
   ReplMonacoEditor,
-  'path' | 'theme' | 'runtime' | 'monaco' | 'tsconfig'
+  'path' | 'theme' | 'runtime' | 'monaco'
 >
 
 declare module 'solid-js/jsx-runtime' {
@@ -46,13 +45,12 @@ declare global {
 /*                                                                                */
 /**********************************************************************************/
 
-const GRAMMARS = new Map([
-  ['typescript', 'source.tsx'],
-  ['javascript', 'source.tsx'],
-  ['css', 'source.css'],
-])
-
-function wrapPaths(paths: Record<string, string[] | string>): Record<string, string[]> {
+function prefixPaths(
+  paths?: Record<string, string[] | string>,
+): Record<string, string[]> | undefined {
+  if (!paths) {
+    return undefined
+  }
   return Object.fromEntries(
     Object.entries(paths).map(([key, paths]) => [
       key,
@@ -66,11 +64,10 @@ export class ReplMonacoEditor extends Element {
   static monaco: Promise<Monaco> | undefined
   @signal monaco: Promise<Monaco> | undefined
   @signal runtime: Runtime | null | undefined = null
-  @signal tsconfig: CompilerOptions = {}
   @stringAttribute path = ''
   @stringAttribute theme: MonacoTheme | null = null
 
-  static grammarMap = {
+  static GRAMMAR_MAP = {
     typescript: 'source.tsx',
     javascript: 'source.tsx',
     css: 'source.css',
@@ -91,7 +88,7 @@ export class ReplMonacoEditor extends Element {
     const runtime = useRuntime(this)
     const [monaco] = createResource(() => this.monaco || ReplMonacoEditor.monaco)
 
-    // Initialize monaco.
+    // Setup monaco.
     {
       // TODO:  Swap theme with TM-CDN class we can share with tm-editor.
       const [grammars] = createResource(() =>
@@ -141,7 +138,11 @@ export class ReplMonacoEditor extends Element {
             if (!initialisation)
               initialisation = loadWASM(onigasm).then(() => (initialisation = 'complete'))
             await initialisation
-            await wireTmGrammars(monaco, registry, GRAMMARS)
+            await wireTmGrammars(
+              monaco,
+              registry,
+              new Map(Object.entries(ReplMonacoEditor.GRAMMAR_MAP)),
+            )
           }
         })
 
@@ -185,12 +186,13 @@ export class ReplMonacoEditor extends Element {
 
           // Add virtual path to monaco's tsconfig's `path`-property.
           createEffect(() => {
+            const runtimeTsConfig = runtime.config.tsconfig
             const tsConfig = unwrap({
-              ...this.tsconfig,
+              ...runtimeTsConfig,
               paths: {
-                ...(this.tsconfig?.paths ? wrapPaths(this.tsconfig.paths) : undefined),
+                ...prefixPaths(runtimeTsConfig?.paths),
                 ...runtime.types.alias,
-                ...(runtime.fs.alias ? wrapPaths(runtime.fs.alias) : undefined),
+                ...prefixPaths(runtime.fs.alias),
               },
             }) as any
             monaco.languages.typescript.typescriptDefaults.setCompilerOptions(tsConfig)

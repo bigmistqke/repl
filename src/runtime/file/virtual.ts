@@ -46,6 +46,8 @@ export abstract class VirtualFile extends TypedEventTarget<{ url: UrlEvent }> {
     this.#controlled = () => (controlled !== undefined ? controlled : !!runtime.config.controlled)
   }
 
+  abstract getType(): string
+
   /**
    * Retrieves the current source code of the file.
    * @returns The current source code.

@@ -1,15 +1,12 @@
+import { TransformModulePaths } from 'src/runtime/runtime'
 import type TS from 'typescript'
 
 export async function typescriptTransformModulePaths(config?: {
   typescript?: Promise<typeof TS> | typeof TS
-}) {
+}): Promise<TransformModulePaths> {
   // @ts-expect-error
   const ts = (await (config?.typescript || import('https://esm.sh/typescript'))) as typeof TS
-  return function (
-    code: string,
-    //** Callback to modify module-declaration node. Return `false` to remove node from code. `Throw` to break execution. */
-    callback: (source: string) => string | null,
-  ) {
+  return function (code, callback) {
     const sourceFile = ts.createSourceFile('', code, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
     let shouldPrint = false
     const result = ts.transform(sourceFile, [

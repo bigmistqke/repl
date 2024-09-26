@@ -14,30 +14,12 @@ import './styles.css'
 
 register()
 
-const tsconfig = {
-  target: 2,
-  module: 5,
-  jsx: 1,
-  jsxImportSource: 'solid-js',
-  esModuleInterop: true,
-  allowSyntheticDefaultImports: true,
-  forceConsistentCasingInFileNames: true,
-  isolatedModules: true,
-  resolveJsonModule: true,
-  skipLibCheck: true,
-  strict: true,
-  noEmit: false,
-  outDir: './dist',
-}
-
 const App: Component = () => {
   const [runtime] = createResource(async () => {
     const [transformModulePaths, transform] = await Promise.all([
       typescriptTransformModulePaths(),
       Promise.all([
-        typescriptTransform({
-          tsconfig,
-        }),
+        typescriptTransform({}),
         babelTransform({
           plugins: [['proposal-decorators', { version: '2023-11' }]],
           presets: ['babel-preset-solid@1.8.22'],
@@ -77,6 +59,21 @@ dispose('src/index.tsx', render(() => <App />, document.body));`,
     return new Runtime({
       importExternalTypes: true,
       transformModulePaths,
+      tsconfig: {
+        target: 2,
+        module: 5,
+        jsx: 1,
+        jsxImportSource: 'solid-js',
+        esModuleInterop: true,
+        allowSyntheticDefaultImports: true,
+        forceConsistentCasingInFileNames: true,
+        isolatedModules: true,
+        resolveJsonModule: true,
+        skipLibCheck: true,
+        strict: true,
+        noEmit: false,
+        outDir: './dist',
+      },
       transform,
       files,
     }).initialize()
@@ -98,7 +95,6 @@ dispose('src/index.tsx', render(() => <App />, document.body));`,
               runtime={runtime()}
               path="src/index.tsx"
               monaco={loader.init()}
-              tsconfig={tsconfig}
               theme={vs_dark as any}
               style={{
                 flex: '1',

@@ -59,7 +59,7 @@ export async function babelTransform(config: BabelConfig): Promise<Transform> {
     resolveItems({ cdn, babel, items: config.plugins, type: 'plugins' }),
   ])
 
-  return (source: string, path: string) => {
+  return (source, path) => {
     const result = babel.transform(source, {
       presets,
       plugins,

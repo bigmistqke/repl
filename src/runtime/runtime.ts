@@ -1,6 +1,7 @@
 import { CssFile, JsFile, VirtualFile, WasmFile } from '@bigmistqke/repl'
 import { mergeProps, untrack } from 'solid-js'
 import type { Mandatory } from 'src/utils/type'
+import { CompilerOptions } from 'typescript'
 import { FileSystem, FileSystemState } from './file-system'
 import { ImportUtils } from './import-utils'
 import { TypeRegistry, TypeRegistryState } from './type-registry'
@@ -15,7 +16,7 @@ export interface InitialState {
   types?: Partial<TypeRegistryState>
 }
 
-export type Transform = (source: string, path: string) => string
+export type Transform = (source: string, path: string, runtime: Runtime) => string
 export type TransformModulePaths = (
   source: string,
   callback: (value: string) => string | null,
@@ -37,6 +38,7 @@ interface RuntimeConfigBase {
    * @returns The transformed source code.
    */
   transform: Transform | Array<Transform>
+  tsconfig?: CompilerOptions
   /**
    * Function to transform module paths.
    * @param source - The source code containing module paths.
