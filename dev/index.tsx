@@ -5,7 +5,10 @@ import { typescriptTransformModulePaths } from '@bigmistqke/repl/transform-modul
 import { babelTransform } from '@bigmistqke/repl/transform/babel'
 import { typescriptTransform } from '@bigmistqke/repl/transform/typescript'
 import loader from '@monaco-editor/loader'
-import { decompressFromEncodedURIComponent as decompress } from 'lz-string'
+import {
+  compressToEncodedURIComponent as compress,
+  decompressFromEncodedURIComponent as decompress,
+} from 'lz-string'
 import { createResource, Show, type Component } from 'solid-js'
 import { render } from 'solid-js/web'
 import vs_dark from 'src/element/editor/themes/vs_dark_good.json'
@@ -14,23 +17,10 @@ import './styles.css'
 
 register()
 
-const App: Component = () => {
-  const [runtime] = createResource(async () => {
-    const [transformModulePaths, transform] = await Promise.all([
-      typescriptTransformModulePaths(),
-      Promise.all([
-        typescriptTransform({}),
-        babelTransform({
-          plugins: [['proposal-decorators', { version: '2023-11' }]],
-          presets: ['babel-preset-solid@1.8.22'],
-        }),
-      ]),
-    ])
-
-    const files = location.hash
-      ? JSON.parse(decompress(location.hash.slice(1)))
-      : {
-          'src/index.css': `body {
+const files = location.hash
+  ? JSON.parse(decompress(location.hash.slice(1)))
+  : {
+      'src/index.css': `body {
 background: blue;
 }
 /* .test */
@@ -38,7 +28,7 @@ background: blue;
 background: red;
 }
   `,
-          'src/index.tsx': `import { render } from "solid-js/web";
+      'src/index.tsx': `import { render } from "solid-js/web";
 import { dispose } from "@repl/std";
 import "solid-js/jsx-runtime";
 import "./index.css";
@@ -52,9 +42,20 @@ return (
 }
 
 dispose('src/index.tsx', render(() => <App />, document.body));`,
-        }
+    }
 
-    console.log(files)
+const App: Component = () => {
+  const [runtime] = createResource(async () => {
+    const [transformModulePaths, transform] = await Promise.all([
+      typescriptTransformModulePaths(),
+      Promise.all([
+        typescriptTransform(),
+        babelTransform({
+          plugins: [['proposal-decorators', { version: '2023-11' }]],
+          presets: ['babel-preset-solid@1.8.22'],
+        }),
+      ]),
+    ])
 
     return new Runtime({
       importExternalTypes: true,
@@ -111,7 +112,10 @@ dispose('src/index.tsx', render(() => <App />, document.body));`,
                   frame.clearBody()
                   cleanup = frame.injectModuleUrl(url)
                 }
-                file.addEventListener('url', injectUrl)
+                file.onUrl(injectUrl)
+                file.onSource(() => {
+                  location.hash = compress(JSON.stringify(runtime().fs.toJSON().sources))
+                })
                 injectUrl(file)
               }}
             />
