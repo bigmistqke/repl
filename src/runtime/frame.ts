@@ -54,7 +54,7 @@ export class Frame {
       ),
     )
     if (entry instanceof JsFile) {
-      entry.onDependencyRemoved(file => this.dispose(file.path))
+      entry.onDependencyRemoved(({ file }) => this.dispose(file.path))
     }
     // We need to generate a new module-url everytime we inject a file, to ensure the body is executed.
     return check(entry.createObjectUrl(), url => {
