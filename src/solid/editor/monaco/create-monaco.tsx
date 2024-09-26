@@ -79,14 +79,14 @@ export function createMonaco(props: {
           const model =
             monaco.editor.getModel(uri) ||
             monaco.editor.createModel(
-              file.get(),
+              file.source,
               file instanceof CssFile ? 'css' : 'typescript',
               uri,
             )
 
           createEffect(() => {
-            if (model.getValue() !== file.get()) {
-              model.setValue(file.get())
+            if (model.getValue() !== file.source) {
+              model.setValue(file.source)
             }
           })
         },

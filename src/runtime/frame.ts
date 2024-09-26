@@ -1,6 +1,7 @@
 import { JsFile, VirtualFile } from '@bigmistqke/repl'
 import { createEffect, on, onCleanup } from 'solid-js'
 import { check } from 'src/utils/conditionals'
+import { waitForEvent } from 'src/utils/wait-for-load'
 
 /**
  * Represents an individual `<iframe/>` within the application.
@@ -84,13 +85,7 @@ export class Frame {
   reload() {
     this.contentWindow.location.reload()
     this.reloading = true
-    return new Promise<void>(resolve => {
-      const onLoad = () => {
-        this.iframe.removeEventListener('load', onLoad)
-        this.reloading = false
-      }
-      this.iframe.addEventListener('load', onLoad)
-    })
+    return waitForEvent(this.iframe, 'load').then(() => (this.reloading = false))
   }
 
   clearBody() {

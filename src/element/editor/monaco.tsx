@@ -159,8 +159,8 @@ export class ReplMonacoEditor extends Element {
                   monaco.editor.createModel(file.source, file.type, uri)
 
                 createEffect(() => {
-                  if (model.getValue() !== file.get()) {
-                    model.setValue(file.get())
+                  if (model.getValue() !== file.source) {
+                    model.setValue(file.source)
                   }
                 })
               },

@@ -1,7 +1,6 @@
 import clsx from 'clsx'
-import { ComponentProps, createResource, mergeProps, onCleanup, splitProps } from 'solid-js'
-import { Frame, Runtime } from 'src/runtime'
-import { whenEffect } from 'src/utils/conditionals'
+import { ComponentProps, mergeProps, splitProps } from 'solid-js'
+import { Runtime } from 'src/runtime'
 import { html, javascript } from 'src/utils/object-url-literal'
 import { useRuntime } from './'
 import styles from './repl.module.css'
@@ -109,7 +108,7 @@ DevTools.Standalone = function (props: DevToolsProps & { runtime: Runtime }) {
     />
   ) as HTMLIFrameElement
 
-  const [targetFrame] = createResource(
+  /* const [targetFrame] = createResource(
     () => props.runtime.frames.get(config.name),
     frame => {
       if (frame.contentWindow.document.readyState === 'interactive') return frame
@@ -136,7 +135,7 @@ DevTools.Standalone = function (props: DevToolsProps & { runtime: Runtime }) {
     onCleanup(() => window.removeEventListener('message', messageListener))
   })
 
-  whenEffect(targetFrame, targetFrame => targetFrame.injectModuleUrl(chobitsuModule))
+  whenEffect(targetFrame, targetFrame => targetFrame.injectModuleUrl(chobitsuModule)) */
 
   return iframe
 }
