@@ -40,8 +40,6 @@ export class CssFile extends VirtualFile {
 
     const scheduled = createScheduled(fn => debounce(fn, 250))
 
-    this.jsFile.addEventListener('url', event => this.dispatchEvent(event))
-
     createEffect(() => {
       if (!scheduled()) return
       this.jsFile.set(createStyleLoaderSource(path, this.get()))
