@@ -1,6 +1,8 @@
+import { Runtime } from '@bigmistqke/repl'
 import { useRuntime } from '@bigmistqke/repl/element/runtime'
 import { DevTools } from '@bigmistqke/repl/solid'
 import { element, Element, ElementAttributes, stringAttribute } from '@lume/element'
+import { signal } from 'classy-solid'
 import { Show } from 'solid-js'
 
 /**********************************************************************************/
@@ -36,6 +38,7 @@ declare global {
 @element('repl-devtools')
 export class ReplDevtools extends Element {
   @stringAttribute name = 'default'
+  @signal runtime: Runtime | null | undefined = null
 
   template = () => {
     const runtime = useRuntime(this)
