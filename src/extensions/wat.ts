@@ -35,8 +35,8 @@ export class WatFile extends VirtualFile {
     })
   }
 
-  generate() {
-    return this.wasmFile.generate()
+  createObjectUrl() {
+    return this.wasmFile.createObjectUrl()
   }
 
   get url() {

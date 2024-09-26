@@ -1,79 +1,62 @@
 import { Runtime } from '@bigmistqke/repl'
 import { createScheduled, debounce } from '@solid-primitives/scheduled'
-import {
-  Accessor,
-  Setter,
-  batch,
-  createMemo,
-  createResource,
-  createSignal,
-  onCleanup,
-  untrack,
-} from 'solid-js'
-import { check } from 'src/utils/conditionals'
+import { Accessor, batch, createMemo, untrack } from 'solid-js'
+import { check, when } from 'src/utils/conditionals'
 import { isRelativePath, isUrl, relativeToAbsolutePath } from 'src/utils/path'
-import { UrlEvent, VirtualFile } from './virtual'
+import { createEventDispatchEffects, VirtualFile } from './virtual'
 
-type StaleDependencyHandler = (file: VirtualFile) => void
+class DependencyRemovedEvent extends Event {
+  constructor(public file: VirtualFile) {
+    super('dependency-removed')
+  }
+}
 
 /**
  * Represents a JavaScript file within the system. Extends the generic File class.
  */
-export class JsFile extends VirtualFile {
+
+export class JsFile extends VirtualFile<{ 'dependency-removed': DependencyRemovedEvent }> {
   /** An array of imported `VirtualFiles` found referred to in the source. */
-  directDependencies: Accessor<VirtualFile[]>
-  /** Internal setter for the imported `VirtualFiles`. */
-  #setDirectDependencies: Setter<VirtualFile[]>
+  dependencies: VirtualFile[] = []
+
   /** Internal callback to get current module-url. */
   #getUrl: Accessor<string | undefined>
   /** Internal callback to get the esm output of the current source. */
   #esm: Accessor<string | undefined>
-
-  #dependencyRemovedHandlers: Accessor<StaleDependencyHandler[]>
-  #setDependencyRemovedHandlers: Setter<StaleDependencyHandler[]>
-
-  get type() {
-    switch (this.extension) {
-      case 'js':
-        return 'javascript'
-      case 'jsx':
-        return 'javascript'
-      case 'ts':
-        return 'typescript'
-      case 'tsx':
-        return 'typescript'
-      default:
-        throw `Unknown extension ${this.extension}`
-    }
-  }
 
   constructor(
     public runtime: Runtime,
     public path: string,
   ) {
     super(runtime, path)
-    ;[this.directDependencies, this.#setDirectDependencies] = createSignal<VirtualFile[]>([])
-    ;[this.#dependencyRemovedHandlers, this.#setDependencyRemovedHandlers] = createSignal<
-      StaleDependencyHandler[]
-    >([])
 
     let initialized = false
     const scheduled = createScheduled(fn => debounce(fn, 250))
 
     // Transpile source to javascript
-    const [intermediary] = createResource(
-      () => [this.get(), !initialized || scheduled()] as const,
-      async ([source]) => {
+    const intermediary = when(
+      () => (!initialized || scheduled()) && this.source,
+      source => {
         initialized = true
-        try {
-          if (Array.isArray(runtime.config.transform)) {
-            return runtime.config.transform.reduce((source, transform) => {
-              return transform(source, path, runtime)
-            }, source)
+        if (source === '') return ''
+
+        if (Array.isArray(runtime.config.transform)) {
+          let current = source
+          try {
+            runtime.config.transform.forEach(transform => {
+              current = transform(current, path, runtime)
+            })
+            return current
+          } catch (error) {
+            console.error('Error while transforming js', { error, source, current })
+            return null
           }
-          return runtime.config.transform(this.get(), this.path, runtime)
+        }
+
+        try {
+          return runtime.config.transform(this.source, this.path, runtime)
         } catch (error) {
-          console.error('error while transforming js', error)
+          console.error('Error while transforming js', { error, source })
         }
       },
     )
@@ -86,12 +69,12 @@ export class JsFile extends VirtualFile {
     this.#esm = createMemo<string | undefined>(previous =>
       check(
         intermediary,
-        value => {
+        intermediary => {
           const imports: VirtualFile[] = []
-          const removedImports = new Set(untrack(this.directDependencies))
+          const removedImports = new Set(untrack(() => this.dependencies))
           try {
             return batch(() =>
-              runtime.config.transformModulePaths(value, modulePath => {
+              runtime.config.transformModulePaths(intermediary, modulePath => {
                 if (isUrl(modulePath)) return modulePath
 
                 const alias = runtime.fs.alias[modulePath]
@@ -134,9 +117,9 @@ export class JsFile extends VirtualFile {
             console.warn('error', error)
             return previous
           } finally {
-            this.#setDirectDependencies(imports)
+            this.dependencies = imports
             for (const removedImport of removedImports) {
-              this.#callDependencyRemovedHandlers(removedImport)
+              this.dispatchEvent(new DependencyRemovedEvent(removedImport))
             }
           }
         },
@@ -145,35 +128,31 @@ export class JsFile extends VirtualFile {
     )
 
     // Get latest module-url from esm-module
-    this.#getUrl = createMemo(previous =>
-      check(
-        this.generate.bind(this),
-        esm => {
-          this.dispatchEvent(new UrlEvent(esm))
-          return esm
-        },
-        () => previous,
-      ),
-    )
+    this.#getUrl = createMemo(previous => this.createObjectUrl() || previous)
+
+    createEventDispatchEffects(this)
   }
 
-  onDependencyRemoved(callback: StaleDependencyHandler) {
-    this.#setDependencyRemovedHandlers(callbacks => [...callbacks, callback])
-    onCleanup(() => {
-      this.#setDependencyRemovedHandlers(callbacks => {
-        const index = callbacks.findIndex(_callback => _callback === callback)
-        if (index !== -1) {
-          callbacks.splice(index, 1)
-          return [...callbacks]
-        }
-        return callbacks
-      })
-    })
+  /**
+   * Retrieves the URL of the currently active module.
+   * @returns The URL as a string, or undefined if not available.
+   */
+  get url() {
+    return this.#getUrl()
   }
 
-  #callDependencyRemovedHandlers(file: VirtualFile) {
-    for (const handler of this.#dependencyRemovedHandlers()) {
-      handler(file)
+  get type() {
+    switch (this.extension) {
+      case 'js':
+        return 'javascript'
+      case 'jsx':
+        return 'javascript'
+      case 'ts':
+        return 'typescript'
+      case 'tsx':
+        return 'typescript'
+      default:
+        throw `Unknown extension ${this.extension}`
     }
   }
 
@@ -185,14 +164,14 @@ export class JsFile extends VirtualFile {
    */
   resolveDependencies() {
     const set = new Set<VirtualFile>()
-    const stack = [...this.directDependencies()] // Initialize the stack with direct imports
+    const stack = [...this.dependencies] // Initialize the stack with direct imports
 
     while (stack.length > 0) {
       const file = stack.pop()
       if (file && !set.has(file)) {
         set.add(file)
         if (file instanceof JsFile) {
-          for (const fileImport of file.directDependencies()) {
+          for (const fileImport of file.dependencies) {
             if (!set.has(fileImport)) {
               stack.push(fileImport)
             }
@@ -204,21 +183,19 @@ export class JsFile extends VirtualFile {
     return Array.from(set)
   }
 
-  generate() {
-    return check(this.#esm.bind(this), esm =>
-      URL.createObjectURL(
-        new Blob([esm], {
+  createObjectUrl() {
+    const url = this.#esm()
+    if (url) {
+      return URL.createObjectURL(
+        new Blob([url], {
           type: 'application/javascript',
         }),
-      ),
-    )
+      )
+    }
   }
 
-  /**
-   * Retrieves the URL of the currently active module.
-   * @returns The URL as a string, or undefined if not available.
-   */
-  get url() {
-    return this.#getUrl()
+  onDependencyRemoved(callback: (event: DependencyRemovedEvent) => void) {
+    this.addEventListener('dependency-removed', callback)
+    return () => this.removeEventListener('dependency-removed', callback)
   }
 }

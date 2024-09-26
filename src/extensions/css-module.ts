@@ -34,8 +34,8 @@ export default ${JSON.stringify(aliases)} as const
     })
   }
 
-  generate(): string | undefined {
-    return this.jsFile.generate()
+  createObjectUrl(): string | undefined {
+    return this.jsFile.createObjectUrl()
   }
 
   get url() {
@@ -43,7 +43,7 @@ export default ${JSON.stringify(aliases)} as const
   }
 
   moduleTransform() {
-    const url = this.generate()
+    const url = this.createObjectUrl()
     if (!url) throw `Module not loaded`
     return url
   }

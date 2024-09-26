@@ -57,7 +57,7 @@ export class Frame {
       entry.onDependencyRemoved(file => this.dispose(file.path))
     }
     // We need to generate a new module-url everytime we inject a file, to ensure the body is executed.
-    return check(entry.generate(), url => {
+    return check(entry.createObjectUrl(), url => {
       return this.injectModuleUrl(url)
     })
   }

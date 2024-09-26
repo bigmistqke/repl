@@ -71,7 +71,7 @@ export class FileSystem extends TypedEventTarget<{ file: FileEvent }> {
   toJSON(): FileSystemState {
     return {
       sources: Object.fromEntries(
-        Object.entries(this.#files).map(([key, value]) => [key, value.toJSON()]),
+        Object.entries(this.#files).map(([key, value]) => [key, value.source]),
       ),
       alias: this.alias,
     }

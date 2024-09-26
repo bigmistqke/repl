@@ -3,11 +3,11 @@ import { createScheduled, debounce } from '@solid-primitives/scheduled'
 import { Accessor, createMemo } from 'solid-js'
 import { whenEffect } from 'src/utils/conditionals'
 import { javascript } from 'src/utils/object-url-literal'
-import { UrlEvent, VirtualFile } from './virtual'
+import { createEventDispatchEffects, UrlEvent, VirtualFile } from './virtual'
 
 export class WasmFile extends VirtualFile {
   #getUrl: Accessor<string | undefined>
-  generate: Accessor<string | undefined>
+  createObjectUrl: Accessor<string | undefined>
 
   type = 'wasm'
 
@@ -21,7 +21,7 @@ export class WasmFile extends VirtualFile {
     const scheduled = createScheduled(fn => debounce(fn, 250))
 
     // Create a JavaScript module that instantiates the WASM module
-    this.generate = () => {
+    this.createObjectUrl = () => {
       const wasmBinaryString = this.get()
       if (!wasmBinaryString) return undefined
       // Convert the binary string to a binary format
@@ -39,13 +39,15 @@ export default (imports) =>  WebAssembly.instantiate(wasmCode, imports).then(res
       if (!scheduled()) {
         return previous
       }
-      const url = this.generate()
+      const url = this.createObjectUrl()
       if (!url) {
         return previous
       }
       this.dispatchEvent(new UrlEvent(url))
       return url
     })
+
+    createEventDispatchEffects(this)
   }
 
   /**
@@ -69,10 +71,11 @@ export class WasmTarget extends VirtualFile {
       () => wasm(this.get()),
       wasm => this.wasmFile.set(wasm),
     )
+    createEventDispatchEffects(this)
   }
 
-  generate() {
-    return this.wasmFile.generate()
+  createObjectUrl() {
+    return this.wasmFile.createObjectUrl()
   }
 
   get url() {

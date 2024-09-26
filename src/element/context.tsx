@@ -1,8 +1,9 @@
 import { css, element, Element, ElementAttributes } from '@lume/element'
-import { signal } from 'classy-solid'
+import { reactive, signal } from 'classy-solid'
 
 export type ContextAttributes<T> = ElementAttributes<ContextBase<T>, 'value'>
 
+@reactive
 class ContextBase<T> extends Element {
   @signal value: T | undefined = undefined
   template = () => <slot />
