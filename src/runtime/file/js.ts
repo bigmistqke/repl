@@ -53,12 +53,12 @@ export class JsFile extends VirtualFile {
         try {
           if (Array.isArray(runtime.config.transform)) {
             return runtime.config.transform.reduce((source, transform) => {
-              const intermediary = transform(source, path)
+              const intermediary = transform(source, path, runtime)
               console.log(intermediary)
               return intermediary
             }, source)
           }
-          return runtime.config.transform(this.get(), this.path)
+          return runtime.config.transform(this.get(), this.path, runtime)
         } catch (error) {
           console.error('error while transforming js', error)
         }

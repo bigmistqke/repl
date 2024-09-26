@@ -9,7 +9,7 @@ export async function typescriptTransform(config?: TypescriptConfig): Promise<Tr
   const ts: typeof TS = await (config?.typescript ||
     // @ts-expect-error
     (import(/* @vite-ignore */ 'https://esm.sh/typescript') as Promise<typeof TS>))
-  return (runtime, source, path) => {
+  return (source, path, runtime) => {
     const isTypescript = path.endsWith('ts') || path.endsWith('tsx')
     if (isTypescript) {
       return ts.transpile(source, runtime.config.tsconfig)
