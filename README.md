@@ -43,10 +43,7 @@ The `@bigmistqke/repl` library is designed to be modular, allowing users to impo
 - **[@bigmistqke/repl](/src/runtime/RUNTIME.md#bigmistqkerepl)**: Contains core runtime functionalities necessary for creating and managing the virtual environment within the repl.
 - **[@bigmistqke/repl/element](/src/element/ELEMENT.md#bigmistqkereplelement)**: Entry to the core custom elements
 - **[@bigmistqke/repl/element/monaco-editor](/src/element/ELEMENT.md#bigmistqkereplelementmonaco-editor)**: Integrates the Monaco editor, providing a rich coding environment.
-- **[@bigmistqke/repl/element/tm-editor](/src/element/ELEMENT.md#bigmistqkereplelementtm-editor)**: Adds syntax highlighting through the Tm library.
-- **[@bigmistqke/repl/solid](/src/solid/SOLID.md#bigmistqkereplsolid)**: Entry to the core solid components
-- **[@bigmistqke/repl/solid/monaco-editor](/src/solid/SOLID.md#bigmistqkereplsolidmonaco-editor)**: Integrates the Monaco editor, providing a rich coding environment.
-- **[@bigmistqke/repl/solid/tm-editor](/src/solid/SOLID.md#bigmistqkereplsolidtm-editor)**: Adds syntax highlighting through the Tm library.
+- **[@bigmistqke/repl/element/tm-editor](/src/element/ELEMENT.md#bigmistqkereplelementtm-editor)**: Adds syntax highlighting through `tm-textarea`
 - **[@bigmistqke/repl/plugins/rollup-service-worker](/src/plugins/PLUGINS.md#bigmistqkereplpluginsrollup-service-worker)**: Enhances the repl with service worker capabilities to efficiently manage caching.
 - **[@bigmistqke/repl/plugins/babel-solid-repl](/src/plugins/PLUGINS.md#bigmistqkereplpluginsbabel-solid-repl)**: Provides plugins for Babel that are optimized for SolidJS applications.
 - **[@bigmistqke/repl/transform/babel](/src/transform/TRANSFORM.md#bigmistqkerepltransformbabel)**: Supports the integration of Babel for dynamic JavaScript code transformation.
