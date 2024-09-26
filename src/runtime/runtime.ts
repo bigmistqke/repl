@@ -2,7 +2,6 @@ import { CssFile, JsFile, VirtualFile, WasmFile } from '@bigmistqke/repl'
 import { mergeProps, untrack } from 'solid-js'
 import type { Mandatory } from 'src/utils/type'
 import { FileSystem, FileSystemState } from './file-system'
-import { FrameRegistry } from './frame-registry'
 import { ImportUtils } from './import-utils'
 import { TypeRegistry, TypeRegistryState } from './type-registry'
 
@@ -97,13 +96,11 @@ export class Runtime {
   config: Mandatory<RuntimeConfig, 'cdn'>
   /** Manages file operations within the virtual file system. */
   fs: FileSystem
-  /** Handles the registration and management of iframe containers for isolated code execution. */
-  frames: FrameRegistry
   /** Manages TypeScript declaration files and other type-related functionality. */
   types: TypeRegistry
   /** Utility class for handling imports from URLS pointing to non-esm packages. */
   import: ImportUtils
-  /**  */
+
   get extensions(): Extensions {
     return {
       css: CssFile,
@@ -123,7 +120,6 @@ export class Runtime {
   ) {
     this.config = mergeProps({ cdn: 'https://esm.sh' }, config)
     this.fs = new FileSystem(this)
-    this.frames = new FrameRegistry()
     this.import = new ImportUtils(this)
     this.types = new TypeRegistry(this)
   }

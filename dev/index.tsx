@@ -95,11 +95,11 @@ dispose('src/index.tsx', render(() => <App />, document.body));`,
         {runtime => (
           <>
             <repl-monaco-editor
-              monaco={loader.init()}
-              tsconfig={tsconfig}
               runtime={runtime()}
               path="src/index.tsx"
-              theme={vs_dark}
+              monaco={loader.init()}
+              tsconfig={tsconfig}
+              theme={vs_dark as any}
               style={{
                 flex: '1',
               }}

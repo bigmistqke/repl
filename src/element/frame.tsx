@@ -1,8 +1,7 @@
 import { Frame, Runtime } from '@bigmistqke/repl'
-import { useRuntime } from '@bigmistqke/repl/element/runtime'
 import { element, Element, ElementAttributes, stringAttribute } from '@lume/element'
 import { signal } from 'classy-solid'
-import { on, onCleanup, onMount } from 'solid-js'
+import { onMount } from 'solid-js'
 import { formatError } from 'src/utils/format-log'
 import { html } from 'src/utils/object-url-literal'
 
@@ -62,7 +61,6 @@ export class ReplFrame extends Element {
   `
 
   template = () => {
-    const runtime = useRuntime(this)
     return (
       <iframe
         ref={iframe => {
@@ -78,18 +76,6 @@ export class ReplFrame extends Element {
             }
 
             iframe.contentWindow.addEventListener('DOMContentLoaded', onReady)
-
-            this.createEffect(
-              on(runtime, runtime => {
-                if (!runtime) return
-                if (runtime.frames.has(this.name)) {
-                  console.warn(`A frame with the same name already exist: ${this.name}`)
-                  return
-                }
-                runtime.frames.add(this.name, this.frame)
-                onCleanup(() => runtime.frames.delete(this.name))
-              }),
-            )
           })
         }}
         class="iframe"

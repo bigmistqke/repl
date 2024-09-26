@@ -1,14 +1,6 @@
 import { Frame as FrameApi } from '@bigmistqke/repl'
 import clsx from 'clsx'
-import {
-  ComponentProps,
-  createEffect,
-  mergeProps,
-  onCleanup,
-  onMount,
-  splitProps,
-  type JSX,
-} from 'solid-js'
+import { ComponentProps, createEffect, mergeProps, onMount, splitProps, type JSX } from 'solid-js'
 import { Runtime } from 'src/runtime/runtime'
 import { useRuntime } from 'src/solid/use-runtime'
 import { formatError } from 'src/utils/format-log'
@@ -76,22 +68,11 @@ Frame.Standalone = function (props: FrameProps) {
     const frame = new FrameApi(iframe)
 
     const onReady = () => {
-      if (props.runtime.frames.has(config.name)) {
-        console.warn(`A frame with the same name already exist: ${config.name}`)
-        return
-      }
-      props.runtime.frames.add(config.name, frame)
       iframe.contentWindow?.removeEventListener('DOMContentLoaded', onReady)
-
-      console.log('frame is ', frame)
       props.onReady?.(frame)
     }
 
     iframe.contentWindow.addEventListener('DOMContentLoaded', onReady)
-
-    onCleanup(() => {
-      props.runtime.frames.delete(config.name)
-    })
 
     createEffect(() => {
       if (!props.bodyStyle) return

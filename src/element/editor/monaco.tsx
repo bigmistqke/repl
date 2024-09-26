@@ -21,7 +21,7 @@ import { CompilerOptions } from 'typescript'
 
 type ReplMonacoAttributes = ElementAttributes<
   ReplMonacoEditor,
-  'path' | 'theme' | 'runtime' | 'monaco'
+  'path' | 'theme' | 'runtime' | 'monaco' | 'tsconfig'
 >
 
 declare module 'solid-js/jsx-runtime' {
