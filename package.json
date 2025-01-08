@@ -55,14 +55,14 @@
     "zeptoid": "^1.0.1"
   },
   "peerDependencies": {
-    "solid-js": "^1.6.0"
+    "solid-js": "^1.6.0",
+    "@monaco-editor/loader": "^1.4.0"
   },
   "devDependencies": {
     "@babel/plugin-proposal-decorators": "^7.24.7",
     "@babel/plugin-syntax-import-attributes": "^7.24.1",
     "@babel/standalone": "^7.24.4",
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
-    "@monaco-editor/loader": "^1.4.0",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-wasm": "^6.2.2",
     "@typescript-eslint/eslint-plugin": "^6.1.0",
@@ -106,16 +106,28 @@
         "default": "./dist/index.js"
       }
     },
+    "./solid": {
+      "import": {
+        "types": "./dist/solid.d.ts",
+        "default": "./dist/solid.js"
+      }
+    },
+    "./solid/monaco": {
+      "import": {
+        "types": "./dist/solid/monaco.d.ts",
+        "default": "./dist/solid/monaco.js"
+      }
+    },
     "./element": {
       "import": {
         "types": "./dist/element.d.ts",
         "default": "./dist/element.js"
       }
     },
-    "./element/monaco-editor": {
+    "./element/monaco": {
       "import": {
-        "types": "./dist/element/monaco-editor.d.ts",
-        "default": "./dist/element/monaco-editor.js"
+        "types": "./dist/element/monaco.d.ts",
+        "default": "./dist/element/monaco.js"
       }
     },
     "./element/tm-editor": {

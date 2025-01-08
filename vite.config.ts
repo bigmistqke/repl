@@ -39,9 +39,11 @@ export default defineConfig({
     lib: {
       entry: {
         index: resolve(__dirname, 'src/runtime/index.ts'),
+        solid: resolve(__dirname, 'src/solid/index.ts'),
+        'solid/monaco': resolve(__dirname, 'src/solid/editor/monaco.tsx'),
         element: resolve(__dirname, 'src/element/index.ts'),
         'element/tm-editor': resolve(__dirname, 'src/element/editor/tm.tsx'),
-        'element/monaco-editor': resolve(__dirname, 'src/element/editor/monaco.tsx'),
+        'element/monaco': resolve(__dirname, 'src/element/editor/monaco.tsx'),
         std: resolve(__dirname, 'src/std/index.ts'),
         'extensions/css-module': resolve(__dirname, 'src/extensions/css-module.ts'),
         'extensions/wat': resolve(__dirname, 'src/extensions/wat.ts'),
@@ -62,7 +64,7 @@ export default defineConfig({
       formats: ['es'],
     },
     rollupOptions: {
-      external: ['solid-js', '@monaco-editor/loader'],
+      external: ['solid-js', '@monaco-editor/loader', 'onigasm'],
       output: {
         globals: {
           'solid-js': 'solidjs',

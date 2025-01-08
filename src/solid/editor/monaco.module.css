@@ -1,0 +1,6 @@
+.monaco {
+  display: block;
+  & .root {
+    height: 100%;
+  }
+}

@@ -11,6 +11,9 @@ importers:
       '@lume/element':
         specifier: ^0.12.0
         version: 0.12.0(@babel/core@7.25.2)(@types/react@18.3.5)
+      '@monaco-editor/loader':
+        specifier: ^1.4.0
+        version: 1.4.0(monaco-editor@0.51.0)
       '@solid-primitives/list':
         specifier: ^0.0.100
         version: 0.0.100(solid-js@1.8.22)
@@ -66,9 +69,6 @@ importers:
       '@esbuild-plugins/node-globals-polyfill':
         specifier: ^0.2.3
         version: 0.2.3(esbuild@0.18.20)
-      '@monaco-editor/loader':
-        specifier: ^1.4.0
-        version: 1.4.0(monaco-editor@0.51.0)
       '@rollup/plugin-json':
         specifier: ^6.1.0
         version: 6.1.0(rollup@3.29.4)

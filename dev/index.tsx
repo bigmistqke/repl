@@ -1,6 +1,6 @@
 import { Runtime } from '@bigmistqke/repl'
-import '@bigmistqke/repl/element'
-import '@bigmistqke/repl/element/monaco-editor'
+import { ReplFrame } from '@bigmistqke/repl/solid'
+import { ReplMonaco } from '@bigmistqke/repl/solid/monaco-editor'
 import { typescriptTransformModulePaths } from '@bigmistqke/repl/transform-module-paths/typescript'
 import { babelTransform } from '@bigmistqke/repl/transform/babel'
 import { typescriptTransform } from '@bigmistqke/repl/transform/typescript'
@@ -83,8 +83,8 @@ const App: Component = () => {
   return (
     <div
       style={{
-        display: 'flex',
-        'flex-direction': 'row',
+        display: 'grid',
+        'grid-template-columns': '1fr 1fr',
         height: '100%',
         overflow: 'hidden',
       }}
@@ -92,7 +92,7 @@ const App: Component = () => {
       <Show when={runtime()}>
         {runtime => (
           <>
-            <repl-monaco-editor
+            <ReplMonaco
               runtime={runtime()}
               path="src/index.tsx"
               monaco={loader.init()}
@@ -101,9 +101,10 @@ const App: Component = () => {
                 flex: '1',
               }}
             />
-            <repl-frame
+            <ReplFrame
+              runtime={runtime()}
               style={{ flex: '1' }}
-              onReady={({ frame }) => {
+              onReady={frame => {
                 const file = runtime().getFile('src/index.tsx')!
                 let cleanup: undefined | (() => void)
                 function injectUrl({ url }: { url?: string }) {

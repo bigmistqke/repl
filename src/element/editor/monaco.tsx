@@ -20,7 +20,7 @@ import { every, when, whenEffect } from 'src/utils/conditionals'
 export type MonacoTheme = Parameters<Monaco['editor']['defineTheme']>[1]
 
 type ReplMonacoAttributes = ElementAttributes<
-  ReplMonacoEditor,
+  ReplMonacoEditorElement,
   'path' | 'theme' | 'runtime' | 'monaco'
 >
 
@@ -61,7 +61,7 @@ function prefixPaths(
 }
 
 @element('repl-monaco-editor')
-export class ReplMonacoEditor extends Element {
+export class ReplMonacoEditorElement extends Element {
   static monaco: Promise<Monaco> | undefined
   @signal monaco: Promise<Monaco> | undefined
   @signal runtime: Runtime | null | undefined = null
@@ -87,7 +87,7 @@ export class ReplMonacoEditor extends Element {
 
   template = () => {
     const runtime = useRuntime(this)
-    const [monaco] = createResource(() => this.monaco || ReplMonacoEditor.monaco)
+    const [monaco] = createResource(() => this.monaco || ReplMonacoEditorElement.monaco)
 
     // Setup monaco.
     {
@@ -142,7 +142,7 @@ export class ReplMonacoEditor extends Element {
             await wireTmGrammars(
               monaco,
               registry,
-              new Map(Object.entries(ReplMonacoEditor.GRAMMAR_MAP)),
+              new Map(Object.entries(ReplMonacoEditorElement.GRAMMAR_MAP)),
             )
           }
         })

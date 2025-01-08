@@ -24,6 +24,9 @@
     "paths": {
       "src": ["./src"],
       "@bigmistqke/repl": ["./src/runtime"],
+      "@bigmistqke/repl/solid": ["./src/solid"],
+      "@bigmistqke/repl/solid/tm-editor": ["./src/solid/editor/tm.tsx"],
+      "@bigmistqke/repl/solid/monaco-editor": ["./src/solid/editor/monaco.tsx"],
       "@bigmistqke/repl/element": ["./src/element"],
       "@bigmistqke/repl/element/*": ["./src/element/*"],
       "@bigmistqke/repl/element/tm-editor": ["./src/element/editor/tm.tsx"],
@@ -39,5 +42,5 @@
       "@bigmistqke/repl/std/*": ["src/std/*"]
     }
   },
-  "include": ["src", "dist"]
+  "include": ["src"]
 }

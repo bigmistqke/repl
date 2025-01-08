@@ -11,7 +11,7 @@ import { html } from 'src/utils/object-url-literal'
 /*                                                                                */
 /**********************************************************************************/
 
-type ShikiTextareaAttributes = ElementAttributes<ReplFrame, 'name' | 'runtime'>
+type ShikiTextareaAttributes = ElementAttributes<ReplFrameElement, 'name' | 'runtime'>
 
 declare module 'solid-js/jsx-runtime' {
   namespace JSX {
@@ -41,7 +41,7 @@ class FrameReadyEvent extends Event {
   }
 }
 @element('repl-frame')
-export class ReplFrame extends Element {
+export class ReplFrameElement extends Element {
   @stringAttribute name = 'default'
   @signal runtime: Runtime | null | undefined = null
   @signal frame: Frame = null!
@@ -94,6 +94,6 @@ export class ReplFrame extends Element {
 
 export function registerFrame() {
   if (!customElements.get('repl-frame')) {
-    customElements.define('repl-frame', ReplFrame)
+    customElements.define('repl-frame', ReplFrameElement)
   }
 }
