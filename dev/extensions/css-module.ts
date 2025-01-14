@@ -1,5 +1,5 @@
-import { createStyleLoaderSource, JsFile, Runtime, VirtualFile } from '@bigmistqke/repl'
 import { createEffect } from 'solid-js'
+import { createStyleLoaderSource, JsFile, Runtime, VirtualFile } from 'src/create-filesystem'
 import zeptoid from 'zeptoid'
 
 /**

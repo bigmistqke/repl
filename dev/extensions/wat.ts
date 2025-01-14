@@ -1,5 +1,5 @@
-import { Runtime, VirtualFile, WasmFile } from '@bigmistqke/repl'
 import { createResource } from 'solid-js'
+import { Runtime, VirtualFile, WasmFile } from 'src/create-filesystem'
 import { every, whenEffect } from 'src/utils/conditionals'
 import WABT from 'wabt'
 

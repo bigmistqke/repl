@@ -1,5 +1,6 @@
 import type * as Babel from '@babel/standalone'
-import { Transform } from 'src/runtime/runtime'
+
+type Transform = (source: string, path: string) => string
 
 export interface BabelConfig {
   babel?: typeof Babel | Promise<typeof Babel>

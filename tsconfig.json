@@ -22,25 +22,8 @@
     "target": "ESNext",
     "types": ["vite/client"],
     "paths": {
-      "src": ["./src"],
-      "@bigmistqke/repl": ["./src/runtime"],
-      "@bigmistqke/repl/solid": ["./src/solid"],
-      "@bigmistqke/repl/solid/tm-editor": ["./src/solid/editor/tm.tsx"],
-      "@bigmistqke/repl/solid/monaco-editor": ["./src/solid/editor/monaco.tsx"],
-      "@bigmistqke/repl/element": ["./src/element"],
-      "@bigmistqke/repl/element/*": ["./src/element/*"],
-      "@bigmistqke/repl/element/tm-editor": ["./src/element/editor/tm.tsx"],
-      "@bigmistqke/repl/element/monaco-editor": ["./src/element/editor/monaco.tsx"],
-      "@bigmistqke/repl/plugins/*": ["./src/plugins/*"],
-      "@bigmistqke/repl/editor/monaco": ["src/solid/editor/monaco"],
-      "@bigmistqke/repl/editor/monaco/themes/*": ["src/solid/editor/monaco/themes/*"],
-      "@bigmistqke/repl/editor/shiki": ["src/solid/editor/textmate"],
-      "@bigmistqke/repl/transform/*": ["src/transform/*"],
-      "@bigmistqke/repl/transform-module-paths/*": ["./src/transform-module-paths/*"],
-      "@bigmistqke/repl/extensions/css-module": ["src/extensions/css-module"],
-      "@bigmistqke/repl/extensions/wat": ["src/extensions/wat"],
-      "@bigmistqke/repl/std/*": ["src/std/*"]
+      "@bigmistqke/repl": ["src/index.ts"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "dev/extensions"]
 }
