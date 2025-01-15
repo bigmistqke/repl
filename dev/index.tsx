@@ -3,6 +3,8 @@ import {
   createFileSystem,
   FileSystem,
   FileType,
+  resolvePath,
+  transformHtml,
   transformModulePaths,
 } from '@bigmistqke/repl'
 import { Split } from '@bigmistqke/solid-grid-split'
@@ -12,103 +14,22 @@ import { createMemo, createSelector, createSignal, Index } from 'solid-js'
 import { render, Show } from 'solid-js/web'
 import { ShikiTextarea } from 'solid-shiki-textarea'
 import ts from 'typescript'
+import demo from './demo'
+import toolkit from './lib/repl-toolkit.js?raw'
 import './styles.css'
-
-function relativeToAbsolutePath(currentPath: string, relativePath: string) {
-  const base = new URL(currentPath, 'http://example.com/')
-  const absoluteUrl = new URL(relativePath, base)
-  return absoluteUrl.pathname
-}
 
 const [selectedPath, setSelectedPath] = createSignal<string>('main.ts')
 const isPathSelected = createSelector(selectedPath)
 
-function processJs(fs: FileSystem, path: string, source: string, typescript?: boolean) {
-  // 1. Parse imports
-  source = transformModulePaths(source, path => {
-    try {
-      if (path.startsWith('.')) {
-        // 2. Swap relative module-path out with their respective module-url
-        const url = fs.url(relativeToAbsolutePath(path, path))
-        if (!url) throw `url is undefined`
-        return url
-      } else if (path.startsWith('http:') || path.startsWith('https:')) {
-        // 3. Return urls directly
-        return path
-      } else {
-        // 4. Wrap external modules with esm.sh
-        return `https://esm.sh/${path}`
-      }
-    } catch (error) {
-      throw error
-    }
-  })!
-
-  if (typescript) {
-    // 4. Transpile to js
-    source = ts.transpile(source, {
-      target: 2,
-      module: 5,
-      jsx: 1,
-      esModuleInterop: true,
-      allowSyntheticDefaultImports: true,
-      forceConsistentCasingInFileNames: true,
-      isolatedModules: true,
-      resolveJsonModule: true,
-      strict: true,
-      noEmit: false,
-      outDir: './dist',
-    })
-  }
-
-  return source
-}
-
-// Create a new DOMParser and XMLSerializer-instance
-const domParser = new DOMParser()
-const xmlSerializer = new XMLSerializer()
-
-function processHtml(fs: FileSystem, path: string, source: string) {
-  // Parse the HTML string into a DOM Document
-  const doc = domParser.parseFromString(source, 'text/html')
-
-  Array.from(
-    // Query all script-elements with type module
-    doc.querySelectorAll<HTMLScriptElement>('script[type="module"]'),
-  ).forEach(script => {
-    if (script.type === 'module' && script.textContent) {
-      script.textContent = processJs(fs, path, script.textContent)
-    }
-  })
-
-  Array.from(
-    // Query all script-elements with relative src
-    doc.querySelectorAll<HTMLScriptElement>('script[src]:not([src^="http:"]):not([src^="https:"])'),
-  ).forEach(script => {
-    // Swap the src with the data-url of the corresponding file
-    const src = script.getAttribute('src')!
-    const absolutePath = relativeToAbsolutePath(path, src)
-    const url = fs.url(absolutePath)
-    if (url) {
-      script.setAttribute('src', url)
-    }
-  })
-
-  Array.from(
-    // Query all stylesheet link-elements
-    doc.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"][href]'),
-  ).forEach(link => {
-    // Swap the href with the data-url of the corresponding file
-    const href = link.getAttribute('href')!
-    const absolutePath = relativeToAbsolutePath(path, href)
-    const url = fs.url(absolutePath)
-    if (url) {
-      link.setAttribute('href', url)
-    }
-  })
-
-  return xmlSerializer.serializeToString(doc)
-}
+const localModules = createFileSystem({
+  js: (path, initial, fs) =>
+    createFile({
+      type: 'javascript',
+      initial,
+      transform: source => processJs(fs, path, source),
+    }),
+})
+localModules.writeFile('repl-toolkit.js', toolkit)
 
 const fs = createFileSystem({
   html: (path, initial, fs) =>
@@ -135,26 +56,68 @@ const fs = createFileSystem({
       transform: source => processJs(fs, path, source, false),
     }),
 })
+Object.entries(demo).forEach(([key, source]) => fs.writeFile(key, source))
 
-fs.writeFile(
-  'main.ts',
-  `import * as x from "https://pkg.pr.new/bigmistqke/repl/@bigmistqke/repl@6"
-console.log(x)
-  document.body.style.background = "yellow"
-export const hallo = () => 'hallo'`,
-)
-fs.writeFile(
-  'index.css',
-  `body {
-   background: yellow;  
-}`,
-)
-fs.writeFile('index.html', `<link rel="stylesheet" href="./index.css" />`)
+function processJs(fs: FileSystem, path: string, source: string, typescript?: boolean) {
+  source = transformModulePaths(source, modulePath => {
+    if (modulePath === '@bigmistqke/repl') {
+      // Return local module (handy for development!)
+      return localModules.url('repl-toolkit.js')
+    } else if (modulePath.startsWith('.')) {
+      // Resolve relative paths to the file's data-url
+      const url = fs.url(resolvePath(path, modulePath))
+      if (!url) throw `url is undefined`
+      return url
+    } else if (modulePath.startsWith('http:') || modulePath.startsWith('https:')) {
+      // Return urls directly
+      return modulePath
+    } else {
+      // Wrap external modules with esm.sh
+      return `https://esm.sh/${modulePath}`
+    }
+  })!
 
-render(function App() {
+  if (typescript) {
+    // Transpile to js
+    source = ts.transpile(source, {
+      target: 2,
+      module: 5,
+      jsx: 1,
+    })
+  }
+
+  return source
+}
+
+function processHtml(fs: FileSystem, path: string, source: string) {
+  return (
+    transformHtml(source)
+      // Process module-paths of module-scripts
+      .transform('script[type="module"]', (script: HTMLScriptElement) => {
+        if (script.type !== 'module' || !script.textContent) return
+        script.textContent = processJs(fs, path, script.textContent)
+      })
+      // Process src-attribute of relative imports of scripts
+      .transform(
+        'script[src]:not([src^="http:"]):not([src^="https:"])',
+        (script: HTMLScriptElement) => {
+          const url = fs.url(resolvePath(path, script.getAttribute('src')!))
+          if (url) script.setAttribute('src', url)
+        },
+      )
+      // Process href-attribute of all stylesheet links
+      .transform('link[rel="stylesheet"][href]', (link: HTMLLinkElement) => {
+        const url = fs.url(resolvePath(path, link.getAttribute('href')!))
+        if (url) link.setAttribute('href', url)
+      })
+      .toString()
+  )
+}
+
+render(() => {
   return (
     <Split style={{ height: '100vh' }}>
-      <Split.Pane size="250px" style={{ display: 'grid', 'align-content': 'start' }}>
+      <Split.Pane size="150px" style={{ display: 'grid', 'align-content': 'start' }}>
         <DirEnt path="" layer={0} type="dir" />
       </Split.Pane>
       <Handle />

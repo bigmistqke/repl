@@ -6,6 +6,7 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineConfig({
   build: {
+    minify: false,
     lib: {
       entry: {
         index: resolve(__dirname, 'src/index.ts'),
@@ -15,7 +16,13 @@ export default defineConfig({
       formats: ['es'],
     },
     rollupOptions: {
-      external: ['solid-js', 'typescript', '@babel/standalone'],
+      external: [
+        'solid-js',
+        'solid-js/store',
+        '@solidjs/router',
+        'typescript',
+        '@babel/standalone',
+      ],
     },
   },
   plugins: [

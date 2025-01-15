@@ -6,6 +6,7 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineConfig({
   base: './',
+  assetsInclude: ['assets/**/*'],
   plugins: [
     tsconfigPaths(),
     solid(),
@@ -27,7 +28,6 @@ export default defineConfig({
       },
     },
     wasmPlugin(),
-    /* rollupServiceWorkerPlugin(), */
   ],
   optimizeDeps: {
     esbuildOptions: {
