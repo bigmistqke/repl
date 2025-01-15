@@ -2,6 +2,16 @@ import { createAsync } from "@solidjs/router";
 import { createSignal, createMemo } from "solid-js";
 import { createStore, produce } from "solid-js/store";
 import typescript from "typescript";
+function createExtension({
+  type,
+  transform
+}) {
+  return (path, initial, fs) => createFile({
+    type,
+    initial,
+    transform: transform ? (source) => transform(path, source, fs) : void 0
+  });
+}
 function createFile({
   type,
   initial,
@@ -163,9 +173,7 @@ function createFileSystem(extensions) {
         let dirEnt2 = extension && ((_a = extensions[extension]) == null ? void 0 : _a.call(extensions, path, source, fs));
         dirEnt2 || (dirEnt2 = createFile({
           type: "unknown",
-          initial: source,
-          transform: () => new Promise(() => {
-          })
+          initial: source
         }));
         setDirEnts(path, dirEnt2);
       }
@@ -299,6 +307,21 @@ async function downloadTypesfromPackage({
 }
 function getVirtualPath(url, cdn = "https://www.esm.sh") {
   return url.replace(`${cdn}/`, "").split("/").slice(1).join("/");
+}
+const domParser = new DOMParser();
+const xmlSerializer = new XMLSerializer();
+function parseHtml(source) {
+  const doc = domParser.parseFromString(source, "text/html");
+  const api = {
+    select(selector, callback) {
+      Array.from(doc.querySelectorAll(selector)).forEach(callback);
+      return api;
+    },
+    toString() {
+      return xmlSerializer.serializeToString(doc);
+    }
+  };
+  return api;
 }
 function resolveExports(exports, conditions) {
   if (typeof exports === "string") {
@@ -439,28 +462,14 @@ async function babelTransform(config) {
     return result;
   };
 }
-const domParser = new DOMParser();
-const xmlSerializer = new XMLSerializer();
-function transformHtml(source) {
-  const doc = domParser.parseFromString(source, "text/html");
-  const api = {
-    transform(selector, callback) {
-      Array.from(doc.querySelectorAll(selector)).forEach(callback);
-      return api;
-    },
-    toString() {
-      return xmlSerializer.serializeToString(doc);
-    }
-  };
-  return api;
-}
 export {
   babelTransform,
+  createExtension,
   createFile,
   createFileSystem,
   downloadTypesFromUrl,
+  parseHtml,
   resolvePackageEntries,
   resolvePath,
-  transformHtml,
   transformModulePaths
 };

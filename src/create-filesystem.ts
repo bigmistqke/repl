@@ -25,6 +25,7 @@ export type DirEnt = File | Dir
 export type DirEntType = DirEnt['type']
 export type Module = Record<string, unknown>
 export type Extension = (path: string, source: string, fs: FileSystem) => File
+export type Transform = (path: string, source: string, fs: FileSystem) => string
 export type FileSystem = ReturnType<typeof createFileSystem>
 
 /**********************************************************************************/
@@ -32,6 +33,21 @@ export type FileSystem = ReturnType<typeof createFileSystem>
 /*                                   Create File                                  */
 /*                                                                                */
 /**********************************************************************************/
+
+export function createExtension({
+  type,
+  transform,
+}: {
+  type: File['type']
+  transform?: (path: string, source: string, fs: FileSystem) => string | Promise<string>
+}): Extension {
+  return (path, initial, fs) =>
+    createFile({
+      type,
+      initial,
+      transform: transform ? source => transform(path, source, fs) : undefined,
+    })
+}
 
 export function createFile({
   type,
@@ -246,7 +262,6 @@ export function createFileSystem(extensions: Record<string, Extension>) {
         dirEnt ||= createFile({
           type: 'unknown',
           initial: source,
-          transform: () => new Promise<string>(() => {}),
         })
         setDirEnts(path, dirEnt)
       }

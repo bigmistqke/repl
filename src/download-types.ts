@@ -1,4 +1,4 @@
-import { transformModulePaths } from './transform-module-paths'
+import { transformModulePaths } from './parse-module-paths'
 
 function relativeToAbsolutePath(currentPath: string, relativePath: string) {
   const base = new URL(currentPath, 'http://example.com/')
