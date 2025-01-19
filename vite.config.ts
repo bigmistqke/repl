@@ -1,6 +1,6 @@
 import { resolve } from 'path'
 import { defineConfig } from 'vite'
-import dtsBundleGenerator from 'vite-plugin-dts-bundle-generator'
+import dts from 'vite-plugin-dts-bundle-generator'
 import solid from 'vite-plugin-solid'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
@@ -8,11 +8,9 @@ export default defineConfig({
   build: {
     minify: false,
     lib: {
-      entry: {
-        index: resolve(__dirname, 'src/index.ts'),
-      },
+      entry: resolve(__dirname, 'src/index.ts'),
       name: 'repl',
-      fileName: (_, name) => `${name}.js`,
+      fileName: 'repl-toolkit',
       formats: ['es'],
     },
     rollupOptions: {
@@ -28,7 +26,7 @@ export default defineConfig({
   plugins: [
     tsconfigPaths(),
     solid(),
-    dtsBundleGenerator(
+    dts(
       {
         fileName: name => `${name}.d.ts`,
         libraries: {

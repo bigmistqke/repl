@@ -164,6 +164,7 @@ export function createFileSystem(extensions: Record<string, Extension>) {
 
   const fs = {
     url,
+    paths: () => Object.keys(dirEnts),
     transformed: (path: string) => getDirEnt(path)?.transformed(),
     getType(path: string): DirEnt['type'] {
       path = normalizePath(path)

@@ -17,6 +17,15 @@ importers:
       '@solidjs/router':
         specifier: ^0.15.2
         version: 0.15.2(solid-js@1.8.22)
+      '@types/picomatch':
+        specifier: ^3.0.1
+        version: 3.0.1
+      '@uwu/monaco-solid':
+        specifier: ^1.4.0
+        version: 1.4.0(solid-js@1.8.22)
+      picomatch:
+        specifier: ^4.0.2
+        version: 4.0.2
       shiki:
         specifier: ^1.26.2
         version: 1.26.2
@@ -33,6 +42,9 @@ importers:
       '@bigmistqke/solid-grid-split':
         specifier: ^0.0.2
         version: 0.0.2(solid-js@1.8.22)
+      '@monaco-editor/loader':
+        specifier: ^1.4.0
+        version: 1.4.0(monaco-editor@0.45.0)
       '@types/babel__standalone':
         specifier: ^7.1.9
         version: 7.1.9
@@ -45,6 +57,15 @@ importers:
       lz-string:
         specifier: ^1.5.0
         version: 1.5.0
+      monaco-editor-textmate:
+        specifier: ^4.0.0
+        version: 4.0.0(monaco-editor@0.45.0)(monaco-textmate@3.0.1(onigasm@2.2.5))
+      monaco-textmate:
+        specifier: ^3.0.1
+        version: 3.0.1(onigasm@2.2.5)
+      onigasm:
+        specifier: ^2.2.5
+        version: 2.2.5
       pako:
         specifier: ^2.1.0
         version: 2.1.0
@@ -351,6 +372,11 @@ packages:
     peerDependencies:
       '@types/react': '*'
 
+  '@monaco-editor/loader@1.4.0':
+    resolution: {integrity: sha512-00ioBig0x642hytVspPl7DbQyaSWRaolYie/UFNjoTdvoKPzo6xrXLhTk9ixgIKcLH5b5vDOjVNiGyY+uDCUlg==}
+    peerDependencies:
+      monaco-editor: '>= 0.21.0 < 1'
+
   '@shikijs/core@1.26.2':
     resolution: {integrity: sha512-ORyu3MrY7dCC7FDLDsFSkBM9b/AT9/Y8rH+UQ07Rtek48pp0ZhQOMPTKolqszP4bBCas6FqTZQYt18BBamVl/g==}
 
@@ -419,6 +445,9 @@ packages:
   '@types/node@22.5.4':
     resolution: {integrity: sha512-FDuKUJQm/ju9fT/SeX/6+gBzoPzlVCzfzmGkwKvRHQVxi4BntVbyIwf6a4Xn62mrvndLiml6z/UBXIdEVjQLXg==}
 
+  '@types/picomatch@3.0.1':
+    resolution: {integrity: sha512-1MRgzpzY0hOp9pW/kLRxeQhUWwil6gnrUYd3oEpeYBqp/FexhaCPv3F8LsYr47gtUU45fO2cm1dbwkSrHEo8Uw==}
+
   '@types/react@19.0.6':
     resolution: {integrity: sha512-gIlMztcTeDgXCUj0vCBOqEuSEhX//63fW9SZtCJ+agxoQTOklwDfiEMlTWn4mR/C/UK5VHlpwsCsOyf7/hc4lw==}
 
@@ -427,6 +456,14 @@ packages:
 
   '@ungap/structured-clone@1.2.1':
     resolution: {integrity: sha512-fEzPV3hSkSMltkw152tJKNARhOupqbH96MZWyRjNaYZOMIzbrTeQDG+MTc6Mr2pgzFQzFxAfmhGDNP5QK++2ZA==}
+
+  '@uwu/monaco-solid@1.4.0':
+    resolution: {integrity: sha512-TeTr2jG80dGKBuVBq8e3Slnv8NgoJCwLc3YZLhQu8MfO9JCRUnCbW3aJ3XQLivMnnchTntKI/NkPgAKb2N5kDQ==}
+    peerDependencies:
+      solid-js: ^1.4.4
+
+  '@uwu/simple-monaco-core@1.4.0':
+    resolution: {integrity: sha512-gKFP9YubVHaOfSBnLZ00DDiAf2jKwQz8fTF0lWt9Mfizm8THz33HSeIak8dr4UXEAEAbcNXW1WZDAK/Uch8/KA==}
 
   '@vitest/expect@0.33.0':
     resolution: {integrity: sha512-sVNf+Gla3mhTCxNJx+wJLDPp/WcstOe0Ksqz4Vec51MmgMth/ia0MGFEkIZmVGeTL5HtjYR4Wl/ZxBxBXZJTzQ==}
@@ -658,6 +695,9 @@ packages:
     resolution: {integrity: sha512-vbRorB5FUQWvla16U8R/qgaFIya2qGzwDrNmCZuYKrbdSUMG6I1ZCGQRefkRVhuOkIGVne7BQ35DSfo1qvJqFg==}
     engines: {node: '>=0.8.0'}
 
+  fast-plist@0.1.3:
+    resolution: {integrity: sha512-d9cEfo/WcOezgPLAC/8t8wGb6YOD6JTCPMw2QcG2nAdFmyY+9rTUizCTaGjIZAloWENTEUMAPpkUAIJJJ0i96A==}
+
   form-data@4.0.0:
     resolution: {integrity: sha512-ETEklSGi5t0QMZuiXoA/Q6vcnxcLQP5vdugSpuAyi6SVGi2clPPp+xgEhuMaHC+zGgn31Kd235W35f7Hykkaww==}
     engines: {node: '>= 6'}
@@ -816,6 +856,23 @@ packages:
   mlly@1.7.1:
     resolution: {integrity: sha512-rrVRZRELyQzrIUAVMHxP97kv+G786pHmOKzuFII8zDYahFBS7qnHh2AlYSl1GAHhaMPCz6/oHjVMcfFYgFYHgA==}
 
+  monaco-editor-textmate@4.0.0:
+    resolution: {integrity: sha512-Clwup5LJzVfwURQrS+odSEC5/hZBEG36pQnvBKt4OtBndF8r2xLeXUZcK/AqEBK2u0Npy7frFp9hG7m66Ol9hA==}
+    peerDependencies:
+      monaco-editor: 0.x.x
+      monaco-textmate: ^3.0.0
+
+  monaco-editor@0.45.0:
+    resolution: {integrity: sha512-mjv1G1ZzfEE3k9HZN0dQ2olMdwIfaeAAjFiwNprLfYNRSz7ctv9XuCT7gPtBGrMUeV1/iZzYKj17Khu1hxoHOA==}
+
+  monaco-textmate@3.0.1:
+    resolution: {integrity: sha512-ZxxY3OsqUczYP1sGqo97tu+CJmMBwuSW+dL0WEBdDhOZ5G1zntw72hvBc68ZQAirosWvbDKgN1dL5k173QtFww==}
+    peerDependencies:
+      onigasm: ^2.0.0
+
+  monaco-themes@0.4.4:
+    resolution: {integrity: sha512-Hbb9pvRrpSi0rZezcB/IOdQnpx10o55Lx4zFdRAAVpFMa1HP7FgaqEZdKffb4ovd90fETCixeFO9JPYFMAq+TQ==}
+
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
 
@@ -829,6 +886,9 @@ packages:
 
   nwsapi@2.2.12:
     resolution: {integrity: sha512-qXDmcVlZV4XRtKFzddidpfVP4oMSGhga+xdMc25mv8kaLUHtgzCDhUxkrN8exkGdTlLNaXj7CV3GtON7zuGZ+w==}
+
+  onigasm@2.2.5:
+    resolution: {integrity: sha512-F+th54mPc0l1lp1ZcFMyL/jTs2Tlq4SqIHKIXGZOR/VkHkF9A7Fr5rRr5+ZG/lWeRsyrClLYRq7s/yFQ/XhWCA==}
 
   oniguruma-to-es@1.0.0:
     resolution: {integrity: sha512-kihvp0O4lFwf5tZMkfanwQLIZ9ORe9OeOFgZonH0BQeThgwfJiaZFeOfvvJVnJIM9TiVmx0RDD35hUJDR0++rQ==}
@@ -851,6 +911,10 @@ packages:
 
   picocolors@1.1.0:
     resolution: {integrity: sha512-TQ92mBOW0l3LeMeyLV6mzy/kWr8lkd/hp3mTg7wYK7zJhuBStmGMBG0BdeDZS/dZx1IukaX6Bk11zcln25o1Aw==}
+
+  picomatch@4.0.2:
+    resolution: {integrity: sha512-M7BAV6Rlcy5u+m6oPhAPFgJTzAioX/6B0DxyvDlo9l8+T3nLKbrczg2WLUyzd45L8RqfUMyGPzekbMvX2Ldkwg==}
+    engines: {node: '>=12'}
 
   pkg-types@1.2.0:
     resolution: {integrity: sha512-+ifYuSSqOQ8CqP4MbZA5hDpb97n3E8SVWdJe+Wms9kj745lmd3b7EZJiqvmLwAlmRfjrI7Hi5z3kdBJ93lFNPA==}
@@ -978,6 +1042,9 @@ packages:
 
   stackback@0.0.2:
     resolution: {integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==}
+
+  state-local@1.0.7:
+    resolution: {integrity: sha512-HTEHMNieakEnoe33shBYcZ7NX83ACUjCu8c40iOGEZsngj9zRnkqS9j1pqQPXwobB0ZcVTk27REb7COQ0UR59w==}
 
   std-env@3.7.0:
     resolution: {integrity: sha512-JPbdCEQLj1w5GilpiHAx3qJvFndqybBysA3qUOnznweH4QbNYUsW/ea8QzSrnh0vNsezMMw5bcVool8lM0gwzg==}
@@ -1534,6 +1601,11 @@ snapshots:
     transitivePeerDependencies:
       - '@babel/core'
 
+  '@monaco-editor/loader@1.4.0(monaco-editor@0.45.0)':
+    dependencies:
+      monaco-editor: 0.45.0
+      state-local: 1.0.7
+
   '@shikijs/core@1.26.2':
     dependencies:
       '@shikijs/engine-javascript': 1.26.2
@@ -1630,6 +1702,8 @@ snapshots:
     dependencies:
       undici-types: 6.19.8
 
+  '@types/picomatch@3.0.1': {}
+
   '@types/react@19.0.6':
     dependencies:
       csstype: 3.1.3
@@ -1637,6 +1711,17 @@ snapshots:
   '@types/unist@3.0.3': {}
 
   '@ungap/structured-clone@1.2.1': {}
+
+  '@uwu/monaco-solid@1.4.0(solid-js@1.8.22)':
+    dependencies:
+      '@uwu/simple-monaco-core': 1.4.0
+      solid-js: 1.8.22
+
+  '@uwu/simple-monaco-core@1.4.0':
+    dependencies:
+      '@monaco-editor/loader': 1.4.0(monaco-editor@0.45.0)
+      monaco-editor: 0.45.0
+      monaco-themes: 0.4.4
 
   '@vitest/expect@0.33.0':
     dependencies:
@@ -1897,6 +1982,8 @@ snapshots:
 
   escape-string-regexp@1.0.5: {}
 
+  fast-plist@0.1.3: {}
+
   form-data@4.0.0:
     dependencies:
       asynckit: 0.4.0
@@ -2086,6 +2173,22 @@ snapshots:
       pkg-types: 1.2.0
       ufo: 1.5.4
 
+  monaco-editor-textmate@4.0.0(monaco-editor@0.45.0)(monaco-textmate@3.0.1(onigasm@2.2.5)):
+    dependencies:
+      monaco-editor: 0.45.0
+      monaco-textmate: 3.0.1(onigasm@2.2.5)
+
+  monaco-editor@0.45.0: {}
+
+  monaco-textmate@3.0.1(onigasm@2.2.5):
+    dependencies:
+      fast-plist: 0.1.3
+      onigasm: 2.2.5
+
+  monaco-themes@0.4.4:
+    dependencies:
+      fast-plist: 0.1.3
+
   ms@2.1.3: {}
 
   nanoid@3.3.7: {}
@@ -2094,6 +2197,10 @@ snapshots:
 
   nwsapi@2.2.12:
     optional: true
+
+  onigasm@2.2.5:
+    dependencies:
+      lru-cache: 5.1.1
 
   oniguruma-to-es@1.0.0:
     dependencies:
@@ -2117,6 +2224,8 @@ snapshots:
   pathval@1.1.1: {}
 
   picocolors@1.1.0: {}
+
+  picomatch@4.0.2: {}
 
   pkg-types@1.2.0:
     dependencies:
@@ -2253,6 +2362,8 @@ snapshots:
   spawn-command@0.0.2: {}
 
   stackback@0.0.2: {}
+
+  state-local@1.0.7: {}
 
   std-env@3.7.0: {}
 

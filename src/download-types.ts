@@ -1,10 +1,7 @@
-import { transformModulePaths } from './parse-module-paths'
+import { resolvePath } from './path'
+import { transformModulePaths } from './transform-module-paths'
+import { defer } from './utils/defer'
 
-function relativeToAbsolutePath(currentPath: string, relativePath: string) {
-  const base = new URL(currentPath, 'http://example.com/')
-  const absoluteUrl = new URL(relativePath, base)
-  return absoluteUrl.pathname
-}
 function isUrl(path: string) {
   return path.startsWith('blob:') || path.startsWith('http:') || path.startsWith('https:')
 }
@@ -12,6 +9,32 @@ function isUrl(path: string) {
 function isRelativePath(path: string) {
   return path.startsWith('.')
 }
+
+/**
+ * Converts a URL into a virtual path by stripping the CDN URL and protocol.
+ *
+ * @param url The URL to convert.
+ * @returns The virtual path derived from the URL.
+ * @private
+ */
+function getVirtualPath(url: string, cdn = 'https://esm.sh') {
+  const [first, ...path] = url.replace(`${cdn}/`, '').split('/')
+  const library = first?.startsWith('@') ? `@${first.slice(1).split('@')[0]}` : first!.split('@')[0]
+  return `${library}/${path.join('/')}`
+}
+
+const extensions = ['.js.d.ts', '.jsx.d.ts', '.ts.d.ts', '.tsx.d.ts', '.js', '.jsx', '.tsx']
+
+function normalizePath(path: string) {
+  for (const extension of extensions) {
+    if (path.endsWith(extension)) {
+      return path.replace(extension, '.d.ts')
+    }
+  }
+  return path
+}
+
+const URL_CACHE = new Map<string, Promise<string>>()
 
 /**
  * Imports type definitions from a URL, checking if the types are already cached before importing.
@@ -24,34 +47,46 @@ function isRelativePath(path: string) {
 export async function downloadTypesFromUrl({
   url,
   declarationFiles = {},
-  cdn = 'https://www.esm.sh',
+  cdn = 'https://esm.sh',
 }: {
   url: string
-  declarationFiles: Record<string, string>
-  cdn: string
+  declarationFiles?: Record<string, string>
+  cdn?: string
 }): Promise<Record<string, string>> {
-  async function resolvePath(path: string) {
+  async function downloadPath(path: string) {
+    if (URL_CACHE.has(path)) return await URL_CACHE.get(path)!
+
+    const { promise, resolve } = defer<string>()
+    URL_CACHE.set(path, promise)
+
     const virtualPath = getVirtualPath(path)
     if (virtualPath in declarationFiles) return
 
-    const code = await fetch(path).then(response => {
-      if (response.status !== 200) {
-        throw new Error(`Error while loading ${url}`)
-      }
-      return response.text()
-    })
+    const response = await fetch(path)
+    if (response.status !== 200) {
+      throw new Error(`Error while loading ${url}`)
+    }
+    const code = await response.text()
+
+    resolve(code)
 
     const promises = new Array<Promise<any>>()
 
     const transformedCode = transformModulePaths(code, modulePath => {
       if (isRelativePath(modulePath)) {
-        promises.push(resolvePath(relativeToAbsolutePath(path, modulePath)))
-        if (modulePath.endsWith('.js')) {
-          return modulePath.replace('.js', '.d.ts')
-        }
+        let newPath = resolvePath(path, modulePath)
+        promises.push(downloadPath(normalizePath(newPath)))
+
+        return normalizePath(modulePath)
       } else if (isUrl(modulePath)) {
         const virtualPath = getVirtualPath(modulePath)
-        promises.push(downloadTypesFromUrl({ url: modulePath, declarationFiles, cdn }))
+        promises.push(
+          downloadTypesFromUrl({
+            url: modulePath,
+            declarationFiles,
+            cdn,
+          }),
+        )
         return virtualPath
       } else {
         promises.push(downloadTypesfromPackage({ name: modulePath, declarationFiles, cdn }))
@@ -68,10 +103,12 @@ export async function downloadTypesFromUrl({
     declarationFiles[virtualPath] = transformedCode
   }
 
-  await resolvePath(url)
+  await downloadPath(url)
 
   return declarationFiles
 }
+
+const TYPE_URL_CACHE = new Map<string, Promise<string | null>>()
 
 /**
  * Imports type definitions based on a package name by resolving it to a CDN path.
@@ -80,43 +117,30 @@ export async function downloadTypesFromUrl({
  * @returns
  * @async
  */
-async function downloadTypesfromPackage({
+export async function downloadTypesfromPackage({
   name,
   declarationFiles = {},
-  cdn = 'https://www.esm.sh',
+  cdn = 'https://esm.sh',
 }: {
   name: string
-  declarationFiles: Record<string, string>
-  cdn: string
+  declarationFiles?: Record<string, string>
+  cdn?: string
 }) {
-  const typeUrl = await fetch(`${cdn}/${name}`)
-    .then(result => result.headers.get('X-TypeScript-Types'))
-    .catch(error => {
-      console.info(error)
-      return undefined
-    })
+  const typeUrl = await (TYPE_URL_CACHE.get(name) ??
+    TYPE_URL_CACHE.set(
+      name,
+      fetch(`${cdn}/${name}`)
+        .then(result => result.headers.get('X-TypeScript-Types'))
+        .catch(error => {
+          console.info(error)
+          return null
+        }),
+    ).get(name))
 
-  if (!typeUrl) {
-    throw `no type url was found for package ${name}`
+  if (!typeUrl) throw `No type url was found for package ${name}`
+
+  return {
+    path: getVirtualPath(typeUrl),
+    types: await downloadTypesFromUrl({ url: typeUrl, declarationFiles, cdn }),
   }
-
-  return downloadTypesFromUrl({ url: typeUrl, declarationFiles, cdn })
-}
-
-/**
- * Converts a URL into a virtual path by stripping the CDN URL and protocol.
- *
- * @param url The URL to convert.
- * @returns The virtual path derived from the URL.
- * @private
- */
-function getVirtualPath(url: string, cdn = 'https://www.esm.sh') {
-  return (
-    url
-      .replace(`${cdn}/`, '')
-      // replace version-number
-      .split('/')
-      .slice(1)
-      .join('/')
-  )
 }

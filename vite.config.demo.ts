@@ -1,5 +1,6 @@
 import { resolve } from 'path'
 import { defineConfig } from 'vite'
+import dts from 'vite-plugin-dts-bundle-generator'
 import solid from 'vite-plugin-solid'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
@@ -23,7 +24,21 @@ export default defineConfig({
       ],
     },
   },
-  plugins: [tsconfigPaths(), solid()],
+  plugins: [
+    tsconfigPaths(),
+    solid(),
+    dts(
+      {
+        fileName: 'repl-toolkit.d.ts',
+        libraries: {
+          importedLibraries: ['solid-js'],
+        },
+      },
+      {
+        preferredConfigPath: './tsconfig.json',
+      },
+    ),
+  ],
   server: { port: 3000 },
   css: {
     modules: {

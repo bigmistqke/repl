@@ -1,6 +1,6 @@
 import { createAsync } from "@solidjs/router";
-import { createSignal, createMemo } from "solid-js";
-import { createStore, produce } from "solid-js/store";
+import { createSignal, createMemo, createEffect } from "solid-js";
+import { createStore, produce, reconcile } from "solid-js/store";
 import typescript from "typescript";
 function createExtension({
   type,
@@ -43,7 +43,7 @@ function createFileSystem(extensions) {
   function normalizePath(path) {
     return path.replace(/^\/+/, "");
   }
-  function getExtension(path) {
+  function getExtension2(path) {
     var _a;
     return (_a = path.split("/").slice(-1)[0]) == null ? void 0 : _a.split(".")[1];
   }
@@ -91,6 +91,7 @@ function createFileSystem(extensions) {
   }
   const fs = {
     url,
+    paths: () => Object.keys(dirEnts),
     transformed: (path) => {
       var _a;
       return (_a = getDirEnt(path)) == null ? void 0 : _a.transformed();
@@ -166,7 +167,7 @@ function createFileSystem(extensions) {
       if ((dirEnt == null ? void 0 : dirEnt.type) === "dir") {
         throw `A directory already exist with the same name: ${path}`;
       }
-      const extension = getExtension(path);
+      const extension = getExtension2(path);
       if (dirEnt) {
         dirEnt.set(source);
       } else {
@@ -241,9 +242,10 @@ function transformModulePaths(code, callback) {
   return printer.printFile(result.transformed[0]);
 }
 function relativeToAbsolutePath(currentPath, relativePath) {
-  const base = new URL(currentPath, "http://example.com/");
+  const isUrl2 = currentPath.startsWith("http:") || currentPath.startsWith("https:");
+  const base = isUrl2 ? currentPath : new URL(currentPath, "http://example.com/");
   const absoluteUrl = new URL(relativePath, base);
-  return absoluteUrl.pathname;
+  return isUrl2 ? absoluteUrl.href : absoluteUrl.pathname;
 }
 function isUrl(path) {
   return path.startsWith("blob:") || path.startsWith("http:") || path.startsWith("https:");
@@ -251,31 +253,56 @@ function isUrl(path) {
 function isRelativePath(path) {
   return path.startsWith(".");
 }
+function getVirtualPath(url, cdn = "https://esm.sh") {
+  const [first, ...path] = url.replace(`${cdn}/`, "").split("/");
+  const library = (first == null ? void 0 : first.startsWith("@")) ? `@${first.slice(1).split("@")[0]}` : first.split("@")[0];
+  return `${library}/${path.join("/")}`;
+}
+function defer() {
+  let resolve = null;
+  return {
+    promise: new Promise((_resolve) => resolve = _resolve),
+    resolve
+  };
+}
+const CACHE = /* @__PURE__ */ new Map();
 async function downloadTypesFromUrl({
   url,
   declarationFiles = {},
-  cdn = "https://www.esm.sh"
+  cdn = "https://esm.sh"
 }) {
   async function resolvePath2(path) {
+    if (CACHE.has(path))
+      return await CACHE.get(path);
+    const { promise, resolve } = defer();
+    CACHE.set(path, promise);
     const virtualPath = getVirtualPath(path);
     if (virtualPath in declarationFiles)
       return;
-    const code = await fetch(path).then((response) => {
-      if (response.status !== 200) {
-        throw new Error(`Error while loading ${url}`);
-      }
-      return response.text();
-    });
+    const response = await fetch(path);
+    if (response.status !== 200) {
+      throw new Error(`Error while loading ${url}`);
+    }
+    const code = await response.text();
+    resolve(code);
     const promises = new Array();
     const transformedCode = transformModulePaths(code, (modulePath) => {
       if (isRelativePath(modulePath)) {
         promises.push(resolvePath2(relativeToAbsolutePath(path, modulePath)));
         if (modulePath.endsWith(".js")) {
           return modulePath.replace(".js", ".d.ts");
+        } else if (modulePath.endsWith(".ts")) {
+          return modulePath.replace(".ts", ".d.ts");
         }
       } else if (isUrl(modulePath)) {
         const virtualPath2 = getVirtualPath(modulePath);
-        promises.push(downloadTypesFromUrl({ url: modulePath, declarationFiles, cdn }));
+        promises.push(
+          downloadTypesFromUrl({
+            url: modulePath,
+            declarationFiles,
+            cdn
+          })
+        );
         return virtualPath2;
       } else {
         promises.push(downloadTypesfromPackage({ name: modulePath, declarationFiles, cdn }));
@@ -294,7 +321,7 @@ async function downloadTypesFromUrl({
 async function downloadTypesfromPackage({
   name,
   declarationFiles = {},
-  cdn = "https://www.esm.sh"
+  cdn = "https://esm.sh"
 }) {
   const typeUrl = await fetch(`${cdn}/${name}`).then((result) => result.headers.get("X-TypeScript-Types")).catch((error) => {
     console.info(error);
@@ -303,10 +330,87 @@ async function downloadTypesfromPackage({
   if (!typeUrl) {
     throw `no type url was found for package ${name}`;
   }
-  return downloadTypesFromUrl({ url: typeUrl, declarationFiles, cdn });
+  return {
+    path: getVirtualPath(typeUrl),
+    types: await downloadTypesFromUrl({ url: typeUrl, declarationFiles, cdn })
+  };
 }
-function getVirtualPath(url, cdn = "https://www.esm.sh") {
-  return url.replace(`${cdn}/`, "").split("/").slice(1).join("/");
+var Monaco;
+((Monaco2) => {
+  ((ModuleKind2) => {
+    ModuleKind2[ModuleKind2["None"] = 0] = "None";
+    ModuleKind2[ModuleKind2["CommonJS"] = 1] = "CommonJS";
+    ModuleKind2[ModuleKind2["AMD"] = 2] = "AMD";
+    ModuleKind2[ModuleKind2["UMD"] = 3] = "UMD";
+    ModuleKind2[ModuleKind2["System"] = 4] = "System";
+    ModuleKind2[ModuleKind2["ES2015"] = 5] = "ES2015";
+    ModuleKind2[ModuleKind2["ESNext"] = 99] = "ESNext";
+  })(Monaco2.ModuleKind || (Monaco2.ModuleKind = {}));
+  ((JsxEmit2) => {
+    JsxEmit2[JsxEmit2["None"] = 0] = "None";
+    JsxEmit2[JsxEmit2["Preserve"] = 1] = "Preserve";
+    JsxEmit2[JsxEmit2["React"] = 2] = "React";
+    JsxEmit2[JsxEmit2["ReactNative"] = 3] = "ReactNative";
+    JsxEmit2[JsxEmit2["ReactJSX"] = 4] = "ReactJSX";
+    JsxEmit2[JsxEmit2["ReactJSXDev"] = 5] = "ReactJSXDev";
+  })(Monaco2.JsxEmit || (Monaco2.JsxEmit = {}));
+  ((NewLineKind2) => {
+    NewLineKind2[NewLineKind2["CarriageReturnLineFeed"] = 0] = "CarriageReturnLineFeed";
+    NewLineKind2[NewLineKind2["LineFeed"] = 1] = "LineFeed";
+  })(Monaco2.NewLineKind || (Monaco2.NewLineKind = {}));
+  ((ScriptTarget2) => {
+    ScriptTarget2[ScriptTarget2["ES3"] = 0] = "ES3";
+    ScriptTarget2[ScriptTarget2["ES5"] = 1] = "ES5";
+    ScriptTarget2[ScriptTarget2["ES2015"] = 2] = "ES2015";
+    ScriptTarget2[ScriptTarget2["ES2016"] = 3] = "ES2016";
+    ScriptTarget2[ScriptTarget2["ES2017"] = 4] = "ES2017";
+    ScriptTarget2[ScriptTarget2["ES2018"] = 5] = "ES2018";
+    ScriptTarget2[ScriptTarget2["ES2019"] = 6] = "ES2019";
+    ScriptTarget2[ScriptTarget2["ES2020"] = 7] = "ES2020";
+    ScriptTarget2[ScriptTarget2["ESNext"] = 99] = "ESNext";
+    ScriptTarget2[ScriptTarget2["JSON"] = 100] = "JSON";
+    ScriptTarget2[ScriptTarget2["Latest"] = 99] = "Latest";
+  })(Monaco2.ScriptTarget || (Monaco2.ScriptTarget = {}));
+  ((ModuleResolutionKind2) => {
+    ModuleResolutionKind2[ModuleResolutionKind2["Classic"] = 1] = "Classic";
+    ModuleResolutionKind2[ModuleResolutionKind2["NodeJs"] = 2] = "NodeJs";
+  })(Monaco2.ModuleResolutionKind || (Monaco2.ModuleResolutionKind = {}));
+})(Monaco || (Monaco = {}));
+function mapObject(object, callback) {
+  return Object.fromEntries(
+    Object.entries(object).map((entry) => [entry[0], callback(entry[1], entry[0])])
+  );
+}
+function createMonacoTypeDownloader(config) {
+  const [types, setTypes] = createStore(config.types);
+  const [paths, setPaths] = createSignal({});
+  createEffect(() => setTypes(reconcile(config.types)));
+  function tsconfig() {
+    return {
+      ...config.tsconfig,
+      paths: {
+        ...mapObject(config.tsconfig.paths || {}, (value) => value.map((path) => `file:///${path}`)),
+        ...paths()
+      }
+    };
+  }
+  createEffect(() => console.log(tsconfig()));
+  return {
+    get tsconfig() {
+      return tsconfig();
+    },
+    types,
+    async downloadModule(name) {
+      if (!(name in paths())) {
+        const { types: types2, path } = await downloadTypesfromPackage({ name });
+        setTypes(types2);
+        setPaths((paths2) => {
+          paths2[name] = [`file:///${path}`];
+          return { ...paths2 };
+        });
+      }
+    }
+  };
 }
 const domParser = new DOMParser();
 const xmlSerializer = new XMLSerializer();
@@ -406,6 +510,13 @@ function resolvePackageEntries(pkg, conditions = { browser: true, require: true,
 function resolvePath(currentPath, relativePath) {
   return new URL(relativePath, new URL(currentPath, "http://example.com/")).pathname;
 }
+function last(array) {
+  return array[array.length - 1];
+}
+function getExtension(path) {
+  const filename = last(path.split("/"));
+  return (filename == null ? void 0 : filename.includes(".")) ? last(filename.split(".")) : void 0;
+}
 function resolveItems({
   cdn,
   babel,
@@ -463,11 +574,15 @@ async function babelTransform(config) {
   };
 }
 export {
+  Monaco,
   babelTransform,
   createExtension,
   createFile,
   createFileSystem,
+  createMonacoTypeDownloader,
   downloadTypesFromUrl,
+  downloadTypesfromPackage,
+  getExtension,
   parseHtml,
   resolvePackageEntries,
   resolvePath,
