@@ -105,6 +105,6 @@ setInterval(randomColor, 2000)`,
       oninput=${e => repl.writeFile(selectedPath(), e.target.value)}
       value=${() => repl.readFile(selectedPath())}
     ></textarea>
-    <iframe src=${repl.url('index.html')}></iframe>
+    <iframe src=${() => repl.url('index.html')}></iframe>
   </div> `
 }, document.getElementById('root')!)
