@@ -210,6 +210,12 @@ export function bindMonaco(config: {
     return type
   }
 
+  createEffect(() => {
+    config.editor.onDidChangeModelContent(event =>
+      config.fs.writeFile(config.path, config.editor.getModel()!.getValue()),
+    )
+  })
+
   createEffect(
     mapArray(config.fs.paths, path => {
       createEffect(() => {
@@ -218,7 +224,12 @@ export function bindMonaco(config: {
         const uri = config.monaco.Uri.parse(`file:///${path}`)
         const model =
           config.monaco.editor.getModel(uri) || config.monaco.editor.createModel('', type, uri)
-        createEffect(() => model.setValue(config.fs.readFile(path) || ''))
+        createEffect(() => {
+          const value = config.fs.readFile(path) || ''
+          if (value !== model.getValue()) {
+            model.setValue(config.fs.readFile(path) || '')
+          }
+        })
         onCleanup(() => model.dispose())
       })
     }),

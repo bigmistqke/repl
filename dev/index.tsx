@@ -41,39 +41,49 @@ function createRepl() {
     target: Monaco.ScriptTarget.ES2015,
     esModuleInterop: true,
   })
-
   typeDownloader.addModule('@bigmistqke/repl/index.d.ts', toolkitDeclaration, '@bigmistqke/repl')
 
-  const transform = {
-    js: (path, source, fs) => {
-      return transformModulePaths(source, modulePath => {
-        if (modulePath === '@bigmistqke/repl') {
-          return localModules.url('repl-toolkit.js')
-        } else if (modulePath.startsWith('.')) {
-          // Swap relative module-path out with their respective module-url
-          const url = fs.url(resolvePath(path, modulePath))
-          if (!url) throw 'url is undefined'
-          return url
-        } else if (modulePath.startsWith('http:') || modulePath.startsWith('https:')) {
-          // Return url directly
-          return modulePath
-        } else {
-          typeDownloader.downloadModule(modulePath)
-          // Wrap external modules with esm.sh
-          return `https://esm.sh/${modulePath}`
-        }
-      })!
+  const transformJs: Transform = (path, source, fs) => {
+    return transformModulePaths(source, modulePath => {
+      if (modulePath === '@bigmistqke/repl') {
+        return localModules.url('repl-toolkit.js')
+      } else if (modulePath.startsWith('.')) {
+        // Swap relative module-path out with their respective module-url
+        const url = fs.url(resolvePath(path, modulePath))
+        if (!url) throw 'url is undefined'
+        return url
+      } else if (modulePath.startsWith('http:') || modulePath.startsWith('https:')) {
+        // Return url directly
+        return modulePath
+      } else {
+        typeDownloader.downloadModule(modulePath)
+        // Wrap external modules with esm.sh
+        return `https://esm.sh/${modulePath}`
+      }
+    })!
+  }
+
+  const jsExtension = createExtension({
+    type: 'javascript',
+    transform: transformJs,
+  })
+
+  const tsExtension = createExtension({
+    type: 'javascript',
+    transform(path, source, fs) {
+      return ts.transpile(transformJs(path, source, fs), typeDownloader.tsconfig)
     },
-    ts: (path, source, fs): string => {
-      return ts.transpile(transform.js(path, source, fs), typeDownloader.tsconfig)
-    },
-    html: (path, source, fs) => {
+  })
+
+  const htmlExtension = createExtension({
+    type: 'html',
+    transform(path, source, fs) {
       return (
         parseHtml(source)
           // Transform module-paths of module-scripts
           .select('script[type="module"]', (script: HTMLScriptElement) => {
             if (script.type !== 'module' || !script.textContent) return
-            script.textContent = transform.js(path, script.textContent, fs)
+            script.textContent = transformJs(path, script.textContent, fs)
           })
           // Transform src-attribute of relative imports of scripts
           .select(
@@ -91,35 +101,26 @@ function createRepl() {
           .toString()
       )
     },
-  } satisfies Record<string, Transform>
+  })
+
+  const cssExtension = createExtension({ type: 'css' })
+
+  // Add file-system we expose to the user
+  const fs = createFileSystem({
+    html: htmlExtension,
+    css: cssExtension,
+    ts: tsExtension,
+    js: jsExtension,
+  })
 
   // Add file-system for local modules
   const localModules = createFileSystem({
     js: createExtension({
       type: 'javascript',
-      transform: transform.js,
+      transform: transformJs,
     }),
   })
   localModules.writeFile('repl-toolkit.js', toolkit)
-
-  // Add file-system we expose to the user
-  const fs = createFileSystem({
-    html: createExtension({
-      type: 'html',
-      transform: transform.html,
-    }),
-    css: createExtension({
-      type: 'css',
-    }),
-    ts: createExtension({
-      type: 'javascript',
-      transform: transform.ts,
-    }),
-    js: createExtension({
-      type: 'javascript',
-      transform: transform.js,
-    }),
-  })
 
   return {
     fs,

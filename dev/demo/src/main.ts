@@ -11,8 +11,8 @@ import html from 'solid-js/html'
 import { render } from 'solid-js/web'
 import ts from 'typescript'
 
-const transform = {
-  js: (path, source, fs) => {
+function createRepl() {
+  const transformJs: Transform = (path, source, fs) => {
     return transformModulePaths(source, modulePath => {
       if (modulePath.startsWith('.')) {
         // Swap relative module-path out with their respective module-url
@@ -27,57 +27,60 @@ const transform = {
         return `https://esm.sh/${modulePath}`
       }
     })!
-  },
-  ts: (path, source, fs): string => {
-    return ts.transpile(transform.js(path, source, fs), {
-      target: 2,
-      module: 5,
-    })
-  },
-  html: (path, source, fs) => {
-    return (
-      parseHtml(source)
-        // Process module-paths of module-scripts
-        .select('script[type="module"]', (script: HTMLScriptElement) => {
-          if (script.type !== 'module' || !script.textContent) return
-          script.textContent = transform.js(path, script.textContent, fs)
-        })
-        // Process src-attribute of relative imports of scripts
-        .select(
-          'script[src]:not([src^="http:"]):not([src^="https:"])',
-          (script: HTMLScriptElement) => {
-            const url = fs.url(resolvePath(path, script.getAttribute('src')!))
-            if (url) script.setAttribute('src', url)
-          },
-        )
-        // Process href-attribute of all stylesheet links
-        .select('link[rel="stylesheet"][href]', (link: HTMLLinkElement) => {
-          const url = fs.url(resolvePath(path, link.getAttribute('href')!))
-          if (url) link.setAttribute('href', url)
-        })
-        .toString()
-    )
-  },
-} satisfies Record<string, Transform>
+  }
+
+  const jsExtension = createExtension({
+    type: 'javascript',
+    transform: transformJs,
+  })
+  const tsExtension = createExtension({
+    type: 'javascript',
+    transform(path, source, fs) {
+      return ts.transpile(transformJs(path, source, fs))
+    },
+  })
+  const htmlExtension = createExtension({
+    type: 'html',
+    transform(path, source, fs) {
+      return (
+        parseHtml(source)
+          // Transform module-paths of module-scripts
+          .select('script[type="module"]', (script: HTMLScriptElement) => {
+            if (script.type !== 'module' || !script.textContent) return
+            script.textContent = transformJs(path, script.textContent, fs)
+          })
+          // Transform src-attribute of relative imports of scripts
+          .select(
+            'script[src]:not([src^="http:"]):not([src^="https:"])',
+            (script: HTMLScriptElement) => {
+              const url = fs.url(resolvePath(path, script.getAttribute('src')!))
+              if (url) script.setAttribute('src', url)
+            },
+          )
+          // Transform href-attribute of all stylesheet links
+          .select('link[rel="stylesheet"][href]', (link: HTMLLinkElement) => {
+            const url = fs.url(resolvePath(path, link.getAttribute('href')!))
+            if (url) link.setAttribute('href', url)
+          })
+          .toString()
+      )
+    },
+  })
+
+  return createFileSystem({
+    css: createExtension({ type: 'css' }),
+    html: htmlExtension,
+    js: jsExtension,
+    ts: tsExtension,
+  })
+}
 
 render(() => {
   const [selectedPath, setSelectedPath] = createSignal<string>('index.html')
 
-  const fs = createFileSystem({
-    ts: createExtension({
-      type: 'javascript',
-      transform: transform.ts,
-    }),
-    css: createExtension({
-      type: 'css',
-    }),
-    html: createExtension({
-      type: 'html',
-      transform: transform.html,
-    }),
-  })
+  const repl = createRepl()
 
-  fs.writeFile(
+  repl.writeFile(
     'index.html',
     `<head>
   <script src="./main.ts"></script>
@@ -88,9 +91,9 @@ hallo world 👋
 </body>`,
   )
 
-  fs.writeFile('index.css', `body { font-size: 32pt; }`)
+  repl.writeFile('index.css', `body { font-size: 32pt; }`)
 
-  fs.writeFile(
+  repl.writeFile(
     'main.ts',
     `function randomValue(){
   return 200 + Math.random() * 50
@@ -114,9 +117,9 @@ setInterval(randomColor, 2000)`,
       <${Button} path="main.ts" />
     </div>
     <textarea
-      oninput=${e => fs.writeFile(selectedPath(), e.target.value)}
-      value=${() => fs.readFile(selectedPath())}
+      oninput=${e => repl.writeFile(selectedPath(), e.target.value)}
+      value=${() => repl.readFile(selectedPath())}
     ></textarea>
-    <iframe src=${() => fs.url('index.html')}></iframe>
+    <iframe src=${() => repl.url('index.html')}></iframe>
   </div> `
 }, document.getElementById('root')!)
