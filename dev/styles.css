@@ -14,6 +14,22 @@ code {
   height: 100vh;
 }
 
-[data-corvu-resizable-handle][data-dragging] + [data-corvu-resizable-panel] iframe {
+textarea {
+  outline: none;
+  border: none;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  font-size: inherit;
+  text-align: left;
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+[data-active-pane] {
   pointer-events: none;
 }

@@ -7,6 +7,7 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 export default defineConfig({
   build: {
     minify: false,
+    outDir: 'dev/lib',
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'repl',
@@ -28,7 +29,7 @@ export default defineConfig({
     solid(),
     dts(
       {
-        fileName: name => `${name}.d.ts`,
+        fileName: 'repl-toolkit.d.ts',
         libraries: {
           importedLibraries: ['solid-js'],
         },

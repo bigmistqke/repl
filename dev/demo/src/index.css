@@ -1,0 +1,12 @@
+.repl {
+  display: grid;
+  grid-template-rows: auto 1fr 1fr;
+  gap: 5px;
+  height: 100%;
+}
+
+iframe {
+  border: 1px solid black;
+  width: 100%;
+  height: 100%;
+}
