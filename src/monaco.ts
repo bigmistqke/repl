@@ -168,7 +168,7 @@ export function createMonacoTypeDownloader(tsconfig: Monaco.CompilerOptions) {
       }
     },
     types,
-    addModule(path: string, source: string, alias?: string) {
+    addDeclaration(path: string, source: string, alias?: string) {
       setTypes(path, source)
       if (alias) {
         addAlias(alias, path)

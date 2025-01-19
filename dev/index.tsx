@@ -42,7 +42,11 @@ function createRepl() {
     target: Monaco.ScriptTarget.ES2015,
     esModuleInterop: true,
   })
-  typeDownloader.addModule('@bigmistqke/repl/index.d.ts', toolkitDeclaration, '@bigmistqke/repl')
+  typeDownloader.addDeclaration(
+    '@bigmistqke/repl/index.d.ts',
+    toolkitDeclaration,
+    '@bigmistqke/repl',
+  )
 
   const transformJs: Transform = ({ path, source, fs }) => {
     return transformModulePaths(source, modulePath => {
@@ -81,8 +85,8 @@ function createRepl() {
       transform(config) {
         return (
           parseHtml(config)
-            // Transform content of all `<script/>` elements
-            .transformScriptContent(transformJs)
+            // Transform content of all `<script type="module" />` elements
+            .transformModuleScriptContent(transformJs)
             // Bind relative `src`-attribute of all `<script/>` elements to FileSystem
             .bindScriptSrc()
             // Bind relative `href`-attribute of all `<link/>` elements to FileSystem

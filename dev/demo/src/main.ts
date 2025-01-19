@@ -47,8 +47,8 @@ function createRepl() {
       transform(config) {
         return (
           parseHtml(config)
-            // Transform content of all `<script/>` elements
-            .transformScriptContent(transformJs)
+            // Transform content of all `<script type="module" />` elements
+            .transformModuleScriptContent(transformJs)
             // Bind relative `src`-attribute of all `<script />` elements
             .bindScriptSrc()
             // Bind relative `href`-attribute of all `<link />` elements
@@ -105,6 +105,6 @@ setInterval(randomColor, 2000)`,
       oninput=${e => repl.writeFile(selectedPath(), e.target.value)}
       value=${() => repl.readFile(selectedPath())}
     ></textarea>
-    <iframe src=${() => repl.url('index.html')}></iframe>
+    <iframe src=${repl.url('index.html')}></iframe>
   </div> `
 }, document.getElementById('root')!)

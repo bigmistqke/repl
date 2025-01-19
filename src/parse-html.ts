@@ -30,8 +30,8 @@ export function parseHtml({ path, source, fs }: { path: string; source: string; 
         if (url) script.setAttribute('src', url)
       })
     },
-    /** Transform content of all `<script />` elements */
-    transformScriptContent(transformJs: Transform) {
+    /** Transform content of all `<script type="module" />` elements */
+    transformModuleScriptContent(transformJs: Transform) {
       return api.select('script[type="module"]', (script: HTMLScriptElement) => {
         if (script.type !== 'module' || !script.textContent) return
         script.textContent = transformJs({ path, source: script.textContent, fs })

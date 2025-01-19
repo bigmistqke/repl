@@ -1,5 +1,5 @@
 import { createAsync, type AccessorWithLatest } from '@solidjs/router'
-import { createMemo, createSignal, type Accessor, type Setter } from 'solid-js'
+import { createEffect, createMemo, createSignal, type Accessor, type Setter } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
 
 /**********************************************************************************/
@@ -68,7 +68,11 @@ export function createFile({
     const blob = new Blob([_transformed], { type: `text/${type}` })
     return URL.createObjectURL(blob)
   }
-  const cachedUrl = createMemo(() => (listen(), createUrl()))
+  const cachedUrl = createMemo<string | undefined>(previous => {
+    if (previous) URL.revokeObjectURL(previous)
+    listen()
+    return createUrl()
+  })
 
   return {
     type,
@@ -138,6 +142,9 @@ export function createFileSystem(extensions: Record<string, Extension>) {
   /** Create a new, uncached object-url from the corresponding file. */
   url.create = (path: string) => {
     return getDirEnt(path)?.createUrl()
+  }
+  url.watch = (path: string, callback: (url: string | undefined) => void) => {
+    createEffect(() => callback(getDirEnt(path)?.cachedUrl()))
   }
 
   function readdir(path: string, options?: { withFileTypes?: false }): Array<string>
