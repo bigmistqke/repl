@@ -38,61 +38,54 @@ import {
   createFileSystem,
   parseHtml,
   resolvePath,
+  Transform,
   transformModulePaths
 } from '@bigmistqke/repl'
 import ts from 'typescript'
 
-function transformJs(){
-  transformModulePaths(source, modulePath => {
-    if (modulePath.startsWith('.')) {
+const transformJs: Transform = ({ path, source, fs }) => {
+  return transformModulePaths(source, modulePath => {
+    if (modulePath === '@bigmistqke/repl') {
+      return localModules.url('repl-toolkit.js')
+    } else if (modulePath.startsWith('.')) {
       // Swap relative module-path out with their respective module-url
       const url = fs.url(resolvePath(path, modulePath))
       if (!url) throw 'url is undefined'
       return url
-    } else if (modulePath.startsWith('http:') || modulePath.startsWith('https:')) {
+    } else if (isUrl(modulePath)) {
       // Return url directly
       return modulePath
     } else {
+      typeDownloader.downloadModule(modulePath)
       // Wrap external modules with esm.sh
       return `https://esm.sh/${modulePath}`
     }
-  })
+  })!
 }
 
 const fs = createFileSystem({
+  css: createExtension({ type: 'css' }),
   js: createExtension({
     type: 'javascript',
-    transform: transformJs
+    transform: transformJs,
   }),
   ts: createExtension({
     type: 'javascript',
-    transform(path, source, fs){
-      return ts.transpile(transformJs(path, source, fs))
-    }
+    transform({ path, source, fs }) {
+      return transformJs({ path, source: ts.transpile(source, typeDownloader.tsconfig), fs })
+    },
   }),
   html: createExtension({
     type: 'html',
-    transform(path, source, fs){
+    transform(config) {
       return (
-        parseHtml(source)
-          // Process module-paths of module-scripts
-          .select('script[type="module"]', (script: HTMLScriptElement) => {
-            if (script.type !== 'module' || !script.textContent) return
-            script.textContent = transform.js(path, script.textContent, fs)
-          })
-          // Process src-attribute of relative imports of scripts
-          .select(
-            'script[src]:not([src^="http:"]):not([src^="https:"])',
-            (script: HTMLScriptElement) => {
-              const url = fs.url(resolvePath(path, script.getAttribute('src')!))
-              if (url) script.setAttribute('src', url)
-            },
-          )
-          // Process href-attribute of all stylesheet links
-          .select('link[rel="stylesheet"][href]', (link: HTMLLinkElement) => {
-            const url = fs.url(resolvePath(path, link.getAttribute('href')!))
-            if (url) link.setAttribute('href', url)
-          })
+        parseHtml(config)
+          // Transform content of all `<script/>` elements
+          .transformScriptContent(transformJs)
+          // Bind relative `src`-attribute of all `<script />` elements
+          .bindScriptSrc()
+          // Bind relative `href`-attribute of all `<link />` elements
+          .bindLinkHref()
           .toString()
       )
     },

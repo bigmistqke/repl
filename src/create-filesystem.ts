@@ -24,8 +24,8 @@ export interface Dir {
 export type DirEnt = File | Dir
 export type DirEntType = DirEnt['type']
 export type Module = Record<string, unknown>
-export type Extension = (path: string, source: string, fs: FileSystem) => File
-export type Transform = (path: string, source: string, fs: FileSystem) => string
+export type Extension = (config: { path: string; source: string; fs: FileSystem }) => File
+export type Transform = (config: { path: string; source: string; fs: FileSystem }) => string
 export type FileSystem = ReturnType<typeof createFileSystem>
 
 /**********************************************************************************/
@@ -39,13 +39,13 @@ export function createExtension({
   transform,
 }: {
   type: File['type']
-  transform?: (path: string, source: string, fs: FileSystem) => string | Promise<string>
+  transform?: Transform
 }): Extension {
-  return (path, initial, fs) =>
+  return ({ path, source: initial, fs }) =>
     createFile({
       type,
       initial,
-      transform: transform ? source => transform(path, source, fs) : undefined,
+      transform: transform ? source => transform({ path, source, fs }) : undefined,
     })
 }
 
@@ -259,7 +259,7 @@ export function createFileSystem(extensions: Record<string, Extension>) {
       if (dirEnt) {
         dirEnt.set(source)
       } else {
-        let dirEnt = extension && extensions[extension]?.(path, source, fs)
+        let dirEnt = extension && extensions[extension]?.({ path, source, fs })
         dirEnt ||= createFile({
           type: 'unknown',
           initial: source,
