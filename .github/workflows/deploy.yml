@@ -25,6 +25,9 @@ jobs:
       - name: Build project
         run: pnpm build
 
+      - name: Build dev lib
+        run: pnpm build:dev-lib
+
       - name: Build dev
         run: pnpm build:dev
 

@@ -2,12 +2,28 @@ import { resolvePath } from './path'
 import { transformModulePaths } from './transform-module-paths'
 import { defer } from './utils/defer'
 
+/**********************************************************************************/
+/*                                                                                */
+/*                                       Misc                                     */
+/*                                                                                */
+/**********************************************************************************/
+
 function isUrl(path: string) {
   return path.startsWith('blob:') || path.startsWith('http:') || path.startsWith('https:')
 }
 
 function isRelativePath(path: string) {
   return path.startsWith('.')
+}
+
+const extensions = ['.js.d.ts', '.jsx.d.ts', '.ts.d.ts', '.tsx.d.ts', '.js', '.jsx', '.tsx']
+function normalizePath(path: string) {
+  for (const extension of extensions) {
+    if (path.endsWith(extension)) {
+      return path.replace(extension, '.d.ts')
+    }
+  }
+  return path
 }
 
 /**
@@ -23,16 +39,11 @@ function getVirtualPath(url: string, cdn = 'https://esm.sh') {
   return `${library}/${path.join('/')}`
 }
 
-const extensions = ['.js.d.ts', '.jsx.d.ts', '.ts.d.ts', '.tsx.d.ts', '.js', '.jsx', '.tsx']
-
-function normalizePath(path: string) {
-  for (const extension of extensions) {
-    if (path.endsWith(extension)) {
-      return path.replace(extension, '.d.ts')
-    }
-  }
-  return path
-}
+/**********************************************************************************/
+/*                                                                                */
+/*                             Download Types From Url                            */
+/*                                                                                */
+/**********************************************************************************/
 
 const URL_CACHE = new Map<string, Promise<string>>()
 
@@ -79,7 +90,6 @@ export async function downloadTypesFromUrl({
 
         return normalizePath(modulePath)
       } else if (isUrl(modulePath)) {
-        const virtualPath = getVirtualPath(modulePath)
         promises.push(
           downloadTypesFromUrl({
             url: modulePath,
@@ -87,7 +97,7 @@ export async function downloadTypesFromUrl({
             cdn,
           }),
         )
-        return virtualPath
+        return getVirtualPath(modulePath)
       } else {
         promises.push(downloadTypesfromPackage({ name: modulePath, declarationFiles, cdn }))
       }
@@ -107,6 +117,12 @@ export async function downloadTypesFromUrl({
 
   return declarationFiles
 }
+
+/**********************************************************************************/
+/*                                                                                */
+/*                           Download Types From Package                          */
+/*                                                                                */
+/**********************************************************************************/
 
 const TYPE_URL_CACHE = new Map<string, Promise<string | null>>()
 

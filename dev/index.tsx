@@ -213,7 +213,7 @@ function Editor(props: {
     )
   })
 
-  return <div ref={setElement} />
+  return <div ref={setElement} style={{ overflow: 'hidden' }} />
 }
 
 /**********************************************************************************/

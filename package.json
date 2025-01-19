@@ -25,7 +25,8 @@
   "scripts": {
     "dev": "vite serve dev",
     "serve:dev": "vite preview dev",
-    "build:demo-lib": "vite build --config vite.config.demo.ts",
+    "build:dev": "vite build dev",
+    "build:dev-lib": "vite build --config vite.config.demo.ts",
     "build": "vite build .",
     "optimize": "vite optimize",
     "test": "concurrently pnpm:test:*",
