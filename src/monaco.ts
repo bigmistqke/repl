@@ -157,8 +157,8 @@ export function createMonacoTypeDownloader(tsconfig: Monaco.CompilerOptions) {
     })
   }
 
-  return {
-    get tsconfig() {
+  const methods = {
+    tsconfig() {
       return {
         ...tsconfig,
         paths: {
@@ -167,7 +167,9 @@ export function createMonacoTypeDownloader(tsconfig: Monaco.CompilerOptions) {
         },
       }
     },
-    types,
+    types() {
+      return types
+    },
     addDeclaration(path: string, source: string, alias?: string) {
       setTypes(path, source)
       if (alias) {
@@ -181,10 +183,19 @@ export function createMonacoTypeDownloader(tsconfig: Monaco.CompilerOptions) {
         addAlias(name, path)
       }
     },
+    // Watchers
+    watchTsconfig(cb: (tsconfig: Monaco.CompilerOptions) => void) {
+      createEffect(() => cb(methods.tsconfig()))
+    },
+    watchTypes(cb: (types: Record<string, string>) => void) {
+      createEffect(() => cb({ ...types }))
+    },
   }
+
+  return methods
 }
 
-export function bindMonaco(config: {
+export function bindMonaco(props: {
   editor: Monaco.Editor
   fs: FileSystem
   languages?: Record<string, string>
@@ -198,11 +209,11 @@ export function bindMonaco(config: {
       tsx: 'typescript',
       ts: 'typescript',
     },
-    () => config.languages,
+    () => props.languages,
   )
 
   function getType(path: string) {
-    let type: string = config.fs.getType(path)
+    let type: string = props.fs.getType(path)
     const extension = getExtension(path)
     if (extension && extension in languages) {
       type = languages[extension]!
@@ -211,23 +222,23 @@ export function bindMonaco(config: {
   }
 
   createEffect(() => {
-    config.editor.onDidChangeModelContent(event =>
-      config.fs.writeFile(config.path, config.editor.getModel()!.getValue()),
+    props.editor.onDidChangeModelContent(event =>
+      props.fs.writeFile(props.path, props.editor.getModel()!.getValue()),
     )
   })
 
   createEffect(
-    mapArray(config.fs.paths, path => {
+    mapArray(props.fs.paths, path => {
       createEffect(() => {
         const type = getType(path)
         if (type === 'dir') return
-        const uri = config.monaco.Uri.parse(`file:///${path}`)
+        const uri = props.monaco.Uri.parse(`file:///${path}`)
         const model =
-          config.monaco.editor.getModel(uri) || config.monaco.editor.createModel('', type, uri)
+          props.monaco.editor.getModel(uri) || props.monaco.editor.createModel('', type, uri)
         createEffect(() => {
-          const value = config.fs.readFile(path) || ''
+          const value = props.fs.readFile(path) || ''
           if (value !== model.getValue()) {
-            model.setValue(config.fs.readFile(path) || '')
+            model.setValue(props.fs.readFile(path) || '')
           }
         })
         onCleanup(() => model.dispose())
@@ -236,30 +247,30 @@ export function bindMonaco(config: {
   )
 
   createEffect(() => {
-    const uri = config.monaco.Uri.parse(`file:///${config.path}`)
-    let type = getType(config.path)
+    const uri = props.monaco.Uri.parse(`file:///${props.path}`)
+    let type = getType(props.path)
     const model =
-      config.monaco.editor.getModel(uri) || config.monaco.editor.createModel('', type, uri)
-    config.editor.setModel(model)
+      props.monaco.editor.getModel(uri) || props.monaco.editor.createModel('', type, uri)
+    props.editor.setModel(model)
   })
 
   createEffect(() => {
-    if (config.tsconfig) {
-      config.monaco.languages.typescript.typescriptDefaults.setCompilerOptions(config.tsconfig)
-      config.monaco.languages.typescript.javascriptDefaults.setCompilerOptions(config.tsconfig)
+    if (props.tsconfig) {
+      props.monaco.languages.typescript.typescriptDefaults.setCompilerOptions(props.tsconfig)
+      props.monaco.languages.typescript.javascriptDefaults.setCompilerOptions(props.tsconfig)
     }
   })
 
   createEffect(
     mapArray(
-      () => Object.keys(config.types ?? {}),
+      () => Object.keys(props.types ?? {}),
       name => {
         createEffect(() => {
-          const declaration = config.types?.[name]
+          const declaration = props.types?.[name]
           if (!declaration) return
           const path = `file:///${name}`
-          config.monaco.languages.typescript.typescriptDefaults.addExtraLib(declaration, path)
-          config.monaco.languages.typescript.javascriptDefaults.addExtraLib(declaration, path)
+          props.monaco.languages.typescript.typescriptDefaults.addExtraLib(declaration, path)
+          props.monaco.languages.typescript.javascriptDefaults.addExtraLib(declaration, path)
         })
       },
     ),

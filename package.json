@@ -52,6 +52,9 @@
     "@solidjs/router": "^0.15.2",
     "@types/picomatch": "^3.0.1",
     "@uwu/monaco-solid": "^1.4.0",
+    "dom-serializer": "^2.0.0",
+    "domutils": "^3.2.2",
+    "htmlparser2": "^10.0.0",
     "picomatch": "^4.0.2",
     "shiki": "^1.26.2",
     "solid-shiki-textarea": "^0.1.6"
@@ -64,6 +67,8 @@
   "devDependencies": {
     "@andrewbranch/untar.js": "^1.0.3",
     "@bigmistqke/solid-grid-split": "^0.0.2",
+    "@bigmistqke/vite-plugin-worker-proxy": "^0.0.5",
+    "@bigmistqke/worker-proxy": "^0.0.6",
     "@monaco-editor/loader": "^1.4.0",
     "@types/babel__standalone": "^7.1.9",
     "concurrently": "^8.2.0",

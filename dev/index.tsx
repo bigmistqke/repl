@@ -1,116 +1,24 @@
-import {
-  bindMonaco,
-  createExtension,
-  createFileSystem,
-  createMonacoTypeDownloader,
-  FileSystem,
-  FileType,
-  isUrl,
-  Monaco,
-  parseHtml,
-  resolvePath,
-  Transform,
-  transformModulePaths,
-} from '@bigmistqke/repl'
+import { FileType, getExtension, Monaco } from '@bigmistqke/repl'
 import { Split } from '@bigmistqke/solid-grid-split'
+import type { WorkerProxy } from '@bigmistqke/worker-proxy'
 import loader from '@monaco-editor/loader'
 import {
-  createMemo,
+  createEffect,
   createResource,
   createSelector,
   createSignal,
   Index,
+  mapArray,
   mergeProps,
+  onCleanup,
   Setter,
 } from 'solid-js'
 import { render, Show } from 'solid-js/web'
-import ts from 'typescript'
 import demo from './demo'
-import toolkitDeclaration from './lib/repl-toolkit.d.ts?raw'
-import toolkit from './lib/repl-toolkit.js?raw'
+import { type Methods } from './fs.worker'
+import Worker from './fs.worker?worker-proxy'
 import './styles.css'
 import { every, whenEffect, whenMemo } from './utils/conditionals'
-
-/**********************************************************************************/
-/*                                                                                */
-/*                                   Create Repl                                  */
-/*                                                                                */
-/**********************************************************************************/
-
-function createRepl() {
-  const typeDownloader = createMonacoTypeDownloader({
-    target: Monaco.ScriptTarget.ES2015,
-    esModuleInterop: true,
-  })
-  typeDownloader.addDeclaration(
-    '@bigmistqke/repl/index.d.ts',
-    toolkitDeclaration,
-    '@bigmistqke/repl',
-  )
-
-  const transformJs: Transform = ({ path, source, fs }) => {
-    return transformModulePaths(source, modulePath => {
-      if (modulePath === '@bigmistqke/repl') {
-        return localModules.url('repl-toolkit.js')
-      } else if (modulePath.startsWith('.')) {
-        // Swap relative module-path out with their respective module-url
-        const url = fs.url(resolvePath(path, modulePath))
-        if (!url) throw 'url is undefined'
-        return url
-      } else if (isUrl(modulePath)) {
-        // Return url directly
-        return modulePath
-      } else {
-        typeDownloader.downloadModule(modulePath)
-        // Wrap external modules with esm.sh
-        return `https://esm.sh/${modulePath}`
-      }
-    })!
-  }
-
-  const fs = createFileSystem({
-    css: createExtension({ type: 'css' }),
-    js: createExtension({
-      type: 'javascript',
-      transform: transformJs,
-    }),
-    ts: createExtension({
-      type: 'javascript',
-      transform({ path, source, fs }) {
-        return transformJs({ path, source: ts.transpile(source, typeDownloader.tsconfig), fs })
-      },
-    }),
-    html: createExtension({
-      type: 'html',
-      transform(config) {
-        return (
-          parseHtml(config)
-            // Transform content of all `<script type="module" />` elements
-            .transformModuleScriptContent(transformJs)
-            // Bind relative `src`-attribute of all `<script/>` elements to FileSystem
-            .bindScriptSrc()
-            // Bind relative `href`-attribute of all `<link/>` elements to FileSystem
-            .bindLinkHref()
-            .toString()
-        )
-      },
-    }),
-  })
-
-  // Add file-system for local modules
-  const localModules = createFileSystem({
-    js: createExtension({
-      type: 'javascript',
-      transform: transformJs,
-    }),
-  })
-  localModules.writeFile('repl-toolkit.js', toolkit)
-
-  return {
-    fs,
-    typeDownloader,
-  }
-}
 
 /**********************************************************************************/
 /*                                                                                */
@@ -121,31 +29,31 @@ function createRepl() {
 render(() => {
   const [selectedPath, setSelectedPath] = createSignal<string>('main.ts')
   const isPathSelected = createSelector(selectedPath)
+  const [url, setUrl] = createSignal<string>()
+  const [tsconfig, setTsconfig] = createSignal<Monaco.CompilerOptions>({})
+  const [types, setTypes] = createSignal<Record<string, string>>()
 
-  const repl = createRepl()
-  Object.entries(demo).forEach(([key, source]) => repl.fs.writeFile(key, source))
+  const fs = new Worker<Methods>()
+
+  fs.watchTsconfig(setTsconfig)
+  fs.watchTypes(setTypes)
+  fs.watchUrl('index.html', setUrl)
+
+  Object.entries(demo).forEach(([key, source]) => fs.writeFile(key, source))
 
   // Add demo's source-files to the file-system
   return (
     <Split style={{ height: '100vh' }}>
       <Split.Pane size="150px" style={{ display: 'grid', 'align-content': 'start' }}>
-        <FileTree fs={repl.fs} onPathSelect={setSelectedPath} isPathSelected={isPathSelected} />
+        <FileTree fs={fs} onPathSelect={setSelectedPath} isPathSelected={isPathSelected} />
       </Split.Pane>
       <Handle />
       <Split.Pane style={{ display: 'grid' }}>
-        <Editor
-          fs={repl.fs}
-          path={selectedPath()}
-          types={repl.typeDownloader.types}
-          tsconfig={repl.typeDownloader.tsconfig}
-        />
+        <Editor fs={fs} path={selectedPath()} types={types()} tsconfig={tsconfig()} />
       </Split.Pane>
       <Handle />
       <Split.Pane style={{ display: 'grid' }}>
-        <iframe
-          src={repl.fs.url('index.html')}
-          style={{ height: '100%', width: '100%', border: 'none' }}
-        />
+        <iframe src={url()} style={{ height: '100%', width: '100%', border: 'none' }} />
       </Split.Pane>
     </Split>
   )
@@ -172,12 +80,13 @@ function Handle() {
 /**********************************************************************************/
 
 function Editor(props: {
-  fs: FileSystem
+  fs: WorkerProxy<Methods>
   path: string
   types?: Record<string, string>
   tsconfig: Monaco.CompilerOptions
   languages?: Record<string, string>
 }) {
+  const [paths, setPaths] = createSignal<Array<string>>([])
   const [monaco] = createResource(() => loader.init())
   const [element, setElement] = createSignal<HTMLDivElement>()
 
@@ -189,12 +98,76 @@ function Editor(props: {
     })
   })
 
+  createEffect(() => props.fs.watchPaths(setPaths))
+
   whenEffect(every(monaco, editor), ([monaco, editor]) => {
-    bindMonaco(
-      mergeProps(props, {
-        editor,
-        monaco,
+    const languages = mergeProps(
+      {
+        tsx: 'typescript',
+        ts: 'typescript',
+      },
+      () => props.languages,
+    )
+
+    async function getType(path: string) {
+      let type: string = await props.fs.$async.getType(path)
+      const extension = getExtension(path)
+      if (extension && extension in languages) {
+        type = languages[extension]!
+      }
+      return type
+    }
+
+    createEffect(() => {
+      editor.onDidChangeModelContent(event => {
+        props.fs.writeFile(props.path, editor.getModel()!.getValue())
+      })
+    })
+
+    createEffect(
+      mapArray(paths, path => {
+        createEffect(async () => {
+          const type = await getType(path)
+          if (type === 'dir') return
+          const uri = monaco.Uri.parse(`file:///${path}`)
+          const model = monaco.editor.getModel(uri) || monaco.editor.createModel('', type, uri)
+          props.fs.watchFile(path, value => {
+            if (value !== model.getValue()) {
+              model.setValue(value || '')
+            }
+          })
+          onCleanup(() => model.dispose())
+        })
       }),
+    )
+
+    createEffect(async () => {
+      const uri = monaco.Uri.parse(`file:///${props.path}`)
+      let type = await getType(props.path)
+      const model = monaco.editor.getModel(uri) || monaco.editor.createModel('', type, uri)
+      editor.setModel(model)
+    })
+
+    createEffect(() => {
+      if (props.tsconfig) {
+        monaco.languages.typescript.typescriptDefaults.setCompilerOptions(props.tsconfig)
+        monaco.languages.typescript.javascriptDefaults.setCompilerOptions(props.tsconfig)
+      }
+    })
+
+    createEffect(
+      mapArray(
+        () => Object.keys(props.types ?? {}),
+        name => {
+          createEffect(() => {
+            const declaration = props.types?.[name]
+            if (!declaration) return
+            const path = `file:///${name}`
+            monaco.languages.typescript.typescriptDefaults.addExtraLib(declaration, path)
+            monaco.languages.typescript.javascriptDefaults.addExtraLib(declaration, path)
+          })
+        },
+      ),
     )
   })
 
@@ -208,13 +181,21 @@ function Editor(props: {
 /**********************************************************************************/
 
 function FileTree(treeProps: {
-  fs: FileSystem
+  fs: WorkerProxy<Methods>
   isPathSelected: (path: string) => boolean
   onPathSelect: Setter<string>
 }) {
   function Dir(props: { name: string; layer: number; path: string }) {
     const [collapsed, setCollapsed] = createSignal(false)
-    const childDirEnts = createMemo(() => treeProps.fs.readdir(props.path, { withFileTypes: true }))
+    const [childDirEnts, setChildDirEnts] = createSignal<
+      {
+        type: 'dir' | FileType
+        path: string
+      }[]
+    >([])
+
+    treeProps.fs.watchDir(props.path, setChildDirEnts)
+
     return (
       <>
         <Show when={props.path}>
