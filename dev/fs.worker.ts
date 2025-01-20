@@ -1,3 +1,4 @@
+import { registerMethods } from '@bigmistqke/worker-proxy'
 import { createEffect } from 'solid-js'
 import { createExtension, createFileSystem, FileType, Transform } from 'src/create-filesystem'
 import { createMonacoTypeDownloader, Monaco } from 'src/monaco'
@@ -7,7 +8,6 @@ import { transformModulePaths } from 'src/transform-module-paths'
 import ts from 'typescript'
 import toolkitDeclaration from './lib/repl-toolkit.d.ts?raw'
 import toolkit from './lib/repl-toolkit.js?raw'
-import { registerMethods } from './worker-proxy'
 
 const typeDownloader = createMonacoTypeDownloader({
   target: Monaco.ScriptTarget.ES2015,
@@ -75,6 +75,7 @@ localModules.writeFile('repl-toolkit.js', toolkit)
 const methods = {
   watchTsconfig(cb: (tsconfig: Monaco.CompilerOptions) => void) {
     createEffect(() => {
+      console.log('cb', cb)
       cb(typeDownloader.tsconfig)
     })
   },

@@ -53,10 +53,10 @@ importers:
         version: 0.0.2(solid-js@1.8.22)
       '@bigmistqke/vite-plugin-worker-proxy':
         specifier: ^0.0.5
-        version: 0.0.5(@bigmistqke/worker-proxy@0.0.5)(postcss@8.4.45)(typescript@5.6.2)(vite@4.5.3(@types/node@22.5.4)(terser@5.34.0))
+        version: 0.0.5(@bigmistqke/worker-proxy@0.0.6)(postcss@8.4.45)(typescript@5.6.2)(vite@4.5.3(@types/node@22.5.4)(terser@5.34.0))
       '@bigmistqke/worker-proxy':
-        specifier: ^0.0.5
-        version: 0.0.5
+        specifier: ^0.0.6
+        version: 0.0.6
       '@monaco-editor/loader':
         specifier: ^1.4.0
         version: 1.4.0(monaco-editor@0.45.0)
@@ -226,8 +226,8 @@ packages:
       '@bigmistqke/worker-proxy': ^0.0.3
       vite: ^5.4.2
 
-  '@bigmistqke/worker-proxy@0.0.5':
-    resolution: {integrity: sha512-+aZBCEH82DGb8OBO44CnrgiQ28xZ41fyi2LgyKOfGsz3bpZ09z4ASCAbnnv3gp5+qQA6gVJyGwA/TjIRJlVhTQ==}
+  '@bigmistqke/worker-proxy@0.0.6':
+    resolution: {integrity: sha512-zm8OzCMd4/VS4U9urzsGrj4OCOA1exixhU5ZojhRBhI1AdC8hoi9GYfFBjrSrRlMB+1Xg1/iZ6iwQPEKReUVAA==}
 
   '@esbuild-plugins/node-globals-polyfill@0.2.3':
     resolution: {integrity: sha512-r3MIryXDeXDOZh7ih1l/yE9ZLORCd5e8vWg02azWRGj5SPTuoh69A2AIyn0Z31V/kHBfZ4HgWJ+OK3GTTwLmnw==}
@@ -2034,9 +2034,9 @@ snapshots:
     dependencies:
       solid-js: 1.8.22
 
-  '@bigmistqke/vite-plugin-worker-proxy@0.0.5(@bigmistqke/worker-proxy@0.0.5)(postcss@8.4.45)(typescript@5.6.2)(vite@4.5.3(@types/node@22.5.4)(terser@5.34.0))':
+  '@bigmistqke/vite-plugin-worker-proxy@0.0.5(@bigmistqke/worker-proxy@0.0.6)(postcss@8.4.45)(typescript@5.6.2)(vite@4.5.3(@types/node@22.5.4)(terser@5.34.0))':
     dependencies:
-      '@bigmistqke/worker-proxy': 0.0.5
+      '@bigmistqke/worker-proxy': 0.0.6
       tsup: 8.3.5(postcss@8.4.45)(typescript@5.6.2)
       vite: 4.5.3(@types/node@22.5.4)(terser@5.34.0)
     transitivePeerDependencies:
@@ -2049,7 +2049,7 @@ snapshots:
       - typescript
       - yaml
 
-  '@bigmistqke/worker-proxy@0.0.5': {}
+  '@bigmistqke/worker-proxy@0.0.6': {}
 
   '@esbuild-plugins/node-globals-polyfill@0.2.3(esbuild@0.24.2)':
     dependencies:

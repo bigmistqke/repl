@@ -1,5 +1,6 @@
 import { FileType, getExtension, Monaco } from '@bigmistqke/repl'
 import { Split } from '@bigmistqke/solid-grid-split'
+import { createWorkerProxy } from '@bigmistqke/worker-proxy'
 import loader from '@monaco-editor/loader'
 import {
   createEffect,
@@ -18,7 +19,6 @@ import { type Methods } from './fs.worker'
 import Worker from './fs.worker.ts?worker'
 import './styles.css'
 import { every, whenEffect, whenMemo } from './utils/conditionals'
-import { createWorkerProxy } from './worker-proxy'
 
 const worker = createWorkerProxy<Methods>(new Worker())
 
