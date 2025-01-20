@@ -1405,9 +1405,12 @@ function bindMonaco(props) {
     )
   );
 }
-const domParser = new DOMParser();
-const xmlSerializer = new XMLSerializer();
+const domParser = typeof DOMParser !== "undefined" ? new DOMParser() : void 0;
+const xmlSerializer = typeof XMLSerializer !== "undefined" ? new XMLSerializer() : void 0;
 function parseHtml({ path, source, fs }) {
+  if (!domParser || !xmlSerializer) {
+    throw \`\\\`parseHtml\\\` can only be used in environments where DOMParser and XMLSerializer are available. Please use \\\`parseHtmlWorker\\\` for a worker-friendly alternative.\`;
+  }
   const doc = domParser.parseFromString(source, "text/html");
   const api = {
     select(selector, callback) {
