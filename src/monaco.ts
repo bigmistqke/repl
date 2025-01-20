@@ -157,8 +157,8 @@ export function createMonacoTypeDownloader(tsconfig: Monaco.CompilerOptions) {
     })
   }
 
-  return {
-    get tsconfig() {
+  const methods = {
+    tsconfig() {
       return {
         ...tsconfig,
         paths: {
@@ -167,7 +167,9 @@ export function createMonacoTypeDownloader(tsconfig: Monaco.CompilerOptions) {
         },
       }
     },
-    types,
+    types() {
+      return types
+    },
     addDeclaration(path: string, source: string, alias?: string) {
       setTypes(path, source)
       if (alias) {
@@ -181,7 +183,16 @@ export function createMonacoTypeDownloader(tsconfig: Monaco.CompilerOptions) {
         addAlias(name, path)
       }
     },
+    // Watchers
+    watchTsconfig(cb: (tsconfig: Monaco.CompilerOptions) => void) {
+      createEffect(() => cb(methods.tsconfig()))
+    },
+    watchTypes(cb: (types: Record<string, string>) => void) {
+      createEffect(() => cb({ ...types }))
+    },
   }
+
+  return methods
 }
 
 export function bindMonaco(props: {

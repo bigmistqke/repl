@@ -1,5 +1,4 @@
-import { createEffect } from 'solid-js'
-import { createExtension, createFileSystem, FileType, Transform } from 'src/create-filesystem'
+import { createExtension, createFileSystem, Transform } from 'src/create-filesystem'
 import { createMonacoTypeDownloader, Monaco } from 'src/monaco'
 import { parseHtmlWorker } from 'src/parse-html-worker'
 import { isUrl, resolvePath } from 'src/path'
@@ -43,7 +42,7 @@ const fs = createFileSystem({
   ts: createExtension({
     type: 'javascript',
     transform({ path, source, fs }) {
-      return transformJs({ path, source: ts.transpile(source, typeDownloader.tsconfig), fs })
+      return transformJs({ path, source: ts.transpile(source, typeDownloader.tsconfig()), fs })
     },
   }),
   html: createExtension({
@@ -72,29 +71,8 @@ const localModules = createFileSystem({
 localModules.writeFile('repl-toolkit.js', toolkit)
 
 const methods = {
-  watchTsconfig(cb: (tsconfig: Monaco.CompilerOptions) => void) {
-    createEffect(() => {
-      console.log('cb', cb)
-      cb(typeDownloader.tsconfig)
-    })
-  },
-  watchTypes(cb: (types: Record<string, string>) => void) {
-    createEffect(() => {
-      cb({ ...typeDownloader.types })
-    })
-  },
-  watchUrl(path: string, cb: (url: string | undefined) => void) {
-    createEffect(() => cb(fs.url(path)))
-  },
-  watchFile(path: string, cb: (url: string | undefined) => void) {
-    createEffect(() => cb(fs.readFile(path)))
-  },
-  watchDir(path: string, cb: (paths: Array<{ type: FileType | 'dir'; path: string }>) => void) {
-    createEffect(() => cb(fs.readdir(path, { withFileTypes: true })))
-  },
-  watchPaths(cb: (paths: Array<string>) => void) {
-    createEffect(() => cb(fs.paths()))
-  },
+  watchTsconfig: typeDownloader.watchTsconfig,
+  watchTypes: typeDownloader.watchTypes,
   ...fs,
 }
 

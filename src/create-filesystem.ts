@@ -274,6 +274,19 @@ export function createFileSystem(extensions: Record<string, Extension>) {
         setDirEnts(path, dirEnt)
       }
     },
+    // Watchers
+    watchUrl(path: string, cb: (url: string | undefined) => void) {
+      createEffect(() => cb(fs.url(path)))
+    },
+    watchFile(path: string, cb: (url: string | undefined) => void) {
+      createEffect(() => cb(fs.readFile(path)))
+    },
+    watchDir(path: string, cb: (paths: Array<{ type: FileType | 'dir'; path: string }>) => void) {
+      createEffect(() => cb(fs.readdir(path, { withFileTypes: true })))
+    },
+    watchPaths(cb: (paths: Array<string>) => void) {
+      createEffect(() => cb(fs.paths()))
+    },
   }
 
   return fs
