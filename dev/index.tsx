@@ -1,5 +1,6 @@
 import { FileType, getExtension, Monaco } from '@bigmistqke/repl'
 import { Split } from '@bigmistqke/solid-grid-split'
+import type { WorkerProxy } from '@bigmistqke/worker-proxy'
 import loader from '@monaco-editor/loader'
 import {
   createEffect,
@@ -19,8 +20,6 @@ import Worker from './fs.worker?worker-proxy'
 import './styles.css'
 import { every, whenEffect, whenMemo } from './utils/conditionals'
 
-const worker = new Worker<Methods>()
-
 /**********************************************************************************/
 /*                                                                                */
 /*                                      Repl                                      */
@@ -34,21 +33,23 @@ render(() => {
   const [tsconfig, setTsconfig] = createSignal<Monaco.CompilerOptions>({})
   const [types, setTypes] = createSignal<Record<string, string>>()
 
-  worker.watchTsconfig(setTsconfig)
-  worker.watchTypes(setTypes)
-  worker.watchUrl('index.html', setUrl)
+  const fs = new Worker<Methods>()
 
-  Object.entries(demo).forEach(([key, source]) => worker.writeFile(key, source))
+  fs.watchTsconfig(setTsconfig)
+  fs.watchTypes(setTypes)
+  fs.watchUrl('index.html', setUrl)
+
+  Object.entries(demo).forEach(([key, source]) => fs.writeFile(key, source))
 
   // Add demo's source-files to the file-system
   return (
     <Split style={{ height: '100vh' }}>
       <Split.Pane size="150px" style={{ display: 'grid', 'align-content': 'start' }}>
-        <FileTree onPathSelect={setSelectedPath} isPathSelected={isPathSelected} />
+        <FileTree fs={fs} onPathSelect={setSelectedPath} isPathSelected={isPathSelected} />
       </Split.Pane>
       <Handle />
       <Split.Pane style={{ display: 'grid' }}>
-        <Editor path={selectedPath()} types={types()} tsconfig={tsconfig()} />
+        <Editor fs={fs} path={selectedPath()} types={types()} tsconfig={tsconfig()} />
       </Split.Pane>
       <Handle />
       <Split.Pane style={{ display: 'grid' }}>
@@ -79,6 +80,7 @@ function Handle() {
 /**********************************************************************************/
 
 function Editor(props: {
+  fs: WorkerProxy<Methods>
   path: string
   types?: Record<string, string>
   tsconfig: Monaco.CompilerOptions
@@ -96,7 +98,7 @@ function Editor(props: {
     })
   })
 
-  worker.watchPaths(setPaths)
+  createEffect(() => props.fs.watchPaths(setPaths))
 
   whenEffect(every(monaco, editor), ([monaco, editor]) => {
     const languages = mergeProps(
@@ -108,7 +110,7 @@ function Editor(props: {
     )
 
     async function getType(path: string) {
-      let type: string = await worker.$async.getType(path)
+      let type: string = await props.fs.$async.getType(path)
       const extension = getExtension(path)
       if (extension && extension in languages) {
         type = languages[extension]!
@@ -118,7 +120,7 @@ function Editor(props: {
 
     createEffect(() => {
       editor.onDidChangeModelContent(event => {
-        worker.writeFile(props.path, editor.getModel()!.getValue())
+        props.fs.writeFile(props.path, editor.getModel()!.getValue())
       })
     })
 
@@ -129,7 +131,7 @@ function Editor(props: {
           if (type === 'dir') return
           const uri = monaco.Uri.parse(`file:///${path}`)
           const model = monaco.editor.getModel(uri) || monaco.editor.createModel('', type, uri)
-          worker.watchFile(path, value => {
+          props.fs.watchFile(path, value => {
             if (value !== model.getValue()) {
               model.setValue(value || '')
             }
@@ -179,6 +181,7 @@ function Editor(props: {
 /**********************************************************************************/
 
 function FileTree(treeProps: {
+  fs: WorkerProxy<Methods>
   isPathSelected: (path: string) => boolean
   onPathSelect: Setter<string>
 }) {
@@ -191,7 +194,7 @@ function FileTree(treeProps: {
       }[]
     >([])
 
-    worker.watchDir(props.path, setChildDirEnts)
+    treeProps.fs.watchDir(props.path, setChildDirEnts)
 
     return (
       <>
