@@ -1,4 +1,3 @@
-import { registerMethods } from '@bigmistqke/worker-proxy'
 import { createEffect } from 'solid-js'
 import { createExtension, createFileSystem, FileType, Transform } from 'src/create-filesystem'
 import { createMonacoTypeDownloader, Monaco } from 'src/monaco'
@@ -100,7 +99,7 @@ const methods = {
 }
 
 // Initialize worker-methods
-registerMethods(methods)
+export default methods
 
 // Export types of methods to infer the WorkerProxy's type
 export type Methods = typeof methods
