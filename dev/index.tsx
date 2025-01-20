@@ -39,9 +39,9 @@ render(() => {
   fs.watchTypes(setTypes)
   fs.watchUrl('index.html', setUrl)
 
+  // Add demo's source-files to the file-system
   Object.entries(demo).forEach(([key, source]) => fs.writeFile(key, source))
 
-  // Add demo's source-files to the file-system
   return (
     <Split style={{ height: '100vh' }}>
       <Split.Pane size="150px" style={{ display: 'grid', 'align-content': 'start' }}>
@@ -194,7 +194,7 @@ function FileTree(treeProps: {
       }[]
     >([])
 
-    treeProps.fs.watchDir(props.path, setChildDirEnts)
+    createEffect(() => treeProps.fs.watchDir(props.path, setChildDirEnts))
 
     return (
       <>
