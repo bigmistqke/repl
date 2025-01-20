@@ -2,10 +2,13 @@ import { FileSystem, Transform } from './create-filesystem'
 import { isUrl, resolvePath } from './path'
 
 // Create a new DOMParser and XMLSerializer-instance
-const domParser = new DOMParser()
-const xmlSerializer = new XMLSerializer()
+const domParser = typeof DOMParser !== 'undefined' ? new DOMParser() : undefined
+const xmlSerializer = typeof XMLSerializer !== 'undefined' ? new XMLSerializer() : undefined
 
 export function parseHtml({ path, source, fs }: { path: string; source: string; fs: FileSystem }) {
+  if (!domParser || !xmlSerializer) {
+    throw `\`parseHtml\` can only be used in environments where DOMParser and XMLSerializer are available. Please use \`parseHtmlWorker\` for a worker-friendly alternative.`
+  }
   const doc = domParser.parseFromString(source, 'text/html')
   const api = {
     select<T extends Element>(selector: string, callback: (element: T) => void) {
