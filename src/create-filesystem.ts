@@ -1,6 +1,6 @@
-import { createAsync, type AccessorWithLatest } from '@solidjs/router'
 import { createEffect, createMemo, createSignal, type Accessor, type Setter } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
+import { createAsync, type AccessorWithLatest } from './utils/create-async'
 
 /**********************************************************************************/
 /*                                                                                */

@@ -1,3 +1,4 @@
+import workerPlugin from '@bigmistqke/vite-plugin-worker-proxy'
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill'
 import { defineConfig } from 'vite'
 import solid from 'vite-plugin-solid'
@@ -28,6 +29,7 @@ export default defineConfig({
       },
     },
     wasmPlugin(),
+    workerPlugin(),
   ],
   optimizeDeps: {
     esbuildOptions: {
