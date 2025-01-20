@@ -10,7 +10,7 @@ export default defineConfig({
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'repl',
-      fileName: 'repl-toolkit',
+      fileName: 'index',
       formats: ['es'],
     },
     rollupOptions: {
@@ -28,7 +28,7 @@ export default defineConfig({
     solid(),
     dts(
       {
-        fileName: name => `${name}.d.ts`,
+        fileName: 'index.d.ts',
         libraries: {
           importedLibraries: ['solid-js'],
         },
