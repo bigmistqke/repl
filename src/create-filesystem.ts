@@ -1,89 +1,8 @@
-import { createEffect, createMemo, createSignal, type Accessor, type Setter } from 'solid-js'
+import { createEffect, createMemo, createSignal, mapArray } from 'solid-js'
 import { createStore, produce } from 'solid-js/store'
-import { createAsync, type AccessorWithLatest } from './utils/create-async'
-
-/**********************************************************************************/
-/*                                                                                */
-/*                                      Types                                     */
-/*                                                                                */
-/**********************************************************************************/
-
-export type FileType = 'javascript' | 'css' | 'html' | 'unknown'
-export interface File {
-  type: FileType
-  get: Accessor<string>
-  set: Setter<string>
-  transformed: AccessorWithLatest<string | undefined>
-  cachedUrl: Accessor<string | undefined>
-  createUrl: Accessor<string | undefined>
-  invalidateUrl: () => void
-}
-export interface Dir {
-  type: 'dir'
-}
-export type DirEnt = File | Dir
-export type DirEntType = DirEnt['type']
-export type Module = Record<string, unknown>
-export type Extension = (config: { path: string; source: string; fs: FileSystem }) => File
-export type Transform = (config: { path: string; source: string; fs: FileSystem }) => string
-export type FileSystem = ReturnType<typeof createFileSystem>
-
-/**********************************************************************************/
-/*                                                                                */
-/*                                   Create File                                  */
-/*                                                                                */
-/**********************************************************************************/
-
-export function createExtension({
-  type,
-  transform,
-}: {
-  type: File['type']
-  transform?: Transform
-}): Extension {
-  return ({ path, source: initial, fs }) =>
-    createFile({
-      type,
-      initial,
-      transform: transform ? source => transform({ path, source, fs }) : undefined,
-    })
-}
-
-export function createFile({
-  type,
-  initial,
-  transform,
-}: {
-  type: File['type']
-  initial: string
-  transform?: (source: string) => string | Promise<string>
-}): File {
-  const [get, set] = createSignal<string>(initial)
-  const [listen, emit] = createSignal<void>(null!, { equals: false })
-  const transformed = createAsync(async () => (transform ? transform(get()) : get()))
-
-  function createUrl() {
-    const _transformed = transformed()
-    if (!_transformed) return
-    const blob = new Blob([_transformed], { type: `text/${type}` })
-    return URL.createObjectURL(blob)
-  }
-  const cachedUrl = createMemo<string | undefined>(previous => {
-    if (previous) URL.revokeObjectURL(previous)
-    listen()
-    return createUrl()
-  })
-
-  return {
-    type,
-    get,
-    set,
-    transformed,
-    cachedUrl,
-    createUrl,
-    invalidateUrl: emit,
-  }
-}
+import { createExecutables } from './create-executables.ts'
+import { getExtension, normalizePath } from './path.ts'
+import { Extension, FileType, Match } from './types.ts'
 
 /**********************************************************************************/
 /*                                                                                */
@@ -91,19 +10,37 @@ export function createFile({
 /*                                                                                */
 /**********************************************************************************/
 
+export type FileSystem = ReturnType<typeof createFileSystem>
+
+function getParentDirectory(path: string) {
+  return path.split('/').slice(0, -1).join('/')
+}
+
+function globToRegex(glob: string) {
+  const regex = glob
+    .replace(/\*\*/g, '.*') // Match `**`
+    .replace(/\*/g, '[^/]*') // Match `*`
+    .replace(/\?/g, '.') // Match `?`
+  return new RegExp(`^${regex}$`)
+}
+
 export function createFileSystem(extensions: Record<string, Extension>) {
-  const [dirEnts, setDirEnts] = createStore<Record<string, DirEnt>>({})
+  const [fs, setFs] = createStore<Record<string, string | null>>({})
+  const executables = createExecutables(fs, extensions)
 
-  function normalizePath(path: string) {
-    return path.replace(/^\/+/, '')
-  }
+  const [match, setMatch] = createSignal<Match>((glob: string) => {
+    const regex = globToRegex(glob)
+    return (paths: Array<string>) => paths.filter(path => regex.test(path))
+  })
 
-  function getExtension(path: string) {
-    return path.split('/').slice(-1)[0]?.split('.')[1]
-  }
-
-  function getParentDirectory(path: string) {
-    return path.split('/').slice(0, -1).join('/')
+  function createGlobEffect(glob: string, cb: (path: string) => void) {
+    const matchFn = createMemo(() => match()(glob))
+    createEffect(
+      mapArray(
+        () => matchFn()(api.getPaths()),
+        path => createEffect(() => cb(path)),
+      ),
+    )
   }
 
   function assertPathExists(path: string) {
@@ -111,40 +48,17 @@ export function createFileSystem(extensions: Record<string, Extension>) {
     const pathExists = parts
       .map((_, index) => parts.slice(0, index + 1).join('/'))
       .filter(Boolean)
-      .every(path => path in dirEnts)
+      .every(path => path in fs)
 
     if (!pathExists) {
       throw `Path is invalid ${path}`
     }
     return true
   }
-
-  function getDirEnt(path: string) {
-    path = normalizePath(path)
-
-    const dirEnt = dirEnts[path]
-
-    if (dirEnt?.type === 'dir') {
-      throw `Path is not a file: ${dirEnt}`
+  function assertNotDir(path: string) {
+    if (fs[path] === null) {
+      throw `Path is not a file: ${path}`
     }
-
-    return dirEnt
-  }
-
-  /** Get a cached object-url of the corresponding file. */
-  function url(path: string) {
-    return getDirEnt(path)?.cachedUrl()
-  }
-  /** Invalidate the cached object-url of the corresponding file. */
-  url.invalidate = (path: string) => {
-    return getDirEnt(path)?.invalidateUrl()
-  }
-  /** Create a new, uncached object-url from the corresponding file. */
-  url.create = (path: string) => {
-    return getDirEnt(path)?.createUrl()
-  }
-  url.watch = (path: string, callback: (url: string | undefined) => void) => {
-    createEffect(() => callback(getDirEnt(path)?.cachedUrl()))
   }
 
   function readdir(path: string, options?: { withFileTypes?: false }): Array<string>
@@ -158,27 +72,26 @@ export function createFileSystem(extensions: Record<string, Extension>) {
     assertPathExists(path)
 
     if (options?.withFileTypes) {
-      return Object.entries(dirEnts)
+      return Object.entries(fs)
         .filter(([_path]) => getParentDirectory(_path) === path && path !== _path)
         .map(([path, file]) => ({
-          type: file.type,
+          type: file === null ? 'dir' : extensions[getExtension(path)]?.type || 'plain',
           path,
         }))
     }
 
-    return Object.keys(dirEnts).filter(_path => getParentDirectory(_path) === path)
+    return Object.keys(fs).filter(_path => getParentDirectory(_path) === path)
   }
 
-  const fs = {
-    url,
-    paths: () => Object.keys(dirEnts),
-    transformed: (path: string) => getDirEnt(path)?.transformed(),
-    getType(path: string): DirEnt['type'] {
+  const api = {
+    executables,
+    getPaths: () => Object.keys(fs),
+    getType(path: string): FileType | 'dir' {
       path = normalizePath(path)
 
       assertPathExists(path)
 
-      return dirEnts[path]!.type
+      return fs[path] === null ? 'dir' : extensions[getExtension(path)]?.type || 'plain'
     },
     readdir,
     mkdir(path: string, options?: { recursive?: boolean }) {
@@ -187,25 +100,25 @@ export function createFileSystem(extensions: Record<string, Extension>) {
       if (options?.recursive) {
         const parts = path.split('/')
         parts.forEach((_, index) => {
-          setDirEnts(parts.slice(0, index + 1).join('/'), { type: 'dir' })
+          setFs(parts.slice(0, index + 1).join('/'), null)
         })
         return
       }
 
       assertPathExists(getParentDirectory(path))
 
-      setDirEnts(path, { type: 'dir' })
+      setFs(path, null)
     },
     readFile(path: string) {
       path = normalizePath(path)
 
-      const dirEnt = dirEnts[path]
+      const file = fs[path]
 
-      if (dirEnt?.type === 'dir') {
+      if (file === null) {
         throw `Path is not a file ${path}`
       }
 
-      return dirEnt?.get()
+      return file
     },
     rename(previous: string, next: string) {
       previous = normalizePath(previous)
@@ -213,9 +126,9 @@ export function createFileSystem(extensions: Record<string, Extension>) {
 
       assertPathExists(previous)
 
-      setDirEnts(
+      setFs(
         produce(files => {
-          Object.keys(dirEnts).forEach(path => {
+          Object.keys(fs).forEach(path => {
             if (path.startsWith(previous)) {
               const newPath = path.replace(previous, next)
               files[newPath] = files[path]!
@@ -233,7 +146,7 @@ export function createFileSystem(extensions: Record<string, Extension>) {
       }
 
       if (!options || !options.recursive) {
-        const _dirEnts = Object.keys(dirEnts).filter(value => {
+        const _dirEnts = Object.keys(executables).filter(value => {
           if (value === path) return false
           return value.includes(path)
         })
@@ -243,7 +156,7 @@ export function createFileSystem(extensions: Record<string, Extension>) {
         }
       }
 
-      setDirEnts(
+      setFs(
         produce(files => {
           Object.keys(files)
             .filter(value => value.includes(path))
@@ -255,39 +168,31 @@ export function createFileSystem(extensions: Record<string, Extension>) {
       path = normalizePath(path)
       assertPathExists(getParentDirectory(path))
 
-      const dirEnt = dirEnts[path]!
-
-      if (dirEnt?.type === 'dir') {
+      if (fs[path] === null) {
         throw `A directory already exist with the same name: ${path}`
       }
 
-      const extension = getExtension(path)
-
-      if (dirEnt) {
-        dirEnt.set(source)
-      } else {
-        let dirEnt = extension && extensions[extension]?.({ path, source, fs })
-        dirEnt ||= createFile({
-          type: 'unknown',
-          initial: source,
-        })
-        setDirEnts(path, dirEnt)
-      }
+      setFs(path, source)
     },
     // Watchers
-    watchUrl(path: string, cb: (url: string | undefined) => void) {
-      createEffect(() => cb(fs.url(path)))
+    watchExecutable(glob: string, cb: (url: string | undefined, path: string) => void) {
+      createGlobEffect(glob, path => cb(api.executables.get(path), path))
     },
-    watchFile(path: string, cb: (url: string | undefined) => void) {
-      createEffect(() => cb(fs.readFile(path)))
+    watchFile(glob: string, cb: (source: string | undefined, path: string) => void) {
+      createGlobEffect(glob, path => cb(api.readFile(path), path))
     },
-    watchDir(path: string, cb: (paths: Array<{ type: FileType | 'dir'; path: string }>) => void) {
-      createEffect(() => cb(fs.readdir(path, { withFileTypes: true })))
+    watchDir(
+      path: string,
+      cb: (paths: Array<{ type: FileType | 'dir'; path: string }>, path: string) => void,
+    ) {
+      cb(api.readdir(path, { withFileTypes: true }), path)
     },
     watchPaths(cb: (paths: Array<string>) => void) {
-      createEffect(() => cb(fs.paths()))
+      createEffect(() => cb(api.getPaths()))
     },
+    // Set match function
+    setMatch: setMatch,
   }
 
-  return fs
+  return api
 }

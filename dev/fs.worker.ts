@@ -1,25 +1,26 @@
-import { createExtension, createFileSystem, Transform } from 'src/create-filesystem'
-import { createMonacoTypeDownloader, Monaco } from 'src/monaco'
+import { createFileSystem } from 'src/create-filesystem'
+import { createMonacoTypeDownloader } from 'src/monaco'
 import { parseHtmlWorker } from 'src/parse-html-worker'
 import { isUrl, resolvePath } from 'src/path'
 import { transformModulePaths } from 'src/transform-module-paths'
+import { Transform } from 'src/types'
 import ts from 'typescript'
 import toolkitDeclaration from './lib/repl-toolkit.d.ts?raw'
 import toolkit from './lib/repl-toolkit.js?raw'
 
 const typeDownloader = createMonacoTypeDownloader({
-  target: Monaco.ScriptTarget.ES2015,
+  target: 2,
   esModuleInterop: true,
 })
 typeDownloader.addDeclaration('@bigmistqke/repl/index.d.ts', toolkitDeclaration, '@bigmistqke/repl')
 
-const transformJs: Transform = ({ path, source, fs }) => {
+const transformJs: Transform = ({ path, source, executables }) => {
   return transformModulePaths(source, modulePath => {
     if (modulePath === '@bigmistqke/repl') {
-      return localModules.url('repl-toolkit.js')
+      return localModules.executables.get('repl-toolkit.js')
     } else if (modulePath.startsWith('.')) {
       // Swap relative module-path out with their respective module-url
-      const url = fs.url(resolvePath(path, modulePath))
+      const url = executables.get(resolvePath(path, modulePath))
       if (!url) throw 'url is undefined'
       return url
     } else if (isUrl(modulePath)) {
@@ -34,18 +35,22 @@ const transformJs: Transform = ({ path, source, fs }) => {
 }
 
 const fs = createFileSystem({
-  css: createExtension({ type: 'css' }),
-  js: createExtension({
+  css: { type: 'css' },
+  js: {
     type: 'javascript',
     transform: transformJs,
-  }),
-  ts: createExtension({
+  },
+  ts: {
     type: 'javascript',
-    transform({ path, source, fs }) {
-      return transformJs({ path, source: ts.transpile(source, typeDownloader.tsconfig()), fs })
+    transform({ path, source, executables }) {
+      return transformJs({
+        path,
+        source: ts.transpile(source, typeDownloader.tsconfig()),
+        executables,
+      })
     },
-  }),
-  html: createExtension({
+  },
+  html: {
     type: 'html',
     transform(config) {
       const html = parseHtmlWorker(config)
@@ -58,26 +63,33 @@ const fs = createFileSystem({
         .toString()
       return html
     },
-  }),
+  },
 })
 
 // Add file-system for local modules
 const localModules = createFileSystem({
-  js: createExtension({
+  js: {
     type: 'javascript',
     transform: transformJs,
-  }),
+  },
 })
 localModules.writeFile('repl-toolkit.js', toolkit)
 
 const methods = {
   watchTsconfig: typeDownloader.watchTsconfig,
   watchTypes: typeDownloader.watchTypes,
-  ...fs,
+  watchExecutable: fs.watchExecutable,
+  writeFile: fs.writeFile,
+  watchDir: fs.watchDir,
+  watchFile: fs.watchFile,
+  getType: fs.getType,
+  watchPaths: fs.watchPaths,
 }
 
-// Initialize worker-methods
 export default methods
+
+// Initialize worker-methods
+// export default methods
 
 // Export types of methods to infer the WorkerProxy's type
 export type Methods = typeof methods

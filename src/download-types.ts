@@ -1,6 +1,6 @@
-import { resolvePath } from './path'
-import { transformModulePaths } from './transform-module-paths'
-import { defer } from './utils/defer'
+import { resolvePath } from './path.ts'
+import { transformModulePaths } from './transform-module-paths.ts'
+import { defer } from './utils/defer.ts'
 
 /**********************************************************************************/
 /*                                                                                */

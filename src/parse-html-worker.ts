@@ -1,18 +1,10 @@
 import serialize from 'dom-serializer'
 import { findAll, getAttributeValue, hasAttrib } from 'domutils'
 import { parseDocument } from 'htmlparser2'
-import { FileSystem, Transform } from './create-filesystem'
-import { isUrl, resolvePath } from './path'
+import { isUrl, resolvePath } from './path.ts'
+import { Transform, TransformConfig } from './types.ts'
 
-export function parseHtmlWorker({
-  path,
-  source,
-  fs,
-}: {
-  path: string
-  source: string
-  fs: FileSystem
-}) {
+export function parseHtmlWorker({ path, source, executables }: TransformConfig) {
   const doc = parseDocument(source)
 
   const api = {
@@ -29,7 +21,7 @@ export function parseHtmlWorker({
         if (hasAttrib(link, 'href')) {
           const href = getAttributeValue(link, 'href')
           if (!href || isUrl(href)) return
-          const url = fs.url(resolvePath(path, href))
+          const url = executables.get(resolvePath(path, href))
           if (url) link.attribs.href = url
         }
       })
@@ -40,7 +32,7 @@ export function parseHtmlWorker({
         if (hasAttrib(script, 'src')) {
           const src = getAttributeValue(script, 'src')
           if (!src || isUrl(src)) return
-          const url = fs.url(resolvePath(path, src))
+          const url = executables.get(resolvePath(path, src))
           if (url) script.attribs.src = url
         }
       })
@@ -50,7 +42,7 @@ export function parseHtmlWorker({
       return api.select('script', (script: any) => {
         if (getAttributeValue(script, 'type') === 'module' && script.children.length) {
           const scriptContent = script.children.map((child: any) => child.data).join('')
-          const transformedContent = transformJs({ path, source: scriptContent, fs })
+          const transformedContent = transformJs({ path, source: scriptContent, executables })
           if (transformedContent !== undefined) {
             script.children[0].data = transformedContent
           }

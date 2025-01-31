@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { resolvePackageEntries } from './resolve-package-entries'
+import { resolvePackageEntries } from './resolve-package-entries.ts'
 
 describe('resolvePackage', () => {
   test('resolves basic main field', () => {

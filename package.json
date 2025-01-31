@@ -50,19 +50,20 @@
   "dependencies": {
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
     "@solidjs/router": "^0.15.2",
-    "dom-serializer": "^2.0.0",
-    "domutils": "^3.2.2",
-    "htmlparser2": "^10.0.0"
+    "monaco-editor": "^0.52.2"
   },
   "peerDependencies": {
     "@babel/standalone": "^7.26.6",
+    "dom-serializer": "^2.0.0",
+    "domutils": "^3.2.2",
+    "htmlparser2": "^10.0.0",
     "solid-js": "^1.6.0",
     "typescript": "^5.1.6"
   },
   "devDependencies": {
     "@bigmistqke/solid-grid-split": "^0.0.2",
-    "@bigmistqke/vite-plugin-worker-proxy": "^0.0.9",
-    "@bigmistqke/worker-proxy": "^0.0.9",
+    "@bigmistqke/vite-plugin-worker-proxy": "^0.0.12",
+    "@bigmistqke/worker-proxy": "^0.0.12",
     "@monaco-editor/loader": "^1.4.0",
     "@types/babel__standalone": "^7.1.9",
     "concurrently": "^8.2.0",

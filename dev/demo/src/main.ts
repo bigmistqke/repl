@@ -1,5 +1,4 @@
 import {
-  createExtension,
   createFileSystem,
   isUrl,
   parseHtml,
@@ -13,11 +12,11 @@ import { render } from 'solid-js/web'
 import ts from 'typescript'
 
 function createRepl() {
-  const transformJs: Transform = ({ path, source, fs }) => {
+  const transformJs: Transform = ({ path, source, executables }) => {
     return transformModulePaths(source, modulePath => {
       if (modulePath.startsWith('.')) {
         // Swap relative module-path out with their respective module-url
-        const url = fs.url(resolvePath(path, modulePath))
+        const url = executables.get(resolvePath(path, modulePath))
         if (!url) throw 'url is undefined'
         return url
       } else if (isUrl(modulePath)) {
@@ -31,18 +30,18 @@ function createRepl() {
   }
 
   return createFileSystem({
-    css: createExtension({ type: 'css' }),
-    js: createExtension({
+    css: { type: 'css' },
+    js: {
       type: 'javascript',
       transform: transformJs,
-    }),
-    ts: createExtension({
+    },
+    ts: {
       type: 'javascript',
       transform({ path, source, fs }) {
         return transformJs({ path, source: ts.transpile(source), fs })
       },
-    }),
-    html: createExtension({
+    },
+    html: {
       type: 'html',
       transform(config) {
         return (
@@ -56,7 +55,7 @@ function createRepl() {
             .toString()
         )
       },
-    }),
+    },
   })
 }
 
@@ -105,6 +104,6 @@ setInterval(randomColor, 2000)`,
       oninput=${e => repl.writeFile(selectedPath(), e.target.value)}
       value=${() => repl.readFile(selectedPath())}
     ></textarea>
-    <iframe src=${() => repl.url('index.html')}></iframe>
+    <iframe src=${() => repl.executables.get('index.html')}></iframe>
   </div> `
 }, document.getElementById('root')!)

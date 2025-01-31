@@ -1,7 +1,8 @@
-import { FileType, getExtension, Monaco } from '@bigmistqke/repl'
+import { FileType, getExtension } from '@bigmistqke/repl'
 import { Split } from '@bigmistqke/solid-grid-split'
-import type { WorkerProxy } from '@bigmistqke/worker-proxy'
+import { type WorkerProxy } from '@bigmistqke/worker-proxy'
 import loader from '@monaco-editor/loader'
+import { languages } from 'monaco-editor'
 import {
   createEffect,
   createResource,
@@ -30,14 +31,14 @@ render(() => {
   const [selectedPath, setSelectedPath] = createSignal<string>('main.ts')
   const isPathSelected = createSelector(selectedPath)
   const [url, setUrl] = createSignal<string>()
-  const [tsconfig, setTsconfig] = createSignal<Monaco.CompilerOptions>({})
+  const [tsconfig, setTsconfig] = createSignal<languages.typescript.CompilerOptions>({})
   const [types, setTypes] = createSignal<Record<string, string>>()
 
   const fs = new Worker<Methods>()
 
   fs.watchTsconfig(setTsconfig)
   fs.watchTypes(setTypes)
-  fs.watchUrl('index.html', setUrl)
+  fs.watchExecutable('index.html', setUrl)
 
   // Add demo's source-files to the file-system
   Object.entries(demo).forEach(([key, source]) => fs.writeFile(key, source))
@@ -83,7 +84,7 @@ function Editor(props: {
   fs: WorkerProxy<Methods>
   path: string
   types?: Record<string, string>
-  tsconfig: Monaco.CompilerOptions
+  tsconfig: languages.typescript.CompilerOptions
   languages?: Record<string, string>
 }) {
   const [paths, setPaths] = createSignal<Array<string>>([])
