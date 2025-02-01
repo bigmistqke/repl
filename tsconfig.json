@@ -22,7 +22,11 @@
     "sourceMap": true,
     "strict": true,
     "target": "ESNext",
-    "types": ["vite/client", "@bigmistqke/vite-plugin-worker-proxy/client"],
+    "types": [
+      "vite/client",
+      "@bigmistqke/vite-plugin-worker-proxy/client",
+      "@bigmistqke/vite-plugin-raw-directory/client"
+    ],
     "paths": {
       "@bigmistqke/repl": ["src/index.ts"]
     }

@@ -5,8 +5,8 @@ import { isUrl, resolvePath } from 'src/path'
 import { transformModulePaths } from 'src/transform-module-paths'
 import { Transform } from 'src/types'
 import ts from 'typescript'
-import toolkitDeclaration from './lib/repl-toolkit.d.ts?raw'
-import toolkit from './lib/repl-toolkit.js?raw'
+import toolkitDeclaration from '../lib/repl-toolkit.d.ts?raw'
+import toolkit from '../lib/repl-toolkit.js?raw'
 
 const typeDownloader = createMonacoTypeDownloader({
   target: 2,

@@ -8,6 +8,9 @@ dependencies:
   '@babel/standalone':
     specifier: ^7.26.6
     version: 7.26.7
+  '@bigmistqke/vite-plugin-raw-directory':
+    specifier: ^0.0.2
+    version: 0.0.2
   '@esbuild-plugins/node-globals-polyfill':
     specifier: ^0.2.3
     version: 0.2.3(esbuild@0.24.2)
@@ -275,6 +278,10 @@ packages:
     dependencies:
       solid-js: 1.9.4
     dev: true
+
+  /@bigmistqke/vite-plugin-raw-directory@0.0.2:
+    resolution: {integrity: sha512-sFRVTlTaHbEHxjezOQx/ckF6kjkpOWz3BBoz+HeEFKnuGTesCYTzb6XC+TdqEAZanbyYmqvuULSITardC2n5MA==}
+    dev: false
 
   /@bigmistqke/vite-plugin-worker-proxy@0.0.12(@bigmistqke/worker-proxy@0.0.12)(typescript@5.7.3)(vite@4.5.9):
     resolution: {integrity: sha512-DJwAeYFsBaNvP4b7bUYmx7RFboU5ZMuaonJSt6lQJZNSRkNqQzDJFMJU5Uy2hMaM+Jjth3s+u2Vg7Pf/7SKScQ==}

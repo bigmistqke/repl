@@ -15,11 +15,13 @@ import {
   Setter,
 } from 'solid-js'
 import { render, Show } from 'solid-js/web'
-import demo from './demo'
+import demo from '../demo?raw-directory'
+import { every, whenEffect, whenMemo } from '../utils/conditionals'
 import { type Methods } from './fs.worker'
 import Worker from './fs.worker?worker-proxy'
 import './styles.css'
-import { every, whenEffect, whenMemo } from './utils/conditionals'
+
+console.log('demo is ', demo)
 
 /**********************************************************************************/
 /*                                                                                */

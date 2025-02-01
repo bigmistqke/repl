@@ -48,6 +48,7 @@
     }
   },
   "dependencies": {
+    "@bigmistqke/vite-plugin-raw-directory": "^0.0.2",
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
     "@solidjs/router": "^0.15.2",
     "monaco-editor": "^0.52.2"

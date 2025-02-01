@@ -1,3 +1,4 @@
+import rawDirectoryPlugin from '@bigmistqke/vite-plugin-raw-directory'
 import workerPlugin from '@bigmistqke/vite-plugin-worker-proxy'
 import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill'
 import { defineConfig } from 'vite'
@@ -30,6 +31,7 @@ export default defineConfig({
     },
     wasmPlugin(),
     workerPlugin(),
+    rawDirectoryPlugin(),
   ],
   optimizeDeps: {
     esbuildOptions: {
@@ -51,5 +53,6 @@ export default defineConfig({
   },
   build: {
     target: 'esnext',
+    minify: false,
   },
 })
