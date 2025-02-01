@@ -11,7 +11,7 @@ import type { Extension } from './types.ts'
 import { createAsync } from './utils/create-async.ts'
 
 export function createExecutables(
-  fs: Record<string, string | null>,
+  fs: () => Record<string, string | null>,
   extensions: Record<string, Extension>,
 ) {
   const [actions, setActions] = createStore<
@@ -32,7 +32,7 @@ export function createExecutables(
 
   createRenderEffect(
     mapArray(
-      () => Object.keys(fs).filter(path => fs[path] !== null),
+      () => Object.keys(fs()).filter(path => fs()[path] !== null),
       path => {
         const extension = getExtension(path)
 
@@ -40,8 +40,8 @@ export function createExecutables(
 
         const transformed = createAsync(
           async () =>
-            extensions[extension]?.transform?.({ path, source: fs[path]!, executables }) ||
-            fs[path]!,
+            extensions[extension]?.transform?.({ path, source: fs()[path]!, executables }) ||
+            fs()[path]!,
         )
 
         function createExecutable() {

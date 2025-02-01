@@ -26,7 +26,7 @@ function globToRegex(glob: string) {
 
 export function createFileSystem(extensions: Record<string, Extension>) {
   const [fs, setFs] = createStore<Record<string, string | null>>({})
-  const executables = createExecutables(fs, extensions)
+  const executables = createExecutables(() => fs, extensions)
 
   const [match, setMatch] = createSignal<Match>((glob: string) => {
     const regex = globToRegex(glob)
