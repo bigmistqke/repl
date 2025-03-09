@@ -14,12 +14,12 @@ import {
   onCleanup,
   Setter,
 } from 'solid-js'
-import { render, Show } from 'solid-js/web'
-import demo from '../demo?raw-directory'
-import { every, whenEffect, whenMemo } from '../utils/conditionals'
-import { type Methods } from './fs.worker'
-import Worker from './fs.worker?worker-proxy'
+import { Show } from 'solid-js/web'
+import demo from './demo?raw-directory'
 import './styles.css'
+import { every, whenEffect, whenMemo } from './utils/conditionals'
+import { type Methods } from './worker/fs.worker'
+import Worker from './worker/fs.worker?worker-proxy'
 
 console.log('demo is ', demo)
 
@@ -29,7 +29,7 @@ console.log('demo is ', demo)
 /*                                                                                */
 /**********************************************************************************/
 
-render(() => {
+export function App() {
   const [selectedPath, setSelectedPath] = createSignal<string>('main.ts')
   const isPathSelected = createSelector(selectedPath)
   const [url, setUrl] = createSignal<string>()
@@ -60,7 +60,7 @@ render(() => {
       </Split.Pane>
     </Split>
   )
-}, document.getElementById('root')!)
+}
 
 /**********************************************************************************/
 /*                                                                                */
