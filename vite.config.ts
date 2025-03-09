@@ -23,6 +23,7 @@ export default defineConfig({
         'dom-serializer',
         'domutils',
         'htmlparser2',
+        'monaco-editor',
       ],
     },
   },

@@ -48,9 +48,7 @@
     }
   },
   "dependencies": {
-    "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
-    "@solidjs/router": "^0.15.2",
-    "monaco-editor": "^0.52.2"
+    "@solidjs/router": "^0.15.2"
   },
   "peerDependencies": {
     "@babel/standalone": "^7.26.6",
@@ -58,7 +56,8 @@
     "domutils": "^3.2.2",
     "htmlparser2": "^10.0.0",
     "solid-js": "^1.6.0",
-    "typescript": "^5.1.6"
+    "typescript": "^5.1.6",
+    "monaco-editor": "^0.52.2"
   },
   "devDependencies": {
     "@bigmistqke/solid-grid-split": "^0.0.2",
