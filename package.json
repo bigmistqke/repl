@@ -33,7 +33,7 @@
     "test:client": "vitest",
     "test:ssr": "pnpm run test:client --mode ssr",
     "prepublishOnly": "pnpm build",
-    "format": "prettier --ignore-path .gitignore -w \"src/**/*.{js,ts,json,css,tsx,jsx}\" \"dev/**/*.{js,ts,json,css,tsx,jsx}\"",
+    "format": "prettier -w \"src/**/*.{js,ts,json,css,tsx,jsx}\" \"dev/**/*.{js,ts,json,css,tsx,jsx}\"",
     "lint": "concurrently pnpm:lint:*",
     "lint:code": "eslint --ignore-path .gitignore --max-warnings 0 src/**/*.{js,ts,tsx,jsx}",
     "lint:types": "tsc --noEmit",
@@ -48,7 +48,6 @@
     }
   },
   "dependencies": {
-    "@bigmistqke/vite-plugin-raw-directory": "^0.0.2",
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
     "@solidjs/router": "^0.15.2",
     "monaco-editor": "^0.52.2"
