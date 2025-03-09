@@ -13,6 +13,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: install latest corepack
+        run: npm install corepack@latest -g
+
       - run: corepack enable
       - uses: actions/setup-node@v4
         with:
