@@ -68,18 +68,16 @@ function createExecutables(fs, extensions2) {
   }
   createEffect(
     mapArray(
-      () => Object.keys(fs).filter(path => fs[path] !== null),
-      path => {
-        const extension = getExtension(path)
-        const [listen, invalidateExecutable] = createSignal(null, { equals: false })
-        const transformed = createAsync(async () => {
-          var _a2, _b
-          return (
-            ((_b = (_a2 = extensions2[extension]) == null ? void 0 : _a2.transform) == null
-              ? void 0
-              : _b.call(_a2, { path, source: fs[path], executables })) || fs[path]
-          )
-        })
+      () => Object.keys(fs()).filter((path) => fs()[path] !== null),
+      (path) => {
+        const extension = getExtension(path);
+        const [listen, invalidateExecutable] = createSignal(null, { equals: false });
+        const transformed = createAsync(
+          async () => {
+            var _a2, _b;
+            return ((_b = (_a2 = extensions2[extension]) == null ? void 0 : _a2.transform) == null ? void 0 : _b.call(_a2, { path, source: fs()[path], executables })) || fs()[path];
+          }
+        );
         function createExecutable() {
           var _a2
           const _transformed = transformed()
@@ -115,12 +113,12 @@ function globToRegex(glob) {
   return new RegExp(`^${regex}$`)
 }
 function createFileSystem(extensions2) {
-  const [fs, setFs] = createStore({})
-  const executables = createExecutables(fs, extensions2)
-  const [match, setMatch] = createSignal(glob => {
-    const regex = globToRegex(glob)
-    return paths => paths.filter(path => regex.test(path))
-  })
+  const [fs, setFs] = createStore({});
+  const executables = createExecutables(() => fs, extensions2);
+  const [match, setMatch] = createSignal((glob) => {
+    const regex = globToRegex(glob);
+    return (paths) => paths.filter((path) => regex.test(path));
+  });
   function createGlobEffect(glob, cb) {
     const matchFn = createMemo(() => match()(glob))
     createEffect(
@@ -131,15 +129,34 @@ function createFileSystem(extensions2) {
     )
   }
   function assertPathExists(path) {
-    const parts = path.split('/')
-    const pathExists = parts
-      .map((_, index) => parts.slice(0, index + 1).join('/'))
-      .filter(Boolean)
-      .every(path2 => path2 in executables)
+    if (path === ".")
+      return true;
+    const parts = path.split("/");
+    const pathExists = parts.map((_, index) => parts.slice(0, index + 1).join("/")).filter(Boolean).every((path2) => path2 in fs);
     if (!pathExists) {
       throw `Path is invalid ${path}`
     }
     return true
+  }
+  function assertNotDir(path) {
+    if (fs[path] === null) {
+      throw `Path is not a file: ${path}`;
+    }
+  }
+  function getExecutable(path) {
+    path = normalizePath$1(path);
+    assertNotDir(path);
+    return executables.get(path);
+  }
+  function invalidateExecutable(path) {
+    path = normalizePath$1(path);
+    assertNotDir(path);
+    return executables.invalidate(path);
+  }
+  function createExecutable(path) {
+    path = normalizePath$1(path);
+    assertNotDir(path);
+    return executables.create(path);
   }
   function readdir(path, options) {
     path = normalizePath$1(path)
@@ -161,7 +178,9 @@ function createFileSystem(extensions2) {
     return Object.keys(fs).filter(_path => getParentDirectory(_path) === path)
   }
   const api = {
-    executables,
+    getExecutable,
+    invalidateExecutable,
+    createExecutable,
     getPaths: () => Object.keys(fs),
     getType(path) {
       var _a2
@@ -240,7 +259,7 @@ function createFileSystem(extensions2) {
     },
     // Watchers
     watchExecutable(glob, cb) {
-      createGlobEffect(glob, path => cb(api.executables.get(path), path))
+      createGlobEffect(glob, (path) => cb(api.getExecutable(path), path));
     },
     watchFile(glob, cb) {
       createGlobEffect(glob, path => cb(api.readFile(path), path))

@@ -15,13 +15,11 @@ import {
   Setter,
 } from 'solid-js'
 import { Show } from 'solid-js/web'
-import demo from './demo?raw-directory'
+import demo from './demo'
 import './styles.css'
 import { every, whenEffect, whenMemo } from './utils/conditionals'
 import { type Methods } from './worker/fs.worker'
 import Worker from './worker/fs.worker?worker-proxy'
-
-console.log('demo is ', demo)
 
 /**********************************************************************************/
 /*                                                                                */
@@ -43,7 +41,9 @@ export function App() {
   fs.watchExecutable('index.html', setUrl)
 
   // Add demo's source-files to the file-system
-  Object.entries(demo).forEach(([key, source]) => fs.writeFile(key, source))
+  Object.entries(demo).forEach(([key, source]) => {
+    fs.writeFile(key, source)
+  })
 
   return (
     <Split style={{ height: '100vh' }}>

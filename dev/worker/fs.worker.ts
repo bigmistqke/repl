@@ -1,3 +1,4 @@
+import { createRoot } from 'solid-js'
 import { createFileSystem } from 'src/create-filesystem'
 import { createMonacoTypeDownloader } from 'src/monaco'
 import { parseHtmlWorker } from 'src/parse-html-worker'
@@ -17,7 +18,7 @@ typeDownloader.addDeclaration('@bigmistqke/repl/index.d.ts', toolkitDeclaration,
 const transformJs: Transform = ({ path, source, executables }) => {
   return transformModulePaths(source, modulePath => {
     if (modulePath === '@bigmistqke/repl') {
-      return localModules.executables.get('repl-toolkit.js')
+      return localModules.getExecutable('repl-toolkit.js')
     } else if (modulePath.startsWith('.')) {
       // Swap relative module-path out with their respective module-url
       const url = executables.get(resolvePath(path, modulePath))
@@ -34,45 +35,49 @@ const transformJs: Transform = ({ path, source, executables }) => {
   })!
 }
 
-const fs = createFileSystem({
-  css: { type: 'css' },
-  js: {
-    type: 'javascript',
-    transform: transformJs,
-  },
-  ts: {
-    type: 'javascript',
-    transform({ path, source, executables }) {
-      return transformJs({
-        path,
-        source: ts.transpile(source, typeDownloader.tsconfig()),
-        executables,
-      })
+const fs = createRoot(() =>
+  createFileSystem({
+    css: { type: 'css' },
+    js: {
+      type: 'javascript',
+      transform: transformJs,
     },
-  },
-  html: {
-    type: 'html',
-    transform(config) {
-      const html = parseHtmlWorker(config)
-        // Transform content of all `<script type="module" />` elements
-        .transformModuleScriptContent(transformJs)
-        // Bind relative `src`-attribute of all `<script/>` elements to FileSystem
-        .bindScriptSrc()
-        // Bind relative `href`-attribute of all `<link/>` elements to FileSystem
-        .bindLinkHref()
-        .toString()
-      return html
+    ts: {
+      type: 'javascript',
+      transform({ path, source, executables }) {
+        return transformJs({
+          path,
+          source: ts.transpile(source, typeDownloader.tsconfig()),
+          executables,
+        })
+      },
     },
-  },
-})
+    html: {
+      type: 'html',
+      transform(config) {
+        const html = parseHtmlWorker(config)
+          // Transform content of all `<script type="module" />` elements
+          .transformModuleScriptContent(transformJs)
+          // Bind relative `src`-attribute of all `<script/>` elements to FileSystem
+          .bindScriptSrc()
+          // Bind relative `href`-attribute of all `<link/>` elements to FileSystem
+          .bindLinkHref()
+          .toString()
+        return html
+      },
+    },
+  }),
+)
 
 // Add file-system for local modules
-const localModules = createFileSystem({
-  js: {
-    type: 'javascript',
-    transform: transformJs,
-  },
-})
+const localModules = createRoot(() =>
+  createFileSystem({
+    js: {
+      type: 'javascript',
+      transform: transformJs,
+    },
+  }),
+)
 localModules.writeFile('repl-toolkit.js', toolkit)
 
 const methods = {

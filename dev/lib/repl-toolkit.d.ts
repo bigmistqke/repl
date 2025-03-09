@@ -17,75 +17,52 @@ export interface TransformConfig {
   source: string
   executables: Executables
 }
-export type Transform = (config: TransformConfig) => string
-export type Match = (glob: string) => (paths: Array<string>) => Array<string>
-export declare function createExecutables(
-  fs: Record<string, string | null>,
-  extensions: Record<string, Extension>,
-): {
-  get(path: string): string | undefined
-  invalidate(path: string): void | undefined
-  create(path: string): string | undefined
-}
+export type Transform = (config: TransformConfig) => string;
+export type Match = (glob: string) => (paths: Array<string>) => Array<string>;
+export declare function createExecutables(fs: () => Record<string, string | null>, extensions: Record<string, Extension>): {
+	get(path: string): string | undefined;
+	invalidate(path: string): void | undefined;
+	create(path: string): string | undefined;
+};
 /**********************************************************************************/
 /**********************************************************************************/
 type FileSystem$1 = ReturnType<typeof createFileSystem>
 export declare function createFileSystem(extensions: Record<string, Extension>): {
-  executables: {
-    get(path: string): string | undefined
-    invalidate(path: string): void | undefined
-    create(path: string): string | undefined
-  }
-  getPaths: () => string[]
-  getType(path: string): FileType | 'dir'
-  readdir: {
-    (
-      path: string,
-      options?: {
-        withFileTypes?: false
-      },
-    ): Array<string>
-    (
-      path: string,
-      options: {
-        withFileTypes: true
-      },
-    ): Array<{
-      type: 'dir' | FileType
-      path: string
-    }>
-  }
-  mkdir(
-    path: string,
-    options?: {
-      recursive?: boolean
-    },
-  ): void
-  readFile(path: string): string | undefined
-  rename(previous: string, next: string): void
-  rm(
-    path: string,
-    options?: {
-      force?: boolean
-      recursive?: boolean
-    },
-  ): void
-  writeFile(path: string, source: string): void
-  watchExecutable(glob: string, cb: (url: string | undefined, path: string) => void): void
-  watchFile(glob: string, cb: (source: string | undefined, path: string) => void): void
-  watchDir(
-    path: string,
-    cb: (
-      paths: Array<{
-        type: FileType | 'dir'
-        path: string
-      }>,
-      path: string,
-    ) => void,
-  ): void
-  watchPaths(cb: (paths: Array<string>) => void): void
-  setMatch: import('solid-js').Setter<Match>
-}
+	getExecutable: (path: string) => string | undefined;
+	invalidateExecutable: (path: string) => void | undefined;
+	createExecutable: (path: string) => string | undefined;
+	getPaths: () => string[];
+	getType(path: string): FileType | "dir";
+	readdir: {
+		(path: string, options?: {
+			withFileTypes?: false;
+		}): Array<string>;
+		(path: string, options: {
+			withFileTypes: true;
+		}): Array<{
+			type: "dir" | FileType;
+			path: string;
+		}>;
+	};
+	mkdir(path: string, options?: {
+		recursive?: boolean;
+	}): void;
+	readFile(path: string): string | undefined;
+	rename(previous: string, next: string): void;
+	rm(path: string, options?: {
+		force?: boolean;
+		recursive?: boolean;
+	}): void;
+	writeFile(path: string, source: string): void;
+	watchExecutable(glob: string, cb: (url: string | undefined, path: string) => void): void;
+	watchFile(glob: string, cb: (source: string | undefined, path: string) => void): void;
+	watchDir(path: string, cb: (paths: Array<{
+		type: FileType | "dir";
+		path: string;
+	}>, path: string) => void): void;
+	watchPaths(cb: (paths: Array<string>) => void): void;
+	setMatch: import("solid-js").Setter<Match>;
+};
 /**
  * Imports type definitions from a URL, checking if the types are already cached before importing.
  *

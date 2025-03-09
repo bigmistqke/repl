@@ -61,6 +61,22 @@ export function createFileSystem(extensions: Record<string, Extension>) {
     }
   }
 
+  function getExecutable(path: string) {
+    path = normalizePath(path)
+    assertNotDir(path)
+    return executables.get(path)
+  }
+  function invalidateExecutable(path: string) {
+    path = normalizePath(path)
+    assertNotDir(path)
+    return executables.invalidate(path)
+  }
+  function createExecutable(path: string) {
+    path = normalizePath(path)
+    assertNotDir(path)
+    return executables.create(path)
+  }
+
   function readdir(path: string, options?: { withFileTypes?: false }): Array<string>
   function readdir(
     path: string,
@@ -84,7 +100,9 @@ export function createFileSystem(extensions: Record<string, Extension>) {
   }
 
   const api = {
-    executables,
+    getExecutable,
+    invalidateExecutable,
+    createExecutable,
     getPaths: () => Object.keys(fs),
     getType(path: string): FileType | 'dir' {
       path = normalizePath(path)
@@ -176,7 +194,7 @@ export function createFileSystem(extensions: Record<string, Extension>) {
     },
     // Watchers
     watchExecutable(glob: string, cb: (url: string | undefined, path: string) => void) {
-      createGlobEffect(glob, path => cb(api.executables.get(path), path))
+      createGlobEffect(glob, path => cb(api.getExecutable(path), path))
     },
     watchFile(glob: string, cb: (source: string | undefined, path: string) => void) {
       createGlobEffect(glob, path => cb(api.readFile(path), path))
