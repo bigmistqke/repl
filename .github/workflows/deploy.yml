@@ -28,15 +28,15 @@ jobs:
       - name: Build project
         run: pnpm build
 
-      - name: Build dev lib
-        run: pnpm build:dev-lib
+      - name: Build demo lib
+        run: pnpm build:demo-lib
 
-      - name: Build dev
-        run: pnpm build:dev
+      - name: Build demo
+        run: pnpm build:demo
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dev/dist # Adjust if your build output directory is different
+          publish_dir: ./demo/dist # Adjust if your build output directory is different
           publish_branch: gh-pages # Specify the branch to deploy to

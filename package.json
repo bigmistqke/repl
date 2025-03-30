@@ -24,16 +24,17 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "dev": "vite serve dev",
-    "serve:dev": "vite preview dev",
-    "build:dev": "vite build dev",
-    "build:dev-lib": "vite build --config vite.config.demo.ts",
+    "demo": "vite serve demo",
+    "serve:demo": "vite preview demo",
+    "build:demo": "vite build demo",
+    "build:demo-lib": "vite build --config vite.config.demo.ts",
     "build": "vite build .",
     "optimize": "vite optimize",
     "test": "concurrently pnpm:test:*",
     "test:client": "vitest",
     "test:ssr": "pnpm run test:client --mode ssr",
     "prepublishOnly": "pnpm build",
-    "format": "prettier -w \"src/**/*.{js,ts,json,css,tsx,jsx}\" \"dev/**/*.{js,ts,json,css,tsx,jsx}\"",
+    "format": "prettier -w \"src/**/*.{js,ts,json,css,tsx,jsx}\" \"dev/**/*.{js,ts,json,css,tsx,jsx}\" \"demo/**/*.{js,ts,json,css,tsx,jsx}\"",
     "lint": "concurrently pnpm:lint:*",
     "lint:code": "eslint --ignore-path .gitignore --max-warnings 0 src/**/*.{js,ts,tsx,jsx}",
     "lint:types": "tsc --noEmit",
@@ -47,23 +48,23 @@
       }
     }
   },
-  "dependencies": {
-    "@solidjs/router": "^0.15.2"
-  },
   "peerDependencies": {
     "@babel/standalone": "^7.26.6",
     "dom-serializer": "^2.0.0",
     "domutils": "^3.2.2",
     "htmlparser2": "^10.0.0",
+    "monaco-editor": "^0.52.2",
     "solid-js": "^1.6.0",
-    "typescript": "^5.1.6",
-    "monaco-editor": "^0.52.2"
+    "typescript": "^5.1.6"
   },
   "devDependencies": {
+    "@bigmistqke/vite-plugin-raw-directory": "^0.0.2",
     "@bigmistqke/solid-grid-split": "^0.0.2",
     "@bigmistqke/vite-plugin-worker-proxy": "^0.0.12",
     "@bigmistqke/worker-proxy": "^0.0.12",
+    "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
     "@monaco-editor/loader": "^1.4.0",
+    "@solidjs/router": "^0.15.2",
     "@types/babel__standalone": "^7.1.9",
     "concurrently": "^8.2.0",
     "prettier": "3.0.0",

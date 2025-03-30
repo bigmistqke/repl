@@ -11,9 +11,6 @@ importers:
       '@babel/standalone':
         specifier: ^7.26.6
         version: 7.26.7
-      '@solidjs/router':
-        specifier: ^0.15.2
-        version: 0.15.3(solid-js@1.9.4)
       dom-serializer:
         specifier: ^2.0.0
         version: 2.0.0
@@ -33,15 +30,24 @@ importers:
       '@bigmistqke/solid-grid-split':
         specifier: ^0.0.2
         version: 0.0.2(solid-js@1.9.4)
+      '@bigmistqke/vite-plugin-raw-directory':
+        specifier: ^0.0.2
+        version: 0.0.2
       '@bigmistqke/vite-plugin-worker-proxy':
         specifier: ^0.0.12
         version: 0.0.12(@bigmistqke/worker-proxy@0.0.12)(postcss@8.5.1)(typescript@5.7.3)(vite@4.5.9(@types/node@22.12.0))
       '@bigmistqke/worker-proxy':
         specifier: ^0.0.12
         version: 0.0.12
+      '@esbuild-plugins/node-globals-polyfill':
+        specifier: ^0.2.3
+        version: 0.2.3(esbuild@0.24.2)
       '@monaco-editor/loader':
         specifier: ^1.4.0
         version: 1.4.0(monaco-editor@0.52.2)
+      '@solidjs/router':
+        specifier: ^0.15.2
+        version: 0.15.3(solid-js@1.9.4)
       '@types/babel__standalone':
         specifier: ^7.1.9
         version: 7.1.9
@@ -173,6 +179,9 @@ packages:
     peerDependencies:
       solid-js: ^1.6.0
 
+  '@bigmistqke/vite-plugin-raw-directory@0.0.2':
+    resolution: {integrity: sha512-sFRVTlTaHbEHxjezOQx/ckF6kjkpOWz3BBoz+HeEFKnuGTesCYTzb6XC+TdqEAZanbyYmqvuULSITardC2n5MA==}
+
   '@bigmistqke/vite-plugin-worker-proxy@0.0.12':
     resolution: {integrity: sha512-DJwAeYFsBaNvP4b7bUYmx7RFboU5ZMuaonJSt6lQJZNSRkNqQzDJFMJU5Uy2hMaM+Jjth3s+u2Vg7Pf/7SKScQ==}
     peerDependencies:
@@ -181,6 +190,11 @@ packages:
 
   '@bigmistqke/worker-proxy@0.0.12':
     resolution: {integrity: sha512-YEJ73QNQjJPCna+t9ur5bX/csDIFB9OfQ6VgEDhLLiRGhbRszCAyx6Pg620rIGyduJZ4IB96wRPEO7aWN4ykzw==}
+
+  '@esbuild-plugins/node-globals-polyfill@0.2.3':
+    resolution: {integrity: sha512-r3MIryXDeXDOZh7ih1l/yE9ZLORCd5e8vWg02azWRGj5SPTuoh69A2AIyn0Z31V/kHBfZ4HgWJ+OK3GTTwLmnw==}
+    peerDependencies:
+      esbuild: '*'
 
   '@esbuild/aix-ppc64@0.24.2':
     resolution: {integrity: sha512-thpVCb/rhxE/BnMLQ7GReQLLN8q9qbHmI55F4489/ByVg2aQaQ6kbcLb6FHkocZzQhxc4gx0sCk0tJkKBFzDhA==}
@@ -1551,6 +1565,8 @@ snapshots:
     dependencies:
       solid-js: 1.9.4
 
+  '@bigmistqke/vite-plugin-raw-directory@0.0.2': {}
+
   '@bigmistqke/vite-plugin-worker-proxy@0.0.12(@bigmistqke/worker-proxy@0.0.12)(postcss@8.5.1)(typescript@5.7.3)(vite@4.5.9(@types/node@22.12.0))':
     dependencies:
       '@bigmistqke/worker-proxy': 0.0.12
@@ -1567,6 +1583,10 @@ snapshots:
       - yaml
 
   '@bigmistqke/worker-proxy@0.0.12': {}
+
+  '@esbuild-plugins/node-globals-polyfill@0.2.3(esbuild@0.24.2)':
+    dependencies:
+      esbuild: 0.24.2
 
   '@esbuild/aix-ppc64@0.24.2':
     optional: true
