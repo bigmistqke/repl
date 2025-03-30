@@ -2,67 +2,88 @@
 
 /// <reference types="babel__core" />
 
-export type FileType = "javascript" | "css" | "html" | "wasm" | "plain";
+export type FileType = 'javascript' | 'css' | 'html' | 'wasm' | 'plain'
 export interface Extension {
-	transform?: Transform;
-	type: FileType;
+  transform?: Transform
+  type: FileType
 }
 export interface Executables {
-	invalidate(path: string): void;
-	create(path: string): string | undefined;
-	get(path: string): string | undefined;
+  invalidate(path: string): void
+  create(path: string): string | undefined
+  get(path: string): string | undefined
 }
 export interface TransformConfig {
-	path: string;
-	source: string;
-	executables: Executables;
+  path: string
+  source: string
+  executables: Executables
 }
-export type Transform = (config: TransformConfig) => string;
-export type Match = (glob: string) => (paths: Array<string>) => Array<string>;
-export declare function createExecutables(fs: () => Record<string, string | null>, extensions: Record<string, Extension>): {
-	get(path: string): string | undefined;
-	invalidate(path: string): void | undefined;
-	create(path: string): string | undefined;
-};
+export type Transform = (config: TransformConfig) => string
+export type Match = (glob: string) => (paths: Array<string>) => Array<string>
+export declare function createExecutables(
+  fs: () => Record<string, string | null>,
+  extensions: Record<string, Extension>,
+): {
+  get(path: string): string | undefined
+  invalidate(path: string): void | undefined
+  create(path: string): string | undefined
+}
 /**********************************************************************************/
 /**********************************************************************************/
-type FileSystem$1 = ReturnType<typeof createFileSystem>;
+type FileSystem$1 = ReturnType<typeof createFileSystem>
 export declare function createFileSystem(extensions: Record<string, Extension>): {
-	getExecutable: (path: string) => string | undefined;
-	invalidateExecutable: (path: string) => void | undefined;
-	createExecutable: (path: string) => string | undefined;
-	getPaths: () => string[];
-	getType(path: string): FileType | "dir";
-	readdir: {
-		(path: string, options?: {
-			withFileTypes?: false;
-		}): Array<string>;
-		(path: string, options: {
-			withFileTypes: true;
-		}): Array<{
-			type: "dir" | FileType;
-			path: string;
-		}>;
-	};
-	mkdir(path: string, options?: {
-		recursive?: boolean;
-	}): void;
-	readFile(path: string): string | undefined;
-	rename(previous: string, next: string): void;
-	rm(path: string, options?: {
-		force?: boolean;
-		recursive?: boolean;
-	}): void;
-	writeFile(path: string, source: string): void;
-	watchExecutable(glob: string, cb: (url: string | undefined, path: string) => void): void;
-	watchFile(glob: string, cb: (source: string | undefined, path: string) => void): void;
-	watchDir(path: string, cb: (paths: Array<{
-		type: FileType | "dir";
-		path: string;
-	}>, path: string) => void): void;
-	watchPaths(cb: (paths: Array<string>) => void): void;
-	setMatch: import("solid-js").Setter<Match>;
-};
+  getExecutable: (path: string) => string | undefined
+  invalidateExecutable: (path: string) => void | undefined
+  createExecutable: (path: string) => string | undefined
+  getPaths: () => string[]
+  getType(path: string): FileType | 'dir'
+  readdir: {
+    (
+      path: string,
+      options?: {
+        withFileTypes?: false
+      },
+    ): Array<string>
+    (
+      path: string,
+      options: {
+        withFileTypes: true
+      },
+    ): Array<{
+      type: 'dir' | FileType
+      path: string
+    }>
+  }
+  mkdir(
+    path: string,
+    options?: {
+      recursive?: boolean
+    },
+  ): void
+  readFile(path: string): string | undefined
+  rename(previous: string, next: string): void
+  rm(
+    path: string,
+    options?: {
+      force?: boolean
+      recursive?: boolean
+    },
+  ): void
+  writeFile(path: string, source: string): void
+  watchExecutable(glob: string, cb: (url: string | undefined, path: string) => void): void
+  watchFile(glob: string, cb: (source: string | undefined, path: string) => void): void
+  watchDir(
+    path: string,
+    cb: (
+      paths: Array<{
+        type: FileType | 'dir'
+        path: string
+      }>,
+      path: string,
+    ) => void,
+  ): void
+  watchPaths(cb: (paths: Array<string>) => void): void
+  setMatch: import('solid-js').Setter<Match>
+}
 /**
  * Imports type definitions from a URL, checking if the types are already cached before importing.
  *
@@ -71,11 +92,15 @@ export declare function createFileSystem(extensions: Record<string, Extension>):
  * @returns
  * @async
  */
-export declare function downloadTypesFromUrl({ url, declarationFiles, cdn, }: {
-	url: string;
-	declarationFiles?: Record<string, string>;
-	cdn?: string;
-}): Promise<Record<string, string>>;
+export declare function downloadTypesFromUrl({
+  url,
+  declarationFiles,
+  cdn,
+}: {
+  url: string
+  declarationFiles?: Record<string, string>
+  cdn?: string
+}): Promise<Record<string, string>>
 /**
  * Imports type definitions based on a package name by resolving it to a CDN path.
  *
@@ -83,175 +108,185 @@ export declare function downloadTypesFromUrl({ url, declarationFiles, cdn, }: {
  * @returns
  * @async
  */
-export declare function downloadTypesfromPackage({ name, declarationFiles, cdn, }: {
-	name: string;
-	declarationFiles?: Record<string, string>;
-	cdn?: string;
+export declare function downloadTypesfromPackage({
+  name,
+  declarationFiles,
+  cdn,
+}: {
+  name: string
+  declarationFiles?: Record<string, string>
+  cdn?: string
 }): Promise<{
-	path: string;
-	types: Record<string, string>;
-}>;
-export declare function createMonacoTypeDownloader(tsconfig: Monaco.languages.typescript.CompilerOptions): {
-	tsconfig(): {
-		paths: {
-			[x: string]: string[];
-		};
-		allowJs?: boolean;
-		allowSyntheticDefaultImports?: boolean;
-		allowUmdGlobalAccess?: boolean;
-		allowUnreachableCode?: boolean;
-		allowUnusedLabels?: boolean;
-		alwaysStrict?: boolean;
-		baseUrl?: string;
-		charset?: string;
-		checkJs?: boolean;
-		declaration?: boolean;
-		declarationMap?: boolean;
-		emitDeclarationOnly?: boolean;
-		declarationDir?: string;
-		disableSizeLimit?: boolean;
-		disableSourceOfProjectReferenceRedirect?: boolean;
-		downlevelIteration?: boolean;
-		emitBOM?: boolean;
-		emitDecoratorMetadata?: boolean;
-		experimentalDecorators?: boolean;
-		forceConsistentCasingInFileNames?: boolean;
-		importHelpers?: boolean;
-		inlineSourceMap?: boolean;
-		inlineSources?: boolean;
-		isolatedModules?: boolean;
-		jsx?: Monaco.languages.typescript.JsxEmit;
-		keyofStringsOnly?: boolean;
-		lib?: string[];
-		locale?: string;
-		mapRoot?: string;
-		maxNodeModuleJsDepth?: number;
-		module?: Monaco.languages.typescript.ModuleKind;
-		moduleResolution?: Monaco.languages.typescript.ModuleResolutionKind;
-		newLine?: Monaco.languages.typescript.NewLineKind;
-		noEmit?: boolean;
-		noEmitHelpers?: boolean;
-		noEmitOnError?: boolean;
-		noErrorTruncation?: boolean;
-		noFallthroughCasesInSwitch?: boolean;
-		noImplicitAny?: boolean;
-		noImplicitReturns?: boolean;
-		noImplicitThis?: boolean;
-		noStrictGenericChecks?: boolean;
-		noUnusedLocals?: boolean;
-		noUnusedParameters?: boolean;
-		noImplicitUseStrict?: boolean;
-		noLib?: boolean;
-		noResolve?: boolean;
-		out?: string;
-		outDir?: string;
-		outFile?: string;
-		preserveConstEnums?: boolean;
-		preserveSymlinks?: boolean;
-		project?: string;
-		reactNamespace?: string;
-		jsxFactory?: string;
-		composite?: boolean;
-		removeComments?: boolean;
-		rootDir?: string;
-		rootDirs?: string[];
-		skipLibCheck?: boolean;
-		skipDefaultLibCheck?: boolean;
-		sourceMap?: boolean;
-		sourceRoot?: string;
-		strict?: boolean;
-		strictFunctionTypes?: boolean;
-		strictBindCallApply?: boolean;
-		strictNullChecks?: boolean;
-		strictPropertyInitialization?: boolean;
-		stripInternal?: boolean;
-		suppressExcessPropertyErrors?: boolean;
-		suppressImplicitAnyIndexErrors?: boolean;
-		target?: Monaco.languages.typescript.ScriptTarget;
-		traceResolution?: boolean;
-		resolveJsonModule?: boolean;
-		types?: string[];
-		typeRoots?: string[];
-		esModuleInterop?: boolean;
-		useDefineForClassFields?: boolean;
-	};
-	types(): Record<string, string>;
-	addDeclaration(path: string, source: string, alias?: string): void;
-	downloadModule(name: string): Promise<void>;
-	watchTsconfig(cb: (tsconfig: Monaco.languages.typescript.CompilerOptions) => void): void;
-	watchTypes(cb: (types: Record<string, string>) => void): void;
-};
-export declare function bindMonaco(props: {
-	editor: Monaco.editor.IStandaloneCodeEditor;
-	fs: FileSystem$1;
-	languages?: Record<string, string>;
-	monaco: typeof Monaco;
-	path: string;
-	tsconfig?: Monaco.languages.typescript.CompilerOptions;
-	types?: Record<string, string>;
-}): void;
-export declare function parseHtmlWorker({ path, source, executables }: TransformConfig): {
-	select(selector: string, callback: (element: any) => void): any;
-	/** Bind relative `href`-attribute of all `<link />` elements */
-	bindLinkHref(): any;
-	/** Bind relative `src`-attribute of all `<script />` elements */
-	bindScriptSrc(): any;
-	/** Transform content of all `<script type="module" />` elements */
-	transformModuleScriptContent(transformJs: Transform): any;
-	toString(): string;
-};
-export declare function parseHtml({ path, source, executables }: TransformConfig): {
-	select<T extends Element>(selector: string, callback: (element: T) => void): any;
-	/** Bind relative `href`-attribute of all `<link />` elements */
-	bindLinkHref(): any;
-	/** Bind relative `src`-attribute of all `<script />` elements */
-	bindScriptSrc(): any;
-	/** Transform content of all `<script type="module" />` elements */
-	transformModuleScriptContent(transformJs: Transform): any;
-	toString(): string;
-};
-export declare function getExtension(path: string): string;
-export declare function getName(path: string): string;
-export declare function getParentPath(path: string): string;
-export declare function normalizePath(path: string): string;
-export declare function resolvePath(currentPath: string, relativePath: string): string;
-export declare function isUrl(path: string): boolean;
-export type PackageJson = {
-	main?: string;
-	module?: string;
-	browser?: string | Record<string, string>;
-	exports?: ExportsField;
-};
-export type ExportsField = string | ExportsConditions | ExportsField[];
-export type ExportsConditions = {
-	"."?: ExportsField;
-	browser?: ExportsField;
-	import?: ExportsField;
-	require?: ExportsField;
-	default?: ExportsField;
-	[key: string]: ExportsField | undefined;
-};
-export type ResolveConditions = {
-	browser?: boolean;
-	require?: boolean;
-	import?: boolean;
-};
-export type ResolvedPaths = {
-	[key: string]: string;
-};
-export declare function resolvePackageEntries(pkg: PackageJson, conditions?: ResolveConditions): ResolvedPaths;
-type Transform$1 = (source: string, path: string) => string;
-export interface BabelConfig {
-	babel?: typeof Babel | Promise<typeof Babel>;
-	presets?: string[];
-	plugins?: (string | babel.PluginItem)[];
-	cdn?: string;
+  path: string
+  types: Record<string, string>
+}>
+export declare function createMonacoTypeDownloader(
+  tsconfig: Monaco.languages.typescript.CompilerOptions,
+): {
+  tsconfig(): {
+    paths: {
+      [x: string]: string[]
+    }
+    allowJs?: boolean
+    allowSyntheticDefaultImports?: boolean
+    allowUmdGlobalAccess?: boolean
+    allowUnreachableCode?: boolean
+    allowUnusedLabels?: boolean
+    alwaysStrict?: boolean
+    baseUrl?: string
+    charset?: string
+    checkJs?: boolean
+    declaration?: boolean
+    declarationMap?: boolean
+    emitDeclarationOnly?: boolean
+    declarationDir?: string
+    disableSizeLimit?: boolean
+    disableSourceOfProjectReferenceRedirect?: boolean
+    downlevelIteration?: boolean
+    emitBOM?: boolean
+    emitDecoratorMetadata?: boolean
+    experimentalDecorators?: boolean
+    forceConsistentCasingInFileNames?: boolean
+    importHelpers?: boolean
+    inlineSourceMap?: boolean
+    inlineSources?: boolean
+    isolatedModules?: boolean
+    jsx?: Monaco.languages.typescript.JsxEmit
+    keyofStringsOnly?: boolean
+    lib?: string[]
+    locale?: string
+    mapRoot?: string
+    maxNodeModuleJsDepth?: number
+    module?: Monaco.languages.typescript.ModuleKind
+    moduleResolution?: Monaco.languages.typescript.ModuleResolutionKind
+    newLine?: Monaco.languages.typescript.NewLineKind
+    noEmit?: boolean
+    noEmitHelpers?: boolean
+    noEmitOnError?: boolean
+    noErrorTruncation?: boolean
+    noFallthroughCasesInSwitch?: boolean
+    noImplicitAny?: boolean
+    noImplicitReturns?: boolean
+    noImplicitThis?: boolean
+    noStrictGenericChecks?: boolean
+    noUnusedLocals?: boolean
+    noUnusedParameters?: boolean
+    noImplicitUseStrict?: boolean
+    noLib?: boolean
+    noResolve?: boolean
+    out?: string
+    outDir?: string
+    outFile?: string
+    preserveConstEnums?: boolean
+    preserveSymlinks?: boolean
+    project?: string
+    reactNamespace?: string
+    jsxFactory?: string
+    composite?: boolean
+    removeComments?: boolean
+    rootDir?: string
+    rootDirs?: string[]
+    skipLibCheck?: boolean
+    skipDefaultLibCheck?: boolean
+    sourceMap?: boolean
+    sourceRoot?: string
+    strict?: boolean
+    strictFunctionTypes?: boolean
+    strictBindCallApply?: boolean
+    strictNullChecks?: boolean
+    strictPropertyInitialization?: boolean
+    stripInternal?: boolean
+    suppressExcessPropertyErrors?: boolean
+    suppressImplicitAnyIndexErrors?: boolean
+    target?: Monaco.languages.typescript.ScriptTarget
+    traceResolution?: boolean
+    resolveJsonModule?: boolean
+    types?: string[]
+    typeRoots?: string[]
+    esModuleInterop?: boolean
+    useDefineForClassFields?: boolean
+  }
+  types(): Record<string, string>
+  addDeclaration(path: string, source: string, alias?: string): void
+  downloadModule(name: string): Promise<void>
+  watchTsconfig(cb: (tsconfig: Monaco.languages.typescript.CompilerOptions) => void): void
+  watchTypes(cb: (types: Record<string, string>) => void): void
 }
-export declare function babelTransform(config: BabelConfig): Promise<Transform$1>;
-export declare function transformModulePaths(code: string, callback: (path: string, isImport: boolean) => string | null): string | undefined;
+export declare function bindMonaco(props: {
+  editor: Monaco.editor.IStandaloneCodeEditor
+  fs: FileSystem$1
+  languages?: Record<string, string>
+  monaco: typeof Monaco
+  path: string
+  tsconfig?: Monaco.languages.typescript.CompilerOptions
+  types?: Record<string, string>
+}): void
+export declare function parseHtmlWorker({ path, source, executables }: TransformConfig): {
+  select(selector: string, callback: (element: any) => void): any
+  /** Bind relative `href`-attribute of all `<link />` elements */
+  bindLinkHref(): any
+  /** Bind relative `src`-attribute of all `<script />` elements */
+  bindScriptSrc(): any
+  /** Transform content of all `<script type="module" />` elements */
+  transformModuleScriptContent(transformJs: Transform): any
+  toString(): string
+}
+export declare function parseHtml({ path, source, executables }: TransformConfig): {
+  select<T extends Element>(selector: string, callback: (element: T) => void): any
+  /** Bind relative `href`-attribute of all `<link />` elements */
+  bindLinkHref(): any
+  /** Bind relative `src`-attribute of all `<script />` elements */
+  bindScriptSrc(): any
+  /** Transform content of all `<script type="module" />` elements */
+  transformModuleScriptContent(transformJs: Transform): any
+  toString(): string
+}
+export declare function getExtension(path: string): string
+export declare function getName(path: string): string
+export declare function getParentPath(path: string): string
+export declare function normalizePath(path: string): string
+export declare function resolvePath(currentPath: string, relativePath: string): string
+export declare function isUrl(path: string): boolean
+export type PackageJson = {
+  main?: string
+  module?: string
+  browser?: string | Record<string, string>
+  exports?: ExportsField
+}
+export type ExportsField = string | ExportsConditions | ExportsField[]
+export type ExportsConditions = {
+  '.'?: ExportsField
+  browser?: ExportsField
+  import?: ExportsField
+  require?: ExportsField
+  default?: ExportsField
+  [key: string]: ExportsField | undefined
+}
+export type ResolveConditions = {
+  browser?: boolean
+  require?: boolean
+  import?: boolean
+}
+export type ResolvedPaths = {
+  [key: string]: string
+}
+export declare function resolvePackageEntries(
+  pkg: PackageJson,
+  conditions?: ResolveConditions,
+): ResolvedPaths
+type Transform$1 = (source: string, path: string) => string
+export interface BabelConfig {
+  babel?: typeof Babel | Promise<typeof Babel>
+  presets?: string[]
+  plugins?: (string | babel.PluginItem)[]
+  cdn?: string
+}
+export declare function babelTransform(config: BabelConfig): Promise<Transform$1>
+export declare function transformModulePaths(
+  code: string,
+  callback: (path: string, isImport: boolean) => string | null,
+): string | undefined
 
-export {
-	FileSystem$1 as FileSystem,
-};
+export { FileSystem$1 as FileSystem }
 
-export {};
+export {}
