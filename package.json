@@ -1,6 +1,6 @@
 {
   "name": "@bigmistqke/repl",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Virtual FileSystem and utilties for composing REPLs.",
   "license": "MIT",
   "author": "bigmistqke",
