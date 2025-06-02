@@ -1,22 +1,23 @@
 import {
-  createFileSystem,
+  createFileUrlSystem,
   isUrl,
-  parseHtml,
   resolvePath,
   Transform,
+  transformHtml,
   transformModulePaths,
 } from '@bigmistqke/repl'
+import { createSyncFileSystem, makeVirtualFileSystem } from '@solid-primitives/filesystem'
 import { createSignal } from 'solid-js'
 import html from 'solid-js/html'
 import { render } from 'solid-js/web'
 import ts from 'typescript'
 
 function createRepl() {
-  const transformJs: Transform = ({ path, source, fileUrlRegistry: executables }) => {
+  const transformJs: Transform = ({ path, source, fileUrls }) => {
     return transformModulePaths(source, modulePath => {
       if (modulePath.startsWith('.')) {
         // Swap relative module-path out with their respective module-url
-        const url = executables.cached(resolvePath(path, modulePath))
+        const url = fileUrls.get(resolvePath(path, modulePath))
         if (!url) throw 'url is undefined'
         return url
       } else if (isUrl(modulePath)) {
@@ -28,35 +29,38 @@ function createRepl() {
       }
     })!
   }
-
-  return createFileSystem({
-    css: { type: 'css' },
-    js: {
-      type: 'javascript',
-      transform: transformJs,
-    },
-    ts: {
-      type: 'javascript',
-      transform({ path, source, fs }) {
-        return transformJs({ path, source: ts.transpile(source), fs })
+  const fs = createSyncFileSystem(makeVirtualFileSystem())
+  return {
+    fs,
+    filUrls: createFileUrlSystem(fs.readFile, {
+      css: { type: 'css' },
+      js: {
+        type: 'javascript',
+        transform: transformJs,
       },
-    },
-    html: {
-      type: 'html',
-      transform(config) {
-        return (
-          parseHtml(config)
-            // Transform content of all `<script type="module" />` elements
-            .transformModuleScriptContent(transformJs)
-            // Bind relative `src`-attribute of all `<script />` elements
-            .bindScriptSrc()
-            // Bind relative `href`-attribute of all `<link />` elements
-            .bindLinkHref()
-            .toString()
-        )
+      ts: {
+        type: 'javascript',
+        transform({ path, source, fileUrls }) {
+          return transformJs({ path, source: ts.transpile(source), fileUrls })
+        },
       },
-    },
-  })
+      html: {
+        type: 'html',
+        transform(config) {
+          return (
+            transformHtml(config)
+              // Transform content of all `<script type="module" />` elements
+              .transformModuleScriptContent(transformJs)
+              // Bind relative `src`-attribute of all `<script />` elements
+              .transformScriptSrc()
+              // Bind relative `href`-attribute of all `<link />` elements
+              .transformLinkHref()
+              .toString()
+          )
+        },
+      },
+    }),
+  }
 }
 
 render(() => {
@@ -64,7 +68,7 @@ render(() => {
 
   const repl = createRepl()
 
-  repl.writeFile(
+  repl.fs.writeFile(
     'index.html',
     `<head>
   <script src="./main.ts"></script>
@@ -75,9 +79,9 @@ hallo world 👋
 </body>`,
   )
 
-  repl.writeFile('index.css', `body { font-size: 32pt; }`)
+  repl.fs.writeFile('index.css', `body { font-size: 32pt; }`)
 
-  repl.writeFile(
+  repl.fs.writeFile(
     'main.ts',
     `function randomValue(){
   return 200 + Math.random() * 50
@@ -101,9 +105,9 @@ setInterval(randomColor, 2000)`,
       <${Button} path="main.ts" />
     </div>
     <textarea
-      oninput=${e => repl.writeFile(selectedPath(), e.target.value)}
-      value=${() => repl.readFile(selectedPath())}
+      oninput=${e => repl.fs.writeFile(selectedPath(), e.target.value)}
+      value=${() => repl.fs.readFile(selectedPath())}
     ></textarea>
-    <iframe src=${() => repl.getObjectUrl('index.html')}></iframe>
+    <iframe src=${() => repl.filUrls.get('index.html')}></iframe>
   </div> `
 }, document.getElementById('root')!)

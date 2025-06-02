@@ -4,7 +4,7 @@ import { parseDocument } from 'htmlparser2'
 import { Transform, TransformConfig } from '../types.ts'
 import { isUrl, resolvePath } from '../utils/path.ts'
 
-export function transformHtmlWorker({ path, source, fileUrlRegistry }: TransformConfig) {
+export function transformHtmlWorker({ path, source, fileUrls }: TransformConfig) {
   const doc = parseDocument(source)
 
   const api = {
@@ -21,7 +21,7 @@ export function transformHtmlWorker({ path, source, fileUrlRegistry }: Transform
         if (hasAttrib(link, 'href')) {
           const href = getAttributeValue(link, 'href')
           if (!href || isUrl(href)) return
-          const url = fileUrlRegistry.cached(resolvePath(path, href))
+          const url = fileUrls.get(resolvePath(path, href))
           if (url) link.attribs.href = url
         }
       })
@@ -32,7 +32,7 @@ export function transformHtmlWorker({ path, source, fileUrlRegistry }: Transform
         if (hasAttrib(script, 'src')) {
           const src = getAttributeValue(script, 'src')
           if (!src || isUrl(src)) return
-          const url = fileUrlRegistry.cached(resolvePath(path, src))
+          const url = fileUrls.get(resolvePath(path, src))
           if (url) script.attribs.src = url
         }
       })
@@ -45,7 +45,7 @@ export function transformHtmlWorker({ path, source, fileUrlRegistry }: Transform
           const transformedContent = transformJs({
             path,
             source: scriptContent,
-            fileUrlRegistry: fileUrlRegistry,
+            fileUrls: fileUrls,
           })
           if (transformedContent !== undefined) {
             script.children[0].data = transformedContent
