@@ -1,18 +1,12 @@
-import typescript from 'typescript'
+import typescript, { ScriptKind, ScriptTarget, transform } from 'typescript'
 
 export function transformModulePaths(
   code: string,
   callback: (path: string, isImport: boolean) => string | null,
 ) {
-  const sourceFile = typescript.createSourceFile(
-    '',
-    code,
-    typescript.ScriptTarget.Latest,
-    true,
-    typescript.ScriptKind.TS,
-  )
+  const sourceFile = typescript.createSourceFile('', code, ScriptTarget.Latest, true, ScriptKind.TS)
   let shouldPrint = false
-  const result = typescript.transform(sourceFile, [
+  const result = transform(sourceFile, [
     context => {
       const visit: typescript.Visitor = node => {
         if (

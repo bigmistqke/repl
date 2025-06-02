@@ -1,3 +1,9 @@
+/**********************************************************************************/
+/*                                                                                */
+/*                                 Window Messaging                               */
+/*                                                                                */
+/**********************************************************************************/
+
 import { FileType, getExtension } from '@bigmistqke/repl'
 import { Split } from '@bigmistqke/solid-grid-split'
 import { type WorkerProxy } from '@bigmistqke/worker-proxy'
@@ -19,7 +25,7 @@ import demo from './demo'
 import './styles.css'
 import { every, whenEffect, whenMemo } from './utils/conditionals'
 import { type Methods } from './worker/fs.worker'
-import Worker from './worker/fs.worker?worker-proxy'
+import Worker from './worker/fs.worker?worker'
 
 /**********************************************************************************/
 /*                                                                                */
@@ -34,7 +40,7 @@ export function App() {
   const [tsconfig, setTsconfig] = createSignal<languages.typescript.CompilerOptions>({})
   const [types, setTypes] = createSignal<Record<string, string>>()
 
-  const fs = new Worker<Methods>()
+  const proxy = new Worker()
 
   fs.watchTsconfig(setTsconfig)
   fs.watchTypes(setTypes)

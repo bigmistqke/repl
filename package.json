@@ -58,12 +58,14 @@
     "typescript": "^5.1.6"
   },
   "devDependencies": {
-    "@bigmistqke/vite-plugin-raw-directory": "^0.0.2",
     "@bigmistqke/solid-grid-split": "^0.0.2",
+    "@bigmistqke/vite-plugin-raw-directory": "^0.0.2",
     "@bigmistqke/vite-plugin-worker-proxy": "^0.0.12",
     "@bigmistqke/worker-proxy": "^0.0.12",
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
     "@monaco-editor/loader": "^1.4.0",
+    "@solid-primitives/filesystem": "^1.3.1",
+    "@solid-primitives/map": "^0.7.1",
     "@solidjs/router": "^0.15.2",
     "@types/babel__standalone": "^7.1.9",
     "concurrently": "^8.2.0",
@@ -88,5 +90,8 @@
     "node": ">=18",
     "pnpm": ">=8.6.0"
   },
-  "packageManager": "pnpm@9.1.1"
+  "packageManager": "pnpm@9.1.1",
+  "dependencies": {
+    "@solid-primitives/set": "^0.7.1"
+  }
 }

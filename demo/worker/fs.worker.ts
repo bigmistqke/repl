@@ -1,9 +1,12 @@
-import { createRoot } from 'solid-js'
-import { createFileSystem } from 'src/create-filesystem'
-import { createMonacoTypeDownloader } from 'src/monaco'
-import { parseHtmlWorker } from 'src/parse-html-worker'
-import { isUrl, resolvePath } from 'src/path'
-import { transformModulePaths } from 'src/transform-module-paths'
+import { createSyncFileSystem, makeVirtualFileSystem } from '@solid-primitives/filesystem'
+import {
+  createFileUrlSystem,
+  createMonacoTypeDownloader,
+  isUrl,
+  resolvePath,
+  transformHtmlWorker,
+  transformModulePaths,
+} from 'src'
 import { Transform } from 'src/types'
 import ts from 'typescript'
 import toolkitDeclaration from '../lib/repl-toolkit.d.ts?raw'
@@ -15,13 +18,13 @@ const typeDownloader = createMonacoTypeDownloader({
 })
 typeDownloader.addDeclaration('@bigmistqke/repl/index.d.ts', toolkitDeclaration, '@bigmistqke/repl')
 
-const transformJs: Transform = ({ path, source, executables }) => {
+const transformJs: Transform = ({ path, source, fileUrls }) => {
   return transformModulePaths(source, modulePath => {
     if (modulePath === '@bigmistqke/repl') {
-      return localModules.getExecutable('repl-toolkit.js')
+      return localModules.getFileUrl('repl-toolkit.js')
     } else if (modulePath.startsWith('.')) {
       // Swap relative module-path out with their respective module-url
-      const url = executables.get(resolvePath(path, modulePath))
+      const url = fileUrls.get(resolvePath(path, modulePath))
       if (!url) throw 'url is undefined'
       return url
     } else if (isUrl(modulePath)) {
@@ -35,66 +38,54 @@ const transformJs: Transform = ({ path, source, executables }) => {
   })!
 }
 
-const fs = createRoot(() =>
-  createFileSystem({
-    css: { type: 'css' },
-    js: {
-      type: 'javascript',
-      transform: transformJs,
+const fs = createSyncFileSystem(makeVirtualFileSystem())
+const fileUrls = createFileUrlSystem(fs.readFile, {
+  css: { type: 'css' },
+  js: {
+    type: 'javascript',
+    transform: transformJs,
+  },
+  ts: {
+    type: 'javascript',
+    transform({ path, source, fileUrls }) {
+      return transformJs({
+        path,
+        source: ts.transpile(source, typeDownloader.tsconfig()),
+        fileUrls,
+      })
     },
-    ts: {
-      type: 'javascript',
-      transform({ path, source, executables }) {
-        return transformJs({
-          path,
-          source: ts.transpile(source, typeDownloader.tsconfig()),
-          executables,
-        })
-      },
+  },
+  html: {
+    type: 'html',
+    transform(config) {
+      const html = transformHtmlWorker(config)
+        // Transform content of all `<script type="module" />` elements
+        .transformModuleScriptContent(transformJs)
+        // Bind relative `src`-attribute of all `<script/>` elements to FileSystem
+        .transformScriptSrc()
+        // Bind relative `href`-attribute of all `<link/>` elements to FileSystem
+        .transformLinkHref()
+        .toString()
+      return html
     },
-    html: {
-      type: 'html',
-      transform(config) {
-        const html = parseHtmlWorker(config)
-          // Transform content of all `<script type="module" />` elements
-          .transformModuleScriptContent(transformJs)
-          // Bind relative `src`-attribute of all `<script/>` elements to FileSystem
-          .bindScriptSrc()
-          // Bind relative `href`-attribute of all `<link/>` elements to FileSystem
-          .bindLinkHref()
-          .toString()
-        return html
-      },
-    },
-  }),
-)
+  },
+})
 
+const localFs = createSyncFileSystem(makeVirtualFileSystem())
 // Add file-system for local modules
-const localModules = createRoot(() =>
-  createFileSystem({
-    js: {
-      type: 'javascript',
-      transform: transformJs,
-    },
-  }),
-)
-localModules.writeFile('repl-toolkit.js', toolkit)
+const localModules = createFileUrlSystem(localFs.readFile, {
+  js: {
+    type: 'javascript',
+    transform: transformJs,
+  },
+})
+localFs.writeFile('repl-toolkit.js', toolkit)
 
 const methods = {
-  watchTsconfig: typeDownloader.watchTsconfig,
-  watchTypes: typeDownloader.watchTypes,
-  watchExecutable: fs.watchExecutable,
-  writeFile: fs.writeFile,
-  watchDir: fs.watchDir,
-  watchFile: fs.watchFile,
-  getType: fs.getType,
-  watchPaths: fs.watchPaths,
+  fs,
+  fileUrls,
 }
-
-export default methods
-
-// Initialize worker-methods
-// export default methods
 
 // Export types of methods to infer the WorkerProxy's type
 export type Methods = typeof methods
+export default {}

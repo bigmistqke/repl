@@ -3,16 +3,13 @@ export interface Extension {
   transform?: Transform
   type: FileType
 }
-interface Executables {
+export interface FileUrls {
   invalidate(path: string): void
-  create(path: string): string | undefined
-  get(path: string): string | undefined
+  get(path: string, config?: { cached?: boolean }): string | undefined
 }
 export interface TransformConfig {
   path: string
   source: string
-  executables: Executables
+  fileUrls: FileUrls
 }
 export type Transform = (config: TransformConfig) => string
-
-export type Match = (glob: string) => (paths: Array<string>) => Array<string>

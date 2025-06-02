@@ -1,21 +1,24 @@
 import {
-  createFileSystem,
+  createFileUrlSystem,
   isUrl,
-  parseHtml,
   resolvePath,
   Transform,
+  transformHtml,
   transformModulePaths,
 } from '@bigmistqke/repl'
-import { createSignal } from 'solid-js'
+import { createSyncFileSystem, makeVirtualFileSystem } from '@solid-primitives/filesystem'
+import { createEffect, createSignal } from 'solid-js'
 import ts from 'typescript'
 import './index.css'
 
 function createRepl() {
-  const transformJs: Transform = ({ path, source, executables }) => {
+  const fs = createSyncFileSystem(makeVirtualFileSystem())
+
+  const transformJs: Transform = ({ path, source, fileUrls }) => {
     return transformModulePaths(source, modulePath => {
       if (modulePath.startsWith('.')) {
         // Swap relative module-path out with their respective module-url
-        const url = executables.get(resolvePath(path, modulePath))
+        const url = fileUrls.get(resolvePath(path, modulePath))
         if (!url) throw 'url is undefined'
         return url
       } else if (isUrl(modulePath)) {
@@ -28,7 +31,7 @@ function createRepl() {
     })!
   }
 
-  return createFileSystem({
+  const fileUrls = createFileUrlSystem(fs.readFile.bind(fs), {
     css: { type: 'css' },
     js: {
       type: 'javascript',
@@ -36,26 +39,31 @@ function createRepl() {
     },
     ts: {
       type: 'javascript',
-      transform({ path, source, fs }) {
-        return transformJs({ path, source: ts.transpile(source), fs })
+      transform({ path, source, fileUrls }) {
+        return transformJs({ path, source: ts.transpile(source), fileUrls })
       },
     },
     html: {
       type: 'html',
       transform(config) {
         return (
-          parseHtml(config)
+          transformHtml(config)
             // Transform content of all `<script type="module" />` elements
             .transformModuleScriptContent(transformJs)
             // Bind relative `src`-attribute of all `<script />` elements
-            .bindScriptSrc()
+            .transformScriptSrc()
             // Bind relative `href`-attribute of all `<link />` elements
-            .bindLinkHref()
+            .transformLinkHref()
             .toString()
         )
       },
     },
   })
+
+  return {
+    fs,
+    fileUrls,
+  }
 }
 
 export const App = () => {
@@ -63,7 +71,7 @@ export const App = () => {
 
   const repl = createRepl()
 
-  repl.writeFile(
+  repl.fs.writeFile(
     'index.html',
     `<head>
   <script src="./main.ts"></script>
@@ -74,9 +82,11 @@ hallo world 👋
 </body>`,
   )
 
-  repl.writeFile('index.css', `body { font-size: 32pt; }`)
+  createEffect(() => console.log(repl.fileUrls.get('wrong')))
 
-  repl.writeFile(
+  repl.fs.writeFile('index.css', `body { font-size: 32pt; }`)
+
+  repl.fs.writeFile(
     'main.ts',
     `function randomValue(){
   return 200 + Math.random() * 50
@@ -102,10 +112,12 @@ setInterval(randomColor, 2000)`,
         <Button path="main.ts" />
       </div>
       <textarea
-        oninput={e => repl.writeFile(selectedPath(), e.target.value)}
-        value={repl.readFile(selectedPath())}
+        oninput={e => {
+          repl.fs.writeFile(selectedPath(), e.target.value)
+        }}
+        value={repl.fs.readFile(selectedPath())}
       ></textarea>
-      <iframe src={repl.getExecutable('index.html')}></iframe>
+      <iframe src={repl.fileUrls.get('index.html')}></iframe>
     </>
   )
 }

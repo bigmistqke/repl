@@ -1,63 +1,11 @@
 import type * as Monaco from 'monaco-editor'
-import { createEffect, createSignal, mapArray, mergeProps, onCleanup } from 'solid-js'
-import { createStore } from 'solid-js/store'
-import { FileSystem } from './create-filesystem.ts'
-import { downloadTypesfromPackage } from './download-types.ts'
-import { getExtension } from './path.ts'
-import { mapObject } from './utils/map-object.ts'
+import { createEffect, mapArray, mergeProps, onCleanup } from 'solid-js'
+import { createAsync } from 'src/utils/create-async.ts'
+import { getExtension } from '../utils/path.ts'
 
-export function createMonacoTypeDownloader(tsconfig: Monaco.languages.typescript.CompilerOptions) {
-  const [types, setTypes] = createStore<Record<string, string>>({})
-  const [aliases, setAliases] = createSignal<Record<string, Array<string>>>({})
-
-  function addAlias(alias: string, path: string) {
-    setAliases(paths => {
-      paths[alias] = [`file:///${path}`]
-      return { ...paths }
-    })
-  }
-
-  const methods = {
-    tsconfig() {
-      return {
-        ...tsconfig,
-        paths: {
-          ...mapObject(tsconfig.paths || {}, value => value.map(path => `file:///${path}`)),
-          ...aliases(),
-        },
-      }
-    },
-    types() {
-      return types
-    },
-    addDeclaration(path: string, source: string, alias?: string) {
-      setTypes(path, source)
-      if (alias) {
-        addAlias(alias, path)
-      }
-    },
-    async downloadModule(name: string) {
-      if (!(name in aliases())) {
-        const { types, path } = await downloadTypesfromPackage({ name })
-        setTypes(types)
-        addAlias(name, path)
-      }
-    },
-    // Watchers
-    watchTsconfig(cb: (tsconfig: Monaco.languages.typescript.CompilerOptions) => void) {
-      createEffect(() => cb(methods.tsconfig()))
-    },
-    watchTypes(cb: (types: Record<string, string>) => void) {
-      createEffect(() => cb({ ...types }))
-    },
-  }
-
-  return methods
-}
-
-export function bindMonaco(props: {
+export function bindMonacoToFileSystem(props: {
   editor: Monaco.editor.IStandaloneCodeEditor
-  fs: FileSystem
+  readFile: (path: string) => string
   languages?: Record<string, string>
   monaco: typeof Monaco
   path: string
@@ -71,14 +19,14 @@ export function bindMonaco(props: {
     },
     () => props.languages,
   )
+  const worker = createAsync(() => props.monaco.languages.typescript.getTypeScriptWorker())
 
   function getType(path: string) {
-    let type: string = props.fs.getType(path)
     const extension = getExtension(path)
     if (extension && extension in languages) {
-      type = languages[extension]!
+      return languages[extension]!
     }
-    return type
+    return 'raw'
   }
 
   createEffect(() => {
@@ -96,9 +44,9 @@ export function bindMonaco(props: {
         const model =
           props.monaco.editor.getModel(uri) || props.monaco.editor.createModel('', type, uri)
         createEffect(() => {
-          const value = props.fs.readFile(path) || ''
+          const value = props.readFile(path) || ''
           if (value !== model.getValue()) {
-            model.setValue(props.fs.readFile(path) || '')
+            model.setValue(props.readFile(path) || '')
           }
         })
         onCleanup(() => model.dispose())
@@ -112,6 +60,14 @@ export function bindMonaco(props: {
     const model =
       props.monaco.editor.getModel(uri) || props.monaco.editor.createModel('', type, uri)
     props.editor.setModel(model)
+
+    const client = createAsync(() => worker()?.(model.uri))
+    const diagnosis = createAsync(
+      () => client()?.getSemanticDiagnostics(props.readFile(props.path)),
+    )
+    createEffect(() => {
+      console.log('diagnosis', diagnosis())
+    })
   })
 
   createEffect(() => {

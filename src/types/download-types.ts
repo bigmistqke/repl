@@ -1,16 +1,6 @@
-import { resolvePath } from './path.ts'
-import { transformModulePaths } from './transform-module-paths.ts'
-import { defer } from './utils/defer.ts'
-
-/**********************************************************************************/
-/*                                                                                */
-/*                                       Misc                                     */
-/*                                                                                */
-/**********************************************************************************/
-
-function isUrl(path: string) {
-  return path.startsWith('blob:') || path.startsWith('http:') || path.startsWith('https:')
-}
+import { transformModulePaths } from 'src/transform/transform-module-paths.ts'
+import { defer } from 'src/utils/defer.ts'
+import { isUrl, resolvePath } from 'src/utils/path'
 
 function isRelativePath(path: string) {
   return path.startsWith('.')
@@ -99,7 +89,7 @@ export async function downloadTypesFromUrl({
         )
         return getVirtualPath(modulePath)
       } else {
-        promises.push(downloadTypesfromPackage({ name: modulePath, declarationFiles, cdn }))
+        promises.push(downloadTypesfromPackageName({ name: modulePath, declarationFiles, cdn }))
       }
       return modulePath
     })
@@ -120,7 +110,7 @@ export async function downloadTypesFromUrl({
 
 /**********************************************************************************/
 /*                                                                                */
-/*                           Download Types From Package                          */
+/*                            Download Types From Package                         */
 /*                                                                                */
 /**********************************************************************************/
 
@@ -133,7 +123,7 @@ const TYPE_URL_CACHE = new Map<string, Promise<string | null>>()
  * @returns
  * @async
  */
-export async function downloadTypesfromPackage({
+export async function downloadTypesfromPackageName({
   name,
   declarationFiles = {},
   cdn = 'https://esm.sh',

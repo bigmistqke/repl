@@ -13,7 +13,7 @@ export type AccessorWithLatest<T> = {
 }
 
 export function createAsync<T>(
-  fn: (prev: T) => Promise<T>,
+  fn: (prev: T) => T | Promise<T>,
   options: {
     name?: string
     initialValue: T
@@ -21,7 +21,7 @@ export function createAsync<T>(
   },
 ): AccessorWithLatest<T>
 export function createAsync<T>(
-  fn: (prev: T | undefined) => Promise<T>,
+  fn: (prev: T | undefined) => T | Promise<T>,
   options?: {
     name?: string
     initialValue?: T
@@ -29,7 +29,7 @@ export function createAsync<T>(
   },
 ): AccessorWithLatest<T | undefined>
 export function createAsync<T>(
-  fn: (prev: T | undefined) => Promise<T>,
+  fn: (prev: T | undefined) => T | Promise<T>,
   options?: {
     name?: string
     initialValue?: T
