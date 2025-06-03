@@ -1,17 +1,17 @@
-import { ReactiveMap } from '@solid-primitives/map'
-import { ReactiveSet } from '@solid-primitives/set'
-import {
-  createComputed,
-  createEffect,
-  createMemo,
-  createSignal,
-  mapArray,
-  onCleanup,
-} from 'solid-js'
-import type { Extension, FileUrls } from '../types.ts'
+import { Accessor, createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
+import { accessMaybe } from 'src/utils/access-maybe.ts'
+import { ReactiveRefCount } from 'src/utils/reactive-ref-count.ts'
+import { when } from 'src/utils/when.ts'
+import type { Extension, FileUrlSystem } from '../types.ts'
 import { createAsync } from '../utils/create-async.ts'
 import { getExtension } from '../utils/path.ts'
 import { createFileUrl } from './create-file-url.ts'
+
+interface FileUrlApi {
+  get(): string | undefined
+  create(): string | undefined
+  invalidate(): void
+}
 
 /**
  * Creates a registry for managing object URLs derived from a set of reactive file sources.
@@ -34,86 +34,93 @@ import { createFileUrl } from './create-file-url.ts'
  * const url = fileUrls.get('/src/index.js');
  * fileUrls.invalidate('/src/index.js'); // Forces a refresh
  */
-export function createFileUrlSystem(
-  readFile: (path: string) => string | Promise<string> | undefined,
-  extensions: Record<string, Extension>,
-): FileUrls {
-  const actions = new ReactiveMap<
-    string,
-    { invalidate(): void; create(): string | undefined; get(): string | undefined }
-  >()
-  const paths = new ReactiveSet<string>()
-
-  const api = {
-    get(path: string, { cached = true }: { cached?: boolean } = { cached: true }) {
-      paths.add(path)
-      if (!cached) {
-        return actions.get(path)?.create()
+export function createFileUrlSystem({
+  readFile,
+  extensions,
+}: {
+  readFile: (path: string) => string | Promise<string> | undefined
+  extensions: Record<string, Extension>
+}): FileUrlSystem {
+  const refCount = new ReactiveRefCount((path): Accessor<FileUrlApi | undefined> => {
+    const source = createAsync<string | 0>(() => {
+      try {
+        const result = readFile(path)
+        if (result === undefined) return 0
+        if (result instanceof Promise) {
+          return result.then(result => (result === undefined ? 0 : result)).catch(() => 0)
+        }
+        return result
+      } catch {
+        return 0
       }
-      return actions.get(path)?.get()
+    })
+    const extension = getExtension(path)
+
+    createEffect(() => {
+      // Only remove reference if
+      // - nothing is referencing path and
+      // - source does not exist
+      if (refCount.isNull(path) && source() === 0) {
+        refCount.delete(path)
+      }
+    })
+
+    return createMemo(
+      when(
+        createMemo(() => !!source()),
+        () => {
+          const [listen, invalidate] = createSignal<void>(null!, { equals: false })
+
+          const transformer = createMemo(
+            when(source, source => {
+              if (source && extensions[extension]?.transform) {
+                return extensions[extension]?.transform?.({
+                  path,
+                  source,
+                  fileUrls: api,
+                })
+              }
+              return source
+            }),
+          )
+
+          const transformedSource = createMemo(() => accessMaybe(transformer()))
+
+          const create = when(transformedSource, transformed => {
+            return createFileUrl(transformed, extensions[extension]?.type)
+          })
+
+          const get = createMemo(() => {
+            listen()
+            const url = create()
+            if (url) {
+              onCleanup(() => URL.revokeObjectURL(url))
+            }
+            return url
+          })
+
+          return {
+            get,
+            create,
+            invalidate,
+          }
+        },
+      ),
+    )
+  })
+
+  const api: FileUrlSystem = {
+    get(path, { cached = true } = { cached: true }) {
+      const action = refCount.track(path)()
+      if (!cached) {
+        return action?.create()
+      }
+      return action?.get()
     },
-    invalidate(path: string) {
-      return actions.get(path)?.invalidate()
+    invalidate(path) {
+      return refCount.get(path)?.()?.invalidate()
     },
   }
-
-  createComputed(
-    mapArray(
-      () => Array.from(paths.keys()),
-      path => {
-        const extension = getExtension(path)
-
-        const [listen, invalidate] = createSignal<void>(null!, { equals: false })
-
-        const source = createAsync(async () => {
-          try {
-            return await readFile(path)
-          } catch {
-            paths.delete(path)
-            return undefined
-          }
-        })
-
-        const transformedSource = createAsync(async () => {
-          try {
-            const _source = source()
-            if (_source === undefined || _source === null) return undefined
-            return (
-              extensions[extension]?.transform?.({
-                path,
-                source: _source,
-                fileUrls: api,
-              }) || _source
-            )
-          } catch {
-            return undefined
-          }
-        })
-
-        const get = createMemo<string | undefined>(previous => {
-          if (previous) URL.revokeObjectURL(previous)
-          listen()
-          return create()
-        })
-
-        function create() {
-          const _transformed = transformedSource()
-          if (!_transformed) return undefined
-          return createFileUrl(_transformed, extensions[extension]?.type)
-        }
-
-        actions.set(path, {
-          get,
-          create,
-          invalidate,
-        })
-
-        onCleanup(() => actions.delete(path))
-      },
-    ),
-  )
-
-  createEffect(() => console.log('paths', [...paths.keys()]))
 
   return api
 }

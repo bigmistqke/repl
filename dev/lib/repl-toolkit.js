@@ -302,21 +302,30 @@ function createFileUrlSystem(readFile, extensions2) {
             return void 0;
           }
         });
-        const transformedSource = createAsync(async () => {
-          var _a, _b;
-          try {
-            const _source = source();
-            if (_source === void 0 || _source === null)
-              return void 0;
-            return ((_b = (_a = extensions2[extension]) == null ? void 0 : _a.transform) == null ? void 0 : _b.call(_a, {
-              path,
-              source: _source,
-              fileUrls: api
-            })) || _source;
-          } catch {
+        const sourceTransformer = createAsync(() => {
+          var _a, _b, _c, _d, _e;
+          const _source = source();
+          if (_source === void 0 || _source === null)
             return void 0;
+          if ((_a = extensions2[extension]) == null ? void 0 : _a.transform) {
+            return createMemo(
+              (_c = (_b = extensions2[extension]) == null ? void 0 : _b.transform) == null ? void 0 : _c.call(_b, {
+                path,
+                source: _source,
+                fileUrls: api
+              })
+            );
           }
+          return ((_e = (_d = extensions2[extension]) == null ? void 0 : _d.transform) == null ? void 0 : _e.call(_d, {
+            path,
+            source: _source,
+            fileUrls: api
+          })) || (() => _source);
         });
+        const getTransformedSource = () => {
+          var _a;
+          return (_a = sourceTransformer()) == null ? void 0 : _a();
+        };
         const get = createMemo((previous) => {
           if (previous)
             URL.revokeObjectURL(previous);
@@ -325,10 +334,10 @@ function createFileUrlSystem(readFile, extensions2) {
         });
         function create() {
           var _a;
-          const _transformed = transformedSource();
-          if (!_transformed)
+          const transformedSource = getTransformedSource();
+          if (!transformedSource)
             return void 0;
-          return createFileUrl(_transformed, (_a = extensions2[extension]) == null ? void 0 : _a.type);
+          return createFileUrl(transformedSource, (_a = extensions2[extension]) == null ? void 0 : _a.type);
         }
         actions.set(path, {
           get,
@@ -618,6 +627,41 @@ function resolvePackageEntries(pkg, conditions = { browser: true, require: true,
   }
   return resolved;
 }
+function createTransformModulePaths(ts, input) {
+  const sourceFile = ts.createSourceFile("", input, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const ranges = [];
+  function collect(node) {
+    if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
+      const isImport = ts.isImportDeclaration(node);
+      const text = node.moduleSpecifier.text;
+      const start = node.moduleSpecifier.getStart(sourceFile) + 1;
+      const end = node.moduleSpecifier.getEnd() - 1;
+      ranges.push({ start, end, path: text, isImport });
+    }
+    ts.forEachChild(node, collect);
+  }
+  collect(sourceFile);
+  return (transform2) => {
+    let modified = false;
+    const edits = [];
+    for (const { start, end, path, isImport } of ranges) {
+      const replacement = transform2(path, isImport);
+      if (replacement !== null && replacement !== path) {
+        edits.push({ start, end, replacement });
+        modified = true;
+      }
+    }
+    if (!modified) {
+      return input;
+    }
+    let result = input;
+    for (let i = edits.length - 1; i >= 0; i--) {
+      const { start, end, replacement } = edits[i];
+      result = result.slice(0, start) + replacement + result.slice(end);
+    }
+    return result;
+  };
+}
 function resolveItems({
   cdn,
   babel,
@@ -775,7 +819,7 @@ function transformHtml({ path, source, fileUrls }) {
           path,
           source: script.textContent,
           fileUrls
-        });
+        })();
       });
     },
     toString() {
@@ -788,6 +832,7 @@ export {
   babelTransform,
   createFileUrlSystem,
   createMonacoTypeDownloader,
+  createTransformModulePaths,
   downloadTypesFromUrl,
   downloadTypesfromPackageName,
   getExtension,

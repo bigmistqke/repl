@@ -1,4 +1,6 @@
 export * from './core/create-file-url-system.ts'
+export * from './core/default-file-url-system.ts'
+export * from './extensions/js-extension.ts'
 export * from './monaco/create-monaco-typeloader.ts'
 export * from './package/resolve-package-entries.ts'
 export * from './transform/transform-babel.ts'

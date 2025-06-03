@@ -1,6 +1,7 @@
 import type * as Monaco from 'monaco-editor'
 import { createEffect, createSignal } from 'solid-js'
 import { createStore } from 'solid-js/store'
+import type TS from 'typescript'
 import { downloadTypesfromPackageName } from '../types/download-types.ts'
 import { mapObject } from '../utils/map-object.ts'
 
@@ -38,7 +39,13 @@ import { mapObject } from '../utils/map-object.ts'
  *   console.log('Updated types:', types);
  * });
  */
-export function createMonacoTypeDownloader(tsconfig: Monaco.languages.typescript.CompilerOptions) {
+export function createMonacoTypeDownloader({
+  ts,
+  tsconfig,
+}: {
+  ts: typeof TS
+  tsconfig: Monaco.languages.typescript.CompilerOptions
+}) {
   const [types, setTypes] = createStore<Record<string, string>>({})
   const [aliases, setAliases] = createSignal<Record<string, Array<string>>>({})
 
@@ -70,7 +77,7 @@ export function createMonacoTypeDownloader(tsconfig: Monaco.languages.typescript
     },
     async downloadModule(name: string) {
       if (!(name in aliases())) {
-        const { types, path } = await downloadTypesfromPackageName({ name })
+        const { types, path } = await downloadTypesfromPackageName({ name, ts })
         setTypes(types)
         addAlias(name, path)
       }

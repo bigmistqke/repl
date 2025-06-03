@@ -1,62 +1,125 @@
-import typescript, { ScriptKind, ScriptTarget, transform } from 'typescript'
+import { FileUrlSystem } from 'src/types'
+import { isUrl } from 'src/utils/path'
+import type TS from 'typescript'
 
-export function transformModulePaths(
-  code: string,
-  callback: (path: string, isImport: boolean) => string | null,
-) {
-  const sourceFile = typescript.createSourceFile('', code, ScriptTarget.Latest, true, ScriptKind.TS)
-  let shouldPrint = false
-  const result = transform(sourceFile, [
-    context => {
-      const visit: typescript.Visitor = node => {
-        if (
-          (typescript.isImportDeclaration(node) || typescript.isExportDeclaration(node)) &&
-          node.moduleSpecifier &&
-          typescript.isStringLiteral(node.moduleSpecifier)
-        ) {
-          const isImport = typescript.isImportDeclaration(node)
+interface Range {
+  start: number
+  end: number
+  path: string
+  isImport: boolean
+}
 
-          const previous = node.moduleSpecifier.text
-          const result = callback(node.moduleSpecifier.text, isImport)
+export function transformModulePaths({
+  ts,
+  source,
+  transform,
+}: {
+  ts: typeof TS
+  source: string
+  transform(path: string, isImport: boolean): string
+}) {
+  const sourceFile = ts.createSourceFile('', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
 
-          if (result === null) {
-            shouldPrint = true
-            return
-          }
+  const ranges: Array<Range> = []
 
-          node.moduleSpecifier.text = result
+  function collect(node: TS.Node) {
+    if (
+      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+      node.moduleSpecifier &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    ) {
+      const isImport = ts.isImportDeclaration(node)
+      const text = node.moduleSpecifier.text
+      const start = node.moduleSpecifier.getStart(sourceFile) + 1 // skip quote
+      const end = node.moduleSpecifier.getEnd() - 1 // skip quote
 
-          if (previous !== node.moduleSpecifier.text) {
-            shouldPrint = true
-            if (isImport) {
-              return typescript.factory.updateImportDeclaration(
-                node,
-                node.modifiers,
-                node.importClause,
-                typescript.factory.createStringLiteral(result),
-                node.assertClause, // Preserve the assert clause if it exists
-              )
-            } else {
-              return typescript.factory.updateExportDeclaration(
-                node,
-                node.modifiers,
-                false,
-                node.exportClause,
-                typescript.factory.createStringLiteral(result),
-                node.assertClause, // Preserve the assert clause if it exists
-              )
-            }
-          }
-        }
-        return typescript.visitEachChild(node, visit, context)
+      ranges.push({ start, end, path: text, isImport })
+    }
+
+    ts.forEachChild(node, collect)
+  }
+
+  collect(sourceFile)
+
+  return () => {
+    let modified = false
+    const edits: Array<{ start: number; end: number; replacement: string }> = []
+    const transformedRanges: Array<Range> = []
+
+    for (const { start, end, path, isImport } of ranges) {
+      console.log('TRANSFORM MODULE PATH', path)
+
+      const replacement = transform(path, isImport)
+      transformedRanges.push({ start, end, path, isImport })
+      if (replacement !== null && replacement !== path) {
+        edits.push({ start, end, replacement })
+        modified = true
       }
-      return node => typescript.visitNode(node, visit) as typescript.SourceFile
+    }
+
+    if (!modified) {
+      return source
+    }
+
+    // Apply edits in reverse order to preserve positions
+    let result = source
+    for (let i = edits.length - 1; i >= 0; i--) {
+      const { start, end, replacement } = edits[i]!
+      result = result.slice(0, start) + replacement + result.slice(end)
+    }
+
+    return result
+  }
+}
+
+export function defaultTransformModulePaths({
+  fileUrls,
+  compilerOptions = {},
+  path,
+  readFile,
+  source,
+  ts,
+  cdn = 'https://esm.sh',
+}: {
+  fileUrls: FileUrlSystem
+  compilerOptions?: TS.CompilerOptions
+  path: string
+  readFile(path: string): string | undefined
+  source: string
+  ts: typeof TS
+  cdn?: string
+}) {
+  return transformModulePaths({
+    ts,
+    source,
+    transform(modulePath) {
+      console.log('MODULE PATH', modulePath)
+      if (modulePath.startsWith('.')) {
+        // Swap relative module-path out with their respective module-url
+        const { resolvedModule } = ts.resolveModuleName(modulePath, path, compilerOptions, {
+          fileExists(path) {
+            try {
+              return readFile(path) !== undefined
+            } catch {
+              return false
+            }
+          },
+          readFile,
+        })
+
+        if (!resolvedModule) throw `no resolved module ${path} ${modulePath}`
+
+        const url = fileUrls.get(resolvedModule.resolvedFileName)
+        if (!url) throw `url ${path} ${modulePath} ${resolvedModule.resolvedFileName} is undefined`
+
+        return url
+      } else if (isUrl(modulePath)) {
+        // Return url directly
+        return modulePath
+      } else {
+        // Wrap external modules with esm.sh
+        return `${cdn}/${modulePath}`
+      }
     },
-  ])
-  if (!result.transformed[0]) return undefined
-  if (!shouldPrint) return code
-  const printer = typescript.createPrinter({
-    newLine: typescript.NewLineKind.LineFeed,
   })
-  return printer.printFile(result.transformed[0])
 }

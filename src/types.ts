@@ -1,15 +1,17 @@
+import { Accessor } from 'solid-js'
+
 export type FileType = 'javascript' | 'css' | 'html' | 'wasm' | 'plain'
 export interface Extension {
   transform?: Transform
   type: FileType
 }
-export interface FileUrls {
+export interface FileUrlSystem {
   invalidate(path: string): void
   get(path: string, config?: { cached?: boolean }): string | undefined
 }
 export interface TransformConfig {
   path: string
   source: string
-  fileUrls: FileUrls
+  fileUrls: FileUrlSystem
 }
-export type Transform = (config: TransformConfig) => string
+export type Transform = (config: TransformConfig) => Accessor<string> | string

@@ -58,6 +58,7 @@
     "typescript": "^5.1.6"
   },
   "devDependencies": {
+    "@bigmistqke/solid-fs-components": "0.1.0-beta",
     "@bigmistqke/solid-grid-split": "^0.0.2",
     "@bigmistqke/vite-plugin-raw-directory": "^0.0.2",
     "@bigmistqke/vite-plugin-worker-proxy": "^0.0.12",
@@ -69,6 +70,7 @@
     "@solidjs/router": "^0.15.2",
     "@types/babel__standalone": "^7.1.9",
     "concurrently": "^8.2.0",
+    "domhandler": "^5.0.3",
     "prettier": "3.0.0",
     "typescript": "^5.1.6",
     "vite": "^4.4.6",

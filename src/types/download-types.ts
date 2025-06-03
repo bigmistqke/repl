@@ -1,6 +1,7 @@
-import { transformModulePaths } from 'src/transform/transform-module-paths.ts'
+import { transformModulePaths } from 'src/transform/transform-module-paths'
 import { defer } from 'src/utils/defer.ts'
 import { isUrl, resolvePath } from 'src/utils/path'
+import type TS from 'typescript'
 
 function isRelativePath(path: string) {
   return path.startsWith('.')
@@ -46,10 +47,12 @@ const URL_CACHE = new Map<string, Promise<string>>()
  * @async
  */
 export async function downloadTypesFromUrl({
+  ts,
   url,
   declarationFiles = {},
   cdn = 'https://esm.sh',
 }: {
+  ts: typeof TS
   url: string
   declarationFiles?: Record<string, string>
   cdn?: string
@@ -67,13 +70,13 @@ export async function downloadTypesFromUrl({
     if (response.status !== 200) {
       throw new Error(`Error while loading ${url}`)
     }
-    const code = await response.text()
+    const source = await response.text()
 
-    resolve(code)
+    resolve(source)
 
     const promises = new Array<Promise<any>>()
 
-    const transformedCode = transformModulePaths(code, modulePath => {
+    const transformedCode = transformModulePaths({ ts, source })(modulePath => {
       if (isRelativePath(modulePath)) {
         let newPath = resolvePath(path, modulePath)
         promises.push(downloadPath(normalizePath(newPath)))
@@ -82,6 +85,7 @@ export async function downloadTypesFromUrl({
       } else if (isUrl(modulePath)) {
         promises.push(
           downloadTypesFromUrl({
+            ts,
             url: modulePath,
             declarationFiles,
             cdn,
@@ -89,7 +93,7 @@ export async function downloadTypesFromUrl({
         )
         return getVirtualPath(modulePath)
       } else {
-        promises.push(downloadTypesfromPackageName({ name: modulePath, declarationFiles, cdn }))
+        promises.push(downloadTypesfromPackageName({ name: modulePath, declarationFiles, cdn, ts }))
       }
       return modulePath
     })
@@ -124,10 +128,12 @@ const TYPE_URL_CACHE = new Map<string, Promise<string | null>>()
  * @async
  */
 export async function downloadTypesfromPackageName({
+  ts,
   name,
   declarationFiles = {},
   cdn = 'https://esm.sh',
 }: {
+  ts: typeof TS
   name: string
   declarationFiles?: Record<string, string>
   cdn?: string
@@ -147,6 +153,6 @@ export async function downloadTypesfromPackageName({
 
   return {
     path: getVirtualPath(typeUrl),
-    types: await downloadTypesFromUrl({ url: typeUrl, declarationFiles, cdn }),
+    types: await downloadTypesFromUrl({ url: typeUrl, declarationFiles, cdn, ts }),
   }
 }

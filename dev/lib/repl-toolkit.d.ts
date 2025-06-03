@@ -18,7 +18,7 @@ export interface TransformConfig {
 	source: string;
 	fileUrls: FileUrls;
 }
-export type Transform = (config: TransformConfig) => string;
+export type Transform = (config: TransformConfig) => () => string;
 /**
  * Creates a registry for managing object URLs derived from a set of reactive file sources.
  *
@@ -189,6 +189,7 @@ export type ResolvedPaths = {
 	[key: string]: string;
 };
 export declare function resolvePackageEntries(pkg: PackageJson, conditions?: ResolveConditions): ResolvedPaths;
+export declare function createTransformModulePaths(ts: typeof TS, input: string): (transform: (path: string, isImport: boolean) => string | null) => string;
 type Transform$1 = (source: string, path: string) => string;
 export interface BabelConfig {
 	babel?: typeof Babel | Promise<typeof Babel>;

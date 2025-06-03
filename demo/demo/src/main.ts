@@ -1,11 +1,4 @@
-import {
-  createFileUrlSystem,
-  isUrl,
-  resolvePath,
-  Transform,
-  transformHtml,
-  transformModulePaths,
-} from '@bigmistqke/repl'
+import { createFileUrlSystem, createJSExtension, transformHtml } from '@bigmistqke/repl'
 import { createSyncFileSystem, makeVirtualFileSystem } from '@solid-primitives/filesystem'
 import { createSignal } from 'solid-js'
 import html from 'solid-js/html'
@@ -13,53 +6,38 @@ import { render } from 'solid-js/web'
 import ts from 'typescript'
 
 function createRepl() {
-  const transformJs: Transform = ({ path, source, fileUrls }) => {
-    return transformModulePaths(source, modulePath => {
-      if (modulePath.startsWith('.')) {
-        // Swap relative module-path out with their respective module-url
-        const url = fileUrls.get(resolvePath(path, modulePath))
-        if (!url) throw 'url is undefined'
-        return url
-      } else if (isUrl(modulePath)) {
-        // Return url directly
-        return modulePath
-      } else {
-        // Wrap external modules with esm.sh
-        return `https://esm.sh/${modulePath}`
-      }
-    })!
-  }
   const fs = createSyncFileSystem(makeVirtualFileSystem())
+
+  const jsExtension = createJSExtension({
+    ts,
+    fs,
+  })
+
+  const fileUrls = createFileUrlSystem(fs.readFile, {
+    css: { type: 'css' },
+    js: jsExtension(false),
+    ts: jsExtension(true),
+    html: {
+      type: 'html',
+      transform(config) {
+        return () =>
+          transformHtml(config)
+            // Transform content of all `<script type="module" />` elements
+            .transformModuleScriptContent(source =>
+              jsExtension(false).transform({ ...config, source }),
+            )
+            // Bind relative `src`-attribute of all `<script />` elements
+            .transformScriptSrc()
+            // Bind relative `href`-attribute of all `<link />` elements
+            .transformLinkHref()
+            .toString()
+      },
+    },
+  })
+
   return {
     fs,
-    filUrls: createFileUrlSystem(fs.readFile, {
-      css: { type: 'css' },
-      js: {
-        type: 'javascript',
-        transform: transformJs,
-      },
-      ts: {
-        type: 'javascript',
-        transform({ path, source, fileUrls }) {
-          return transformJs({ path, source: ts.transpile(source), fileUrls })
-        },
-      },
-      html: {
-        type: 'html',
-        transform(config) {
-          return (
-            transformHtml(config)
-              // Transform content of all `<script type="module" />` elements
-              .transformModuleScriptContent(transformJs)
-              // Bind relative `src`-attribute of all `<script />` elements
-              .transformScriptSrc()
-              // Bind relative `href`-attribute of all `<link />` elements
-              .transformLinkHref()
-              .toString()
-          )
-        },
-      },
-    }),
+    fileUrls,
   }
 }
 

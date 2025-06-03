@@ -30,6 +30,9 @@ importers:
         specifier: ^1.6.0
         version: 1.9.4
     devDependencies:
+      '@bigmistqke/solid-fs-components':
+        specifier: 0.1.0-beta
+        version: 0.1.0-beta(solid-js@1.9.4)
       '@bigmistqke/solid-grid-split':
         specifier: ^0.0.2
         version: 0.0.2(solid-js@1.9.4)
@@ -63,6 +66,9 @@ importers:
       concurrently:
         specifier: ^8.2.0
         version: 8.2.2
+      domhandler:
+        specifier: ^5.0.3
+        version: 5.0.3
       prettier:
         specifier: 3.0.0
         version: 3.0.0
@@ -181,6 +187,12 @@ packages:
   '@babel/types@7.26.7':
     resolution: {integrity: sha512-t8kDRGrKXyp6+tjUh7hw2RLyclsW4TRoRvRHtSyAX9Bb5ldlFh+90YAYY6awRXrlB4G5G2izNeGySpATlFzmOg==}
     engines: {node: '>=6.9.0'}
+
+  '@bigmistqke/solid-fs-components@0.1.0-beta':
+    resolution: {integrity: sha512-tVsUONnoF0ZNDVHmv9BkF5OAezeL+UoBK8Tl947kJHntWAfNfYFOaI5u7FX4nM7sO+d8KmFHS8n/z6J4//GvMA==}
+    engines: {node: '>=18', pnpm: '>=9.0.0'}
+    peerDependencies:
+      solid-js: ^1.6.0
 
   '@bigmistqke/solid-grid-split@0.0.2':
     resolution: {integrity: sha512-SbAZrBMc+hcQsHvGT/xzIVQH5vBsA4dLzOQVgKJ+1aQOd2NtbAu1jIEaR6EpxIJwyLZ1ZJ2VQtdZw7VdRyFB2g==}
@@ -629,8 +641,23 @@ packages:
       chokidar:
         optional: true
 
+  '@solid-primitives/keyed@1.5.1':
+    resolution: {integrity: sha512-lAgQ1Jou8nxywifWsWjDTla9MI7Pfr46JRTC40K81fqz8dw4E8t/4gYuIwqP1EHVG0mItfIb3XqDw0wEQh+QYA==}
+    peerDependencies:
+      solid-js: ^1.6.12
+
+  '@solid-primitives/map@0.6.0':
+    resolution: {integrity: sha512-h8uCJNxUTvzNK/aTW9vJCd/PQeBkUL8i7AyLPvTFqMgcMnJ1I5GzAi5JODzxpxQwffxoqJyQtOE1vBqFzDv0Vw==}
+    peerDependencies:
+      solid-js: ^1.6.12
+
   '@solid-primitives/map@0.7.1':
     resolution: {integrity: sha512-0Fo5gToY+XPZVQLwzm8dc/3vVLdYLboUJD+kyoW+V64YPHs0qPDEekJuRUV7Mp9uiyHnD1DArfy1CrHAezTDZQ==}
+    peerDependencies:
+      solid-js: ^1.6.12
+
+  '@solid-primitives/range@0.2.2':
+    resolution: {integrity: sha512-pL2YiToHgoOw5dKdgt7r+1TeQEgC0ZGF48zUtg06kTptUlFtOYpkjFQb6bUgwwYgGfFIM6lbZqw5y1bSS/3HaA==}
     peerDependencies:
       solid-js: ^1.6.12
 
@@ -783,6 +810,10 @@ packages:
   cliui@8.0.1:
     resolution: {integrity: sha512-BSeNnyus75C4//NQ9gQt1/csTXyo/8Sb+afLAkzAptFuMsod9HFokGNudZpi/oQV73hnVK+sR+5PVRMd+Dr7YQ==}
     engines: {node: '>=12'}
+
+  clsx@2.1.1:
+    resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
+    engines: {node: '>=6'}
 
   color-convert@2.0.1:
     resolution: {integrity: sha512-RRECPsj7iu/xb5oKYcsFHSppFNnsj/52OVTRKb4zP5onXwVF3zVmmToNcOfGC+CRDpfK/U584fMg38ZHCaElKQ==}
@@ -1599,6 +1630,14 @@ snapshots:
       '@babel/helper-string-parser': 7.25.9
       '@babel/helper-validator-identifier': 7.25.9
 
+  '@bigmistqke/solid-fs-components@0.1.0-beta(solid-js@1.9.4)':
+    dependencies:
+      '@solid-primitives/keyed': 1.5.1(solid-js@1.9.4)
+      '@solid-primitives/map': 0.6.0(solid-js@1.9.4)
+      '@solid-primitives/range': 0.2.2(solid-js@1.9.4)
+      clsx: 2.1.1
+      solid-js: 1.9.4
+
   '@bigmistqke/solid-grid-split@0.0.2(solid-js@1.9.4)':
     dependencies:
       solid-js: 1.9.4
@@ -1868,9 +1907,23 @@ snapshots:
     dependencies:
       solid-js: 1.9.4
 
+  '@solid-primitives/keyed@1.5.1(solid-js@1.9.4)':
+    dependencies:
+      solid-js: 1.9.4
+
+  '@solid-primitives/map@0.6.0(solid-js@1.9.4)':
+    dependencies:
+      '@solid-primitives/trigger': 1.2.1(solid-js@1.9.4)
+      solid-js: 1.9.4
+
   '@solid-primitives/map@0.7.1(solid-js@1.9.4)':
     dependencies:
       '@solid-primitives/trigger': 1.2.1(solid-js@1.9.4)
+      solid-js: 1.9.4
+
+  '@solid-primitives/range@0.2.2(solid-js@1.9.4)':
+    dependencies:
+      '@solid-primitives/utils': 6.3.1(solid-js@1.9.4)
       solid-js: 1.9.4
 
   '@solid-primitives/set@0.7.1(solid-js@1.9.4)':
@@ -2048,6 +2101,8 @@ snapshots:
       string-width: 4.2.3
       strip-ansi: 6.0.1
       wrap-ansi: 7.0.0
+
+  clsx@2.1.1: {}
 
   color-convert@2.0.1:
     dependencies:

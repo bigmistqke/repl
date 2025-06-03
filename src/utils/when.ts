@@ -1,5 +1,4 @@
 import { Accessor, createEffect, createMemo, Resource } from 'solid-js'
-import { accessMaybe } from 'src/utils/access-maybe'
 
 export function check<
   T,
@@ -14,8 +13,8 @@ export function check<
   T,
   const TAccessor extends Accessor<T> | T,
   const TValues extends TAccessor extends ((...args: any[]) => any) | undefined
-    ? Exclude<ReturnType<Exclude<TAccessor, undefined>>, null | undefined | false>
-    : Exclude<TAccessor, null | undefined | false>,
+    ? Exclude<ReturnType<Exclude<TAccessor, undefined>>, 0 | null | undefined | false>
+    : Exclude<TAccessor, 0 | null | undefined | false>,
   const TResult,
   const TFallbackResult,
 >(
@@ -28,16 +27,16 @@ export function check<
   T,
   const TAccessor extends Accessor<T> | T,
   const TValues extends TAccessor extends ((...args: any[]) => any) | undefined
-    ? Exclude<ReturnType<Exclude<TAccessor, undefined>>, null | undefined | false>
-    : Exclude<TAccessor, null | undefined | false>,
+    ? Exclude<ReturnType<Exclude<TAccessor, undefined>>, 0 | null | undefined | false>
+    : Exclude<TAccessor, 0 | null | undefined | false>,
   const TResult,
   const TFallbackResult,
 >(
-  maybeAccessor: TAccessor,
+  accessor: TAccessor,
   callback: (value: TValues) => TResult,
   fallback?: () => TFallbackResult,
 ): TResult | TFallbackResult | undefined {
-  const value = accessMaybe(maybeAccessor)
+  const value = typeof accessor === 'function' ? accessor() : accessor
   return value ? callback(value) : fallback ? fallback() : undefined
 }
 
@@ -52,8 +51,8 @@ export function when<
   T,
   const TAccessor extends Accessor<T> | T,
   const TValues extends TAccessor extends ((...args: any[]) => any) | undefined
-    ? Exclude<ReturnType<Exclude<TAccessor, undefined>>, null | undefined | false>
-    : Exclude<TAccessor, null | undefined | false>,
+    ? Exclude<ReturnType<Exclude<TAccessor, undefined>>, 0 | null | undefined | false>
+    : Exclude<TAccessor, 0 | null | undefined | false>,
   const TResult,
 >(accessor: TAccessor, callback: (value: TValues) => TResult): () => TResult | undefined
 
@@ -61,12 +60,12 @@ export function when<
   const T,
   const TAccessor extends Accessor<T> | T,
   const TValues extends TAccessor extends ((...args: any[]) => any) | undefined
-    ? Exclude<ReturnType<Exclude<TAccessor, undefined>>, null | undefined | false>
-    : Exclude<TAccessor, null | undefined | false>,
+    ? Exclude<ReturnType<Exclude<TAccessor, undefined>>, 0 | null | undefined | false>
+    : Exclude<TAccessor, 0 | null | undefined | false>,
   const TResult,
   const TFallbackResult,
 >(
-  maybeAccessor: TAccessor,
+  accessor: TAccessor,
   callback: (value: TValues) => TResult,
   fallback: () => TFallbackResult,
 ): () => TResult | TFallbackResult
@@ -75,8 +74,8 @@ export function when<
   T,
   const TAccessor extends Accessor<T> | T,
   const TValues extends TAccessor extends ((...args: any[]) => any) | undefined
-    ? Exclude<ReturnType<Exclude<TAccessor, undefined>>, null | undefined | false>
-    : Exclude<TAccessor, null | undefined | false>,
+    ? Exclude<ReturnType<Exclude<TAccessor, undefined>>, 0 | null | undefined | false>
+    : Exclude<TAccessor, 0 | null | undefined | false>,
   const TResult,
   const TFallbackResult,
 >(
@@ -133,13 +132,18 @@ export function whenEffect<
   createEffect(when(accessor, callback))
 }
 
-export function whenMemo<
-  T,
-  const TAccessor extends Accessor<T> | T,
-  const TValues extends TAccessor extends ((...args: any[]) => any) | undefined
-    ? Exclude<ReturnType<Exclude<TAccessor, undefined>>, null | undefined | false>
-    : Exclude<TAccessor, null | undefined | false>,
-  const TResult,
->(accessor: TAccessor, callback: (value: TValues) => TResult) {
-  return createMemo(when(accessor, callback))
+export function whenMemo<const T, const TResult>(
+  accessor: Accessor<T | undefined>,
+  callback: (
+    value: Exclude<ReturnType<Exclude<Accessor<T>, undefined>>, null | undefined | false>,
+    previous: TResult | undefined,
+  ) => TResult,
+) {
+  return createMemo(prev =>
+    check(
+      accessor,
+      value => callback(value, prev),
+      () => prev,
+    ),
+  )
 }
