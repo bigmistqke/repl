@@ -21,6 +21,7 @@ function normalizePath(path: string) {
  * Converts a URL into a virtual path by stripping the CDN URL and protocol.
  *
  * @param url The URL to convert.
+ * @param cdn The CDN base URL to strip from the URL. Defaults to 'https://esm.sh'.
  * @returns The virtual path derived from the URL.
  * @private
  */
@@ -41,9 +42,12 @@ const URL_CACHE = new Map<string, Promise<string>>()
 /**
  * Imports type definitions from a URL, checking if the types are already cached before importing.
  *
- * @param url The URL of the type definition to import.
- * @param [packageName] The package name associated with the type definitions.
- * @returns
+ * @param params The parameters object.
+ * @param params.ts The TypeScript compiler API.
+ * @param params.url The URL of the type definition to import.
+ * @param params.declarationFiles The existing declaration files cache. Defaults to empty object.
+ * @param params.cdn The CDN base URL to use for resolving relative imports. Defaults to 'https://esm.sh'.
+ * @returns A promise that resolves to the declaration files.
  * @async
  */
 export async function downloadTypesFromUrl({
@@ -122,9 +126,16 @@ const TYPE_URL_CACHE = new Map<string, Promise<string | null>>()
 
 /**
  * Imports type definitions based on a package name by resolving it to a CDN path.
+ * Relies on the CDN providing the typescript declaration via 'X-TypeScript-Types' header.
  *
- * @param packageName The package name whose types to import.
- * @returns
+ * You should probably use [@typescript/ata](https://www.npmjs.com/package/@typescript/ata) instead.
+ *
+ * @param params The parameters object.
+ * @param params.ts The TypeScript compiler API.
+ * @param params.name The package name whose types to import.
+ * @param params.declarationFiles Record to store downloaded declaration files. Defaults to empty object.
+ * @param params.cdn The CDN base URL to fetch the package from. Defaults to 'https://esm.sh'.
+ * @returns A promise that resolves to an object with path and types.
  * @async
  */
 export async function downloadTypesfromPackageName({
