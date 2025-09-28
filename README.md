@@ -17,11 +17,13 @@
   - [transformModulePaths](#transformmodulepaths)
   - [transformHtml](#transformhtml)
   - [transformHtmlWorker](#transformhtmlworker)
-  - [transformBabel](#transformbabel)
+  - [babelTransform](#babeltransform)
+  - [createFileUrl](#createfileurl)
+  - [downloadTypesFromUrl](#downloadtypesfromurl)
   - [Download Types](#download-types)
   - [Monaco Editor Integration](#monaco-editor-integration)
+  - [PathUtils](#pathutils)
   - [resolvePackageEntries](#resolvepackageentries)
-  - [ReactiveRefCount](#reactiverefcount)
 - [Advanced Examples](#advanced-examples)
   - [Reactive Extensions](#reactive-extensions)
   - [Template Engine](#template-engine)
@@ -34,18 +36,22 @@
 Create a simple code playground with custom extensions:
 
 ```tsx
-import { createFileUrlSystem, transformModulePaths, resolvePath, type Extension } from '@bigmistqke/repl'
+import { createFileUrlSystem, transformModulePaths, PathUtils, type Extension } from '@bigmistqke/repl'
 import ts from 'typescript'
 
 // Custom JavaScript extension with module resolution
 const jsExtension = {
   type: 'javascript',
   transform: ({ source, path, fileUrls }) => {
-    return transformModulePaths(source, (modulePath) => {
-      if (modulePath.startsWith('.')) {
-        return fileUrls.get(resolvePath(path, modulePath))
+    return transformModulePaths({
+      ts,
+      source,
+      transform: (modulePath) => {
+        if (modulePath.startsWith('.')) {
+          return fileUrls.get(PathUtils.resolvePath(path, modulePath))
+        }
+        return `https://esm.sh/${modulePath}`
       }
-      return `https://esm.sh/${modulePath}`
     })
   }
 } satisfies Extension
@@ -189,7 +195,7 @@ const bundlerExtension = {
 For common use cases, convenience utilities are provided:
 
 ```tsx
-import { createJSExtension, createHTMLExtension } from '@bigmistqke/repl'
+import { createJSExtension } from '@bigmistqke/repl'
 
 // JavaScript extension with TypeScript support
 const jsExtension = createJSExtension({
@@ -206,11 +212,6 @@ const jsExtension = createJSExtension({
 const tsExtension = jsExtension.extend({ 
   transpile: true // Enable transpilation
 })
-
-// HTML extension with script transformation
-const htmlExtension = createHTMLExtension({
-  transformModule: jsExtension.transform
-})
 ```
 
 ## Utilities
@@ -220,11 +221,15 @@ const htmlExtension = createHTMLExtension({
 Transform import/export declarations in JavaScript/TypeScript:
 
 ```tsx
-const transformed = transformModulePaths(source, (modulePath) => {
-  if (modulePath.startsWith('.')) {
-    return fileUrls.get(resolvePath(currentPath, modulePath))
+const transformed = transformModulePaths({
+  ts,
+  source,
+  transform: (modulePath) => {
+    if (modulePath.startsWith('.')) {
+      return fileUrls.get(PathUtils.resolvePath(currentPath, modulePath))
+    }
+    return `https://esm.sh/${modulePath}`
   }
-  return `https://esm.sh/${modulePath}`
 })
 ```
 
@@ -252,33 +257,65 @@ transformHtml({
 Worker-friendly HTML transformation for environments without DOM access:
 
 ```tsx
-import { transformHtmlWorker, createHTMLExtensionWorker } from '@bigmistqke/repl'
+import { transformHtmlWorker } from '@bigmistqke/repl'
 
 // Worker-friendly HTML transformation
-const transformed = transformHtmlWorker({ source, path, readFile })
-  .transformScriptContent(transform)
-  .toString()
-
-// Worker-friendly HTML extension
-const htmlExtension = createHTMLExtensionWorker({
+const transformed = transformHtmlWorker({ 
+  source, 
+  path, 
+  fileUrls,
   transformModule: jsTransform
 })
 ```
 
-### transformBabel
+### babelTransform
 
 Babel transformation support:
 
 ```tsx
-import { transformBabel } from '@bigmistqke/repl'
+import { babelTransform } from '@bigmistqke/repl'
 import * as babel from '@babel/standalone'
 
-const result = await transformBabel({
-  source,
+const transform = await babelTransform({
   babel,
   presets: ['react'],
   plugins: []
 })
+
+const result = transform(source, path)
+```
+
+### createFileUrl
+
+Creates an object URL from a text source:
+
+```tsx
+import { createFileUrl } from '@bigmistqke/repl'
+
+// Create a URL for HTML content
+const url = createFileUrl('<div>Hello World</div>', 'html')
+
+// Create a URL for JavaScript
+const jsUrl = createFileUrl('console.log("Hello")', 'javascript')
+
+// Use in iframe
+const iframe = document.createElement('iframe')
+iframe.src = url
+```
+
+### downloadTypesFromUrl
+
+Download TypeScript definitions from a URL:
+
+```tsx
+import { downloadTypesFromUrl } from '@bigmistqke/repl'
+
+const types = await downloadTypesFromUrl({
+  ts,
+  url: 'https://esm.sh/react@18/index.d.ts',
+  cdn: 'https://esm.sh'
+})
+// Returns: Record<string, string>
 ```
 
 ### Download Types From Package
@@ -289,34 +326,63 @@ Relies on the CDN providing the typescript declaration via `X-TypeScript-Types` 
 You should probably use [@typescript/ata](https://www.npmjs.com/package/@typescript/ata) instead.
 
 ```tsx
-import { downloadTypesFromPackage } from '@bigmistqke/repl'
+import { downloadTypesfromPackageName } from '@bigmistqke/repl'
 
 // Download types for a package
-const files = await downloadTypesFromPackage('react', {
-  registry: 'https://registry.npmjs.org',
+const { path, types } = await downloadTypesfromPackageName({
+  ts,
+  name: 'react',
   cdn: 'https://esm.sh'
 })
-// Returns: { '/path/to/file.d.ts': '...contents...' }
+// Returns: { path: string, types: Record<string, string> }
 ```
 
 ### Monaco Editor Integration
 
-Integrate with Monaco editor for TypeScript support, uses [`downloadTypesFromPackage`](#download-types-from-package) internally:
+Integrate with Monaco editor for TypeScript support, uses [`downloadTypesfromPackageName`](#download-types-from-package) internally:
 
 ```tsx
 import { createMonacoTypeDownloader } from '@bigmistqke/repl'
 
 const typeDownloader = createMonacoTypeDownloader({
-  monaco,
   ts,
-  readFile: fileUrls.readFile
+  tsconfig: {
+    target: monaco.languages.typescript.ScriptTarget.ESNext,
+    moduleResolution: monaco.languages.typescript.ModuleResolutionKind.NodeJs
+  }
 })
 
 // Download and register types
-await typeDownloader.download('react')
+await typeDownloader.downloadModule('react')
 
 // Get generated tsconfig
-const tsconfig = typeDownloader.getTsConfig()
+const tsconfig = typeDownloader.tsconfig()
+```
+
+### PathUtils
+
+Path manipulation utilities:
+
+```tsx
+import { PathUtils } from '@bigmistqke/repl'
+
+// Get file extension
+const ext = PathUtils.getExtension('/src/main.ts') // 'ts'
+
+// Get filename
+const name = PathUtils.getName('/src/main.ts') // 'main.ts'
+
+// Get parent directory
+const parent = PathUtils.getParentPath('/src/main.ts') // '/src'
+
+// Normalize path (remove leading slashes)
+const normalized = PathUtils.normalizePath('//src/main.ts') // 'src/main.ts'
+
+// Resolve relative paths
+const resolved = PathUtils.resolvePath('/src/index.js', './utils.js') // '/src/utils.js'
+
+// Check if path is a URL
+const isURL = PathUtils.isUrl('https://example.com/file.js') // true
 ```
 
 ### resolvePackageEntries
