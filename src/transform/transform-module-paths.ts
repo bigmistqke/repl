@@ -1,6 +1,6 @@
-import { FileUrlSystem } from 'src/types'
-import { isUrl } from 'src/utils/path'
 import type TS from 'typescript'
+import { PathUtils } from '../index.ts'
+import type { FileUrlSystem } from '../types.ts'
 
 interface Range {
   start: number
@@ -113,7 +113,7 @@ export function defaultTransformModulePaths({
         if (!url) throw `url ${path} ${modulePath} ${resolvedModule.resolvedFileName} is undefined`
 
         return url
-      } else if (isUrl(modulePath)) {
+      } else if (PathUtils.isUrl(modulePath)) {
         // Return url directly
         return modulePath
       } else {

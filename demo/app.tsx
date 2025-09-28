@@ -4,7 +4,7 @@
 /*                                                                                */
 /**********************************************************************************/
 
-import { FileType, getExtension } from '@bigmistqke/repl'
+import { PathUtils } from '@bigmistqke/repl'
 import { Split } from '@bigmistqke/solid-grid-split'
 import { every, whenEffect, whenMemo } from '@bigmistqke/solid-whenever'
 import { type WorkerProxy } from '@bigmistqke/worker-proxy'
@@ -120,7 +120,7 @@ function Editor(props: {
 
     async function getType(path: string) {
       let type: string = await props.fs.$async.getType(path)
-      const extension = getExtension(path)
+      const extension = PathUtils.getExtension(path)
       if (extension && extension in languages) {
         type = languages[extension]!
       }
@@ -198,7 +198,7 @@ function FileTree(treeProps: {
     const [collapsed, setCollapsed] = createSignal(false)
     const [childDirEnts, setChildDirEnts] = createSignal<
       {
-        type: 'dir' | FileType
+        type: 'dir' | PathUtils.FileType
         path: string
       }[]
     >([])
@@ -237,7 +237,7 @@ function FileTree(treeProps: {
     )
   }
 
-  function DirEnt(props: { layer: number; path: string; type: FileType | 'dir' }) {
+  function DirEnt(props: { layer: number; path: string; type: PathUtils.FileType | 'dir' }) {
     const name = () => {
       const parts = props.path.split('/')
       return parts[parts.length - 1] || ''

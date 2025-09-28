@@ -1,4 +1,6 @@
-import { Accessor } from 'solid-js'
+import type { Accessor } from 'solid-js'
+
+export type AccessorMaybe<T> = T | Accessor<T>
 
 export type FileType = 'javascript' | 'css' | 'html' | 'wasm' | 'plain'
 export interface Extension {

@@ -7,7 +7,7 @@ import {
   resolvePath,
   transformModulePaths,
 } from 'src'
-import { Transform } from 'src/types'
+import type { Transform } from 'src/types'
 import ts from 'typescript'
 import toolkitDeclaration from '../lib/repl-toolkit.d.ts?raw'
 import toolkit from '../lib/repl-toolkit.js?raw'

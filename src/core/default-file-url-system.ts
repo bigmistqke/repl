@@ -1,7 +1,7 @@
-import { createHTMLExtension } from 'src/extensions/html-extension'
-import { createJSExtension, JSExtensionConfig } from 'src/extensions/js-extension'
-import { Extension } from 'src/types'
-import { createFileUrlSystem } from './create-file-url-system'
+import { createHTMLExtension } from '../extensions/html-extension.ts'
+import { createJSExtension, type JSExtensionConfig } from '../extensions/js-extension.ts'
+import type { Extension } from '../types.ts'
+import { createFileUrlSystem } from './create-file-url-system.ts'
 
 export interface DefaultFileUrlSystemConfig
   extends Omit<JSExtensionConfig, 'transpile' | 'transform'> {

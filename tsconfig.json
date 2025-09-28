@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
-    "rootDir": ".",
-    "allowSyntheticDefaultImports": true,
+    "allowImportingTsExtensions": true,
     "allowJs": true,
+    "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
-    "esModuleInterop": true,
     "declaration": true,
+    "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "jsx": "preserve",
@@ -13,18 +13,19 @@
     "lib": ["DOM", "DOM.Iterable", "ESNext"],
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
+    "noEmit": true,
     "noUncheckedIndexedAccess": true,
     "outDir": "dist",
-    "noEmit": true,
     "resolveJsonModule": true,
+    "rootDir": ".",
     "skipLibCheck": true,
     "sourceMap": true,
     "strict": true,
     "target": "ESNext",
     "types": ["vite/client", "@bigmistqke/vite-plugin-worker-proxy/client"],
+    "verbatimModuleSyntax": true,
     "paths": {
-      "@bigmistqke/repl": ["src/index.ts"]
+      "@bigmistqke/repl": ["src/utils.ts"]
     }
   },
   "include": ["src", "dev/extensions"]

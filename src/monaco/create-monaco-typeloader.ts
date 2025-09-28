@@ -3,7 +3,7 @@ import { createEffect, createSignal } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import type TS from 'typescript'
 import { downloadTypesfromPackageName } from '../types/download-types.ts'
-import { mapObject } from '../utils/map-object.ts'
+import { mapObject } from '../utils.ts'
 
 /**
  * Creates a manager for downloading and tracking TypeScript declaration files (`.d.ts`)

@@ -1,6 +1,6 @@
-import { Accessor } from 'solid-js'
+import type { Accessor } from 'solid-js'
+import { PathUtils } from '../index.ts'
 import type { TransformConfig } from '../types.ts'
-import { isUrl, resolvePath } from '../utils/path.ts'
 
 // Create a new DOMParser and XMLSerializer-instance
 const domParser = typeof DOMParser !== 'undefined' ? new DOMParser() : undefined
@@ -18,17 +18,17 @@ export function transformHtml({ path, source, fileUrls, transformModule }: Trans
 
   const updatelinkHref = createUpdateFn<HTMLLinkElement>(doc, 'link[href]', link => {
     const href = link.getAttribute('href')!
-    if (isUrl(href)) return
+    if (PathUtils.isUrl(href)) return
     return () => {
-      const url = fileUrls.get(resolvePath(path, href))
+      const url = fileUrls.get(PathUtils.resolvePath(path, href))
       if (url) link.setAttribute('href', url)
     }
   })
   const updateScriptSrc = createUpdateFn<HTMLScriptElement>(doc, 'script[src]', script => {
     const src = script.getAttribute('src')!
-    if (isUrl(src)) return
+    if (PathUtils.isUrl(src)) return
     return () => {
-      const url = fileUrls.get(resolvePath(path, src))
+      const url = fileUrls.get(PathUtils.resolvePath(path, src))
       if (url) script.setAttribute('src', url)
     }
   })

@@ -1,10 +1,9 @@
+import { accessMaybe, ReactiveRefCount } from '@bigmistqke/repl'
 import { when } from '@bigmistqke/solid-whenever'
-import { Accessor, createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
-import { accessMaybe } from 'src/utils/access-maybe.ts'
-import { ReactiveRefCount } from 'src/utils/reactive-ref-count.ts'
+import { type Accessor, createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
+import { PathUtils } from '../index.ts'
 import type { Extension, FileUrlSystem } from '../types.ts'
-import { createAsync } from '../utils/create-async.ts'
-import { getExtension } from '../utils/path.ts'
+import { createAsync } from '../utils.ts'
 import { createFileUrl } from './create-file-url.ts'
 
 interface FileUrlApi {
@@ -54,7 +53,7 @@ export function createFileUrlSystem({
         return 0
       }
     })
-    const extension = getExtension(path)
+    const extension = PathUtils.getExtension(path)
 
     createEffect(() => {
       // Only remove reference if

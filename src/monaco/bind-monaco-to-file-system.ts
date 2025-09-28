@@ -1,11 +1,13 @@
+import { createAsync } from '@bigmistqke/repl'
 import type * as Monaco from 'monaco-editor'
 import { createEffect, mapArray, mergeProps, onCleanup } from 'solid-js'
-import { createAsync } from 'src/utils/create-async.ts'
-import { getExtension } from '../utils/path.ts'
+import { PathUtils } from '../index.ts'
 
 export function bindMonacoToFileSystem(props: {
   editor: Monaco.editor.IStandaloneCodeEditor
   readFile: (path: string) => string
+  writeFile: (path: string, value: string) => void
+  getPaths: () => string[]
   languages?: Record<string, string>
   monaco: typeof Monaco
   path: string
@@ -22,7 +24,7 @@ export function bindMonacoToFileSystem(props: {
   const worker = createAsync(() => props.monaco.languages.typescript.getTypeScriptWorker())
 
   function getType(path: string) {
-    const extension = getExtension(path)
+    const extension = PathUtils.getExtension(path)
     if (extension && extension in languages) {
       return languages[extension]!
     }
@@ -31,12 +33,12 @@ export function bindMonacoToFileSystem(props: {
 
   createEffect(() => {
     props.editor.onDidChangeModelContent(() => {
-      props.fs.writeFile(props.path, props.editor.getModel()!.getValue())
+      props.writeFile(props.path, props.editor.getModel()!.getValue())
     })
   })
 
   createEffect(
-    mapArray(props.fs.getPaths, path => {
+    mapArray(props.getPaths, path => {
       createEffect(() => {
         const type = getType(path)
         if (type === 'dir') return

@@ -1,7 +1,7 @@
-import { Accessor } from 'solid-js'
-import { transformHtml } from 'src/transform/transform-html'
-import { transformHtmlWorker } from 'src/transform/transform-html-worker'
-import { TransformConfig } from 'src/types'
+import type { Accessor } from 'solid-js'
+import { transformHtmlWorker } from '../transform/transform-html-worker.ts'
+import { transformHtml } from '../transform/transform-html.ts'
+import type { TransformConfig } from '../types.ts'
 
 export interface HTMLExtensionConfig {
   transformModule: (config: TransformConfig) => Accessor<string>

@@ -2,11 +2,11 @@ import serialize from 'dom-serializer'
 import type { Element } from 'domhandler'
 import { findAll, getAttributeValue, hasAttrib } from 'domutils'
 import { parseDocument } from 'htmlparser2'
-import { Accessor } from 'solid-js'
-import { TransformConfig } from '../types.ts'
-import { isUrl, resolvePath } from '../utils/path.ts'
+import type { Accessor } from 'solid-js'
+import { PathUtils } from '../index.ts'
+import type { TransformConfig } from '../types.ts'
 
-export interface TransformHtmlConfig extends TransformConfig {
+export interface TransformHtmlWorkerConfig extends TransformConfig {
   transformModule(config: TransformConfig): Accessor<string>
 }
 
@@ -15,23 +15,23 @@ export function transformHtmlWorker({
   source,
   fileUrls,
   transformModule,
-}: TransformHtmlConfig) {
+}: TransformHtmlWorkerConfig) {
   const doc = parseDocument(source)
 
   const updatelinkHref = createUpdateFn(doc, 'link', link => {
     const href = getAttributeValue(link, 'href')!
-    if (!href || isUrl(href)) return
+    if (!href || PathUtils.isUrl(href)) return
     return () => {
-      const url = fileUrls.get(resolvePath(path, href))
+      const url = fileUrls.get(PathUtils.resolvePath(path, href))
       if (url) link.attribs.href = url
     }
   })
   const updateScriptSrc = createUpdateFn(doc, 'script', script => {
     if (hasAttrib(script, 'src')) {
       const src = getAttributeValue(script, 'src')
-      if (!src || isUrl(src)) return
+      if (!src || PathUtils.isUrl(src)) return
       return () => {
-        const url = fileUrls.get(resolvePath(path, src))
+        const url = fileUrls.get(PathUtils.resolvePath(path, src))
         if (url) script.attribs.src = url
       }
     }
@@ -41,7 +41,11 @@ export function transformHtmlWorker({
     const source = getAttributeValue(script, 'textContent')
     if (getAttributeValue(script, 'type') !== 'module' || !childNode || !source) return
     const transformed = transformModule({ path, fileUrls, source })
-    return () => (childNode.data = transformed())
+    return () => {
+      if ('data' in childNode) {
+        childNode.data = transformed()
+      }
+    }
   })
 
   return () => {

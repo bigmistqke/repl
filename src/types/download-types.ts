@@ -1,7 +1,7 @@
-import { transformModulePaths } from 'src/transform/transform-module-paths'
-import { defer } from 'src/utils/defer.ts'
-import { isUrl, resolvePath } from 'src/utils/path'
+import { defer } from '@bigmistqke/repl'
 import type TS from 'typescript'
+import { PathUtils } from '../index.ts'
+import { transformModulePaths } from '../transform/transform-module-paths.ts'
 
 function isRelativePath(path: string) {
   return path.startsWith('.')
@@ -80,26 +80,32 @@ export async function downloadTypesFromUrl({
 
     const promises = new Array<Promise<any>>()
 
-    const transformedCode = transformModulePaths({ ts, source })(modulePath => {
-      if (isRelativePath(modulePath)) {
-        let newPath = resolvePath(path, modulePath)
-        promises.push(downloadPath(normalizePath(newPath)))
+    const transformedCode = transformModulePaths({
+      ts,
+      source,
+      transform(modulePath) {
+        if (isRelativePath(modulePath)) {
+          let newPath = PathUtils.resolvePath(path, modulePath)
+          promises.push(downloadPath(normalizePath(newPath)))
 
-        return normalizePath(modulePath)
-      } else if (isUrl(modulePath)) {
-        promises.push(
-          downloadTypesFromUrl({
-            ts,
-            url: modulePath,
-            declarationFiles,
-            cdn,
-          }),
-        )
-        return getVirtualPath(modulePath)
-      } else {
-        promises.push(downloadTypesfromPackageName({ name: modulePath, declarationFiles, cdn, ts }))
-      }
-      return modulePath
+          return normalizePath(modulePath)
+        } else if (PathUtils.isUrl(modulePath)) {
+          promises.push(
+            downloadTypesFromUrl({
+              ts,
+              url: modulePath,
+              declarationFiles,
+              cdn,
+            }),
+          )
+          return getVirtualPath(modulePath)
+        } else {
+          promises.push(
+            downloadTypesfromPackageName({ name: modulePath, declarationFiles, cdn, ts }),
+          )
+        }
+        return modulePath
+      },
     })
 
     if (!transformedCode) {
@@ -108,7 +114,7 @@ export async function downloadTypesFromUrl({
 
     await Promise.all(promises)
 
-    declarationFiles[virtualPath] = transformedCode
+    declarationFiles[virtualPath] = transformedCode()
   }
 
   await downloadPath(url)
