@@ -54,7 +54,7 @@ export async function inject(
 
   await waitForLoad(element)
 
-  return () => contentWindow!.document.head.removeChild(element)
+  return () => contentWindow.document.head.removeChild(element)
 }
 
 /**

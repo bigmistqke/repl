@@ -45,7 +45,7 @@ export function createFileUrlSystem({
         const result = readFile(path)
         if (result === undefined) return 0
         if (result instanceof Promise) {
-          return result.then(result => (result === undefined ? 0 : result)).catch(() => 0)
+          return result.catch(() => 0)
         }
         return result
       } catch {
@@ -72,7 +72,7 @@ export function createFileUrlSystem({
           const transformer = createMemo(
             when(source, source => {
               if (source && extensions[extension]?.transform) {
-                return extensions[extension]?.transform?.({
+                return extensions[extension].transform({
                   path,
                   source,
                   fileUrls: api,

@@ -85,7 +85,7 @@ export async function downloadTypesFromUrl({
       source,
       transform(modulePath) {
         if (isRelativePath(modulePath)) {
-          let newPath = PathUtils.resolvePath(path, modulePath)
+          const newPath = PathUtils.resolvePath(path, modulePath)
           promises.push(downloadPath(normalizePath(newPath)))
 
           return normalizePath(modulePath)
@@ -107,10 +107,6 @@ export async function downloadTypesFromUrl({
         return modulePath
       },
     })
-
-    if (!transformedCode) {
-      throw new Error(`Transform returned undefined for ${virtualPath}`)
-    }
 
     await Promise.all(promises)
 

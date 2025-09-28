@@ -58,7 +58,7 @@ export function bindMonacoToFileSystem(props: {
 
   createEffect(() => {
     const uri = props.monaco.Uri.parse(`file:///${props.path}`)
-    let type = getType(props.path)
+    const type = getType(props.path)
     const model =
       props.monaco.editor.getModel(uri) || props.monaco.editor.createModel('', type, uri)
     props.editor.setModel(model)
@@ -68,7 +68,7 @@ export function bindMonacoToFileSystem(props: {
       () => client()?.getSemanticDiagnostics(props.readFile(props.path)),
     )
     createEffect(() => {
-      console.log('diagnosis', diagnosis())
+      console.info('diagnosis', diagnosis())
     })
   })
 

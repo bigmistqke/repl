@@ -47,11 +47,9 @@ export function transformModulePaths({
     const transformedRanges: Array<Range> = []
 
     for (const { start, end, path, isImport } of ranges) {
-      console.log('TRANSFORM MODULE PATH', path)
-
       const replacement = transform(path, isImport)
       transformedRanges.push({ start, end, path, isImport })
-      if (replacement !== null && replacement !== path) {
+      if (replacement !== path) {
         edits.push({ start, end, replacement })
         modified = true
       }
@@ -93,7 +91,6 @@ export function defaultTransformModulePaths({
     ts,
     source,
     transform(modulePath) {
-      console.log('MODULE PATH', modulePath)
       if (modulePath.startsWith('.')) {
         // Swap relative module-path out with their respective module-url
         const { resolvedModule } = ts.resolveModuleName(modulePath, path, compilerOptions, {

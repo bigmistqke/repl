@@ -22,6 +22,14 @@
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
   "scripts": {
     "demo": "vite serve demo",
     "build": "vite build .",
@@ -31,7 +39,7 @@
     "format": "prettier -w \"src/**/*.{js,ts,json,css,tsx,jsx}\" \"dev/**/*.{js,ts,json,css,tsx,jsx}\" \"demo/**/*.{js,ts,json,css,tsx,jsx}\"",
     "lint": "concurrently pnpm:lint:*",
     "lint:circular": "dpdm src/index.ts",
-    "lint:code": "eslint --ignore-path .gitignore --max-warnings 0 src/**/*.{js,ts,tsx,jsx}",
+    "lint:code": "eslint --max-warnings 0 \"src/**/*.ts\"",
     "lint:types": "tsc --noEmit",
     "optimize": "vite optimize",
     "prepublishOnly": "pnpm lint && pnpm build",
@@ -41,13 +49,9 @@
     "test:ssr": "pnpm run test:client --mode ssr",
     "update-deps": "pnpm up -Li"
   },
-  "exports": {
-    ".": {
-      "import": {
-        "types": "./dist/index.d.ts",
-        "default": "./dist/index.js"
-      }
-    }
+  "dependencies": {
+    "@bigmistqke/solid-whenever": "^0.1.1",
+    "@solid-primitives/set": "^0.7.1"
   },
   "peerDependencies": {
     "@babel/standalone": "^7.26.6",
@@ -70,9 +74,12 @@
     "@solid-primitives/map": "^0.7.1",
     "@solidjs/router": "^0.15.2",
     "@types/babel__standalone": "^7.1.9",
+    "@typescript-eslint/eslint-plugin": "^8.44.1",
+    "@typescript-eslint/parser": "^8.44.1",
     "concurrently": "^8.2.0",
     "domhandler": "^5.0.3",
     "dpdm": "^3.14.0",
+    "eslint": "^9.36.0",
     "prettier": "3.0.0",
     "typescript": "^5.1.6",
     "vite": "^4.4.6",
@@ -94,9 +101,5 @@
     "node": ">=18",
     "pnpm": ">=8.6.0"
   },
-  "packageManager": "pnpm@9.1.1",
-  "dependencies": {
-    "@bigmistqke/solid-whenever": "^0.1.1",
-    "@solid-primitives/set": "^0.7.1"
-  }
+  "packageManager": "pnpm@9.1.1"
 }

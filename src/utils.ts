@@ -6,6 +6,7 @@ import {
   createRoot,
   type EffectFunction,
   getListener,
+  type InitializedResource,
   onCleanup,
   untrack,
 } from 'solid-js'
@@ -66,14 +67,16 @@ export function createAsync<T>(
     deferStream?: boolean
   },
 ): AccessorWithLatest<T | undefined> {
-  let resource: () => T
-  let prev = () =>
+  let resource: InitializedResource<T> | null = null
+
+  const prev = () =>
     !resource || (resource as any).state === 'unresolved' ? undefined : (resource as any).latest
-  ;[resource] = createResource(
+
+  resource = createResource(
     () => fn(untrack(prev)),
     v => v,
     options as any,
-  )
+  )[0]
 
   const resultAccessor: AccessorWithLatest<T> = (() => resource()) as any
   Object.defineProperty(resultAccessor, 'latest', {
