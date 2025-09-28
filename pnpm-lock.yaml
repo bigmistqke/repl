@@ -11,6 +11,9 @@ importers:
       '@babel/standalone':
         specifier: ^7.26.6
         version: 7.26.7
+      '@bigmistqke/solid-whenever':
+        specifier: ^0.1.0
+        version: 0.1.0(solid-js@1.9.4)
       '@solid-primitives/set':
         specifier: ^0.7.1
         version: 0.7.1(solid-js@1.9.4)
@@ -196,6 +199,12 @@ packages:
 
   '@bigmistqke/solid-grid-split@0.0.2':
     resolution: {integrity: sha512-SbAZrBMc+hcQsHvGT/xzIVQH5vBsA4dLzOQVgKJ+1aQOd2NtbAu1jIEaR6EpxIJwyLZ1ZJ2VQtdZw7VdRyFB2g==}
+    engines: {node: '>=18', pnpm: '>=9.0.0'}
+    peerDependencies:
+      solid-js: ^1.6.0
+
+  '@bigmistqke/solid-whenever@0.1.0':
+    resolution: {integrity: sha512-y17srABV22S0thB5suLp7lgNI4O8CXTrmx5FOO02dLx1BGqfTHmdxoo+RnyBLXhMtEwwuGCgQcpFgwvxfYs/2A==}
     engines: {node: '>=18', pnpm: '>=9.0.0'}
     peerDependencies:
       solid-js: ^1.6.0
@@ -1639,6 +1648,10 @@ snapshots:
       solid-js: 1.9.4
 
   '@bigmistqke/solid-grid-split@0.0.2(solid-js@1.9.4)':
+    dependencies:
+      solid-js: 1.9.4
+
+  '@bigmistqke/solid-whenever@0.1.0(solid-js@1.9.4)':
     dependencies:
       solid-js: 1.9.4
 

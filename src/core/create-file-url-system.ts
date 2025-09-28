@@ -1,7 +1,7 @@
+import { when } from '@bigmistqke/solid-whenever'
 import { Accessor, createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
 import { accessMaybe } from 'src/utils/access-maybe.ts'
 import { ReactiveRefCount } from 'src/utils/reactive-ref-count.ts'
-import { when } from 'src/utils/when.ts'
 import type { Extension, FileUrlSystem } from '../types.ts'
 import { createAsync } from '../utils/create-async.ts'
 import { getExtension } from '../utils/path.ts'
@@ -19,7 +19,7 @@ interface FileUrlApi {
  * For each file, an object URL is automatically created and kept up-to-date whenever the file
  * content or its transformation changes.
  *
- * @param readFile -
+ * @param readFile A function that reads file content by path, returning string, Promise<string>, or undefined.
  * @param extensions - A map of file extensions to their transformation behavior and MIME types.
  *
  * @returns An API with the following methods:

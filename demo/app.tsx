@@ -6,6 +6,7 @@
 
 import { FileType, getExtension } from '@bigmistqke/repl'
 import { Split } from '@bigmistqke/solid-grid-split'
+import { every, whenEffect, whenMemo } from '@bigmistqke/solid-whenever'
 import { type WorkerProxy } from '@bigmistqke/worker-proxy'
 import loader from '@monaco-editor/loader'
 import { languages } from 'monaco-editor'
@@ -23,7 +24,6 @@ import {
 import { Show } from 'solid-js/web'
 import demo from './demo'
 import './styles.css'
-import { every, whenEffect, whenMemo } from './utils/conditionals'
 import { type Methods } from './worker/fs.worker'
 import Worker from './worker/fs.worker?worker'
 

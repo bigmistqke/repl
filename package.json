@@ -94,6 +94,7 @@
   },
   "packageManager": "pnpm@9.1.1",
   "dependencies": {
+    "@bigmistqke/solid-whenever": "^0.1.0",
     "@solid-primitives/set": "^0.7.1"
   }
 }
