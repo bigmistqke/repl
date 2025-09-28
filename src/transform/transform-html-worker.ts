@@ -3,7 +3,7 @@ import type { Element } from 'domhandler'
 import { findAll, getAttributeValue, hasAttrib } from 'domutils'
 import { parseDocument } from 'htmlparser2'
 import type { Accessor } from 'solid-js'
-import { PathUtils } from '../index.ts'
+import * as PathUtils from '../path-utils.ts'
 import type { TransformConfig } from '../types.ts'
 
 export interface TransformHtmlWorkerConfig extends TransformConfig {

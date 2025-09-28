@@ -1,7 +1,7 @@
-import { createAsync } from '@bigmistqke/repl'
 import type * as Monaco from 'monaco-editor'
 import { createEffect, mapArray, mergeProps, onCleanup } from 'solid-js'
-import { PathUtils } from '../index.ts'
+import * as PathUtils from '../path-utils.ts'
+import { createAsync } from '../utils.ts'
 
 export function bindMonacoToFileSystem(props: {
   editor: Monaco.editor.IStandaloneCodeEditor

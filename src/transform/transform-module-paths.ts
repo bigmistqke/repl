@@ -1,5 +1,5 @@
 import type TS from 'typescript'
-import { PathUtils } from '../index.ts'
+import * as PathUtils from '../path-utils.ts'
 import type { FileUrlSystem } from '../types.ts'
 
 interface Range {

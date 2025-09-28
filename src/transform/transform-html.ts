@@ -1,5 +1,5 @@
 import type { Accessor } from 'solid-js'
-import { PathUtils } from '../index.ts'
+import * as PathUtils from '../path-utils.ts'
 import type { TransformConfig } from '../types.ts'
 
 // Create a new DOMParser and XMLSerializer-instance

@@ -25,7 +25,7 @@
     "types": ["vite/client", "@bigmistqke/vite-plugin-worker-proxy/client"],
     "verbatimModuleSyntax": true,
     "paths": {
-      "@bigmistqke/repl": ["src/utils.ts"]
+      "@bigmistqke/repl": ["src/index.ts"]
     }
   },
   "include": ["src", "dev/extensions"]

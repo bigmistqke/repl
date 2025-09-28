@@ -1,9 +1,8 @@
-import { accessMaybe, ReactiveRefCount } from '@bigmistqke/repl'
 import { when } from '@bigmistqke/solid-whenever'
 import { type Accessor, createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
-import { PathUtils } from '../index.ts'
+import * as PathUtils from '../path-utils.ts'
 import type { Extension, FileUrlSystem } from '../types.ts'
-import { createAsync } from '../utils.ts'
+import { accessMaybe, createAsync, ReactiveRefCount } from '../utils.ts'
 import { createFileUrl } from './create-file-url.ts'
 
 interface FileUrlApi {
