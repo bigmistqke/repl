@@ -15,6 +15,7 @@
   - [Convenience Utilities](#convenience-utilities)
 - [Utilities](#utilities)
   - [transformModulePaths](#transformmodulepaths)
+  - [getModulePathRanges](#getmodulepathranges)
   - [transformHtml](#transformhtml)
   - [transformHtmlWorker](#transformhtmlworker)
   - [babelTransform](#babeltransform)
@@ -232,6 +233,30 @@ const transformed = transformModulePaths({
   }
 })
 ```
+
+### getModulePathRanges
+
+Extract all module path ranges from TypeScript source code. This utility finds import and export declarations and returns their module specifier positions:
+
+```tsx
+import { getModulePathRanges } from '@bigmistqke/repl'
+
+const ranges = getModulePathRanges({
+  ts,
+  source: `
+    import { foo } from "./bar.js"
+    export { baz } from "../qux.ts"
+  `
+})
+
+// Returns:
+// [
+//   { start: 21, end: 30, path: "./bar.js", isImport: true },
+//   { start: 53, end: 63, path: "../qux.ts", isImport: false }
+// ]
+```
+
+This is useful for analyzing module dependencies, building custom transformations, or creating tooling that needs to understand module structure.
 
 ### transformHtml
 
