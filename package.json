@@ -34,7 +34,7 @@
     "build": "vite build .",
     "build:dev": "vite build dev",
     "dev": "vite serve dev",
-    "format": "prettier -w \"src/**/*.{js,ts,json,css,tsx,jsx}\" \"dev/**/*.{js,ts,json,css,tsx,jsx}\" \"demo/**/*.{js,ts,json,css,tsx,jsx}\"",
+    "format": "prettier -w \"src/**/*.{js,ts,json,css,tsx,jsx}\" \"dev/**/*.{js,ts,json,css,tsx,jsx}\"",
     "lint": "concurrently pnpm:lint:*",
     "lint:circular": "dpdm src/index.ts",
     "lint:code": "eslint --max-warnings 0 \"src/**/*.ts\"",
