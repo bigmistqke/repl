@@ -28,17 +28,17 @@ export function resolvePath(currentPath: string, relativePath: string) {
       return `${base}/${relativePath.replace(/^\.\//, '')}`
     }
   }
-  
+
   // Split paths and remove filename from current path
   const baseParts = currentPath.split('/').slice(0, -1)
   const relativeParts = relativePath.split('/').filter(part => part !== '' && part !== '.')
-  
+
   // Determine if we're working with a relative base path
   const isRelativeBase = currentPath.startsWith('../') || currentPath.startsWith('./')
-  
+
   // Build the result path
   const resultParts = [...baseParts]
-  
+
   for (const part of relativeParts) {
     if (part === '..') {
       if (resultParts.length > 0 && resultParts[resultParts.length - 1] !== '..') {
@@ -57,20 +57,20 @@ export function resolvePath(currentPath: string, relativePath: string) {
       resultParts.push(part)
     }
   }
-  
+
   // Handle empty result
   if (resultParts.length === 0) {
     return relativeParts[relativeParts.length - 1] || ''
   }
-  
+
   // Join and clean up
   let result = resultParts.join('/')
-  
+
   // Remove leading './' only for non-relative results
   if (result.startsWith('./') && !result.includes('../')) {
     result = result.substring(2)
   }
-  
+
   return result
 }
 

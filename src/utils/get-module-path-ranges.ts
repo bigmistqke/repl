@@ -38,10 +38,10 @@ export interface GetModulePathRangesOptions {
  * // Returns: [{ start: 21, end: 30, path: "./bar.js", isImport: true }]
  * ```
  */
-export function getModulePathRanges({ 
-  ts, 
-  source, 
-  include = { imports: true, exports: true, dynamicImports: true } 
+export function getModulePathRanges({
+  ts,
+  source,
+  include = { imports: true, exports: true, dynamicImports: true },
 }: GetModulePathRangesOptions) {
   const sourceFile = ts.createSourceFile('', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
 
@@ -55,13 +55,13 @@ export function getModulePathRanges({
       ts.isStringLiteral(node.moduleSpecifier)
     ) {
       const isImport = ts.isImportDeclaration(node)
-      
+
       // Check if this type should be included
       if ((isImport && !include.imports) || (!isImport && !include.exports)) {
         ts.forEachChild(node, collect)
         return
       }
-      
+
       const text = node.moduleSpecifier.text
       const start = node.moduleSpecifier.getStart(sourceFile) + 1 // skip quote
       const end = node.moduleSpecifier.getEnd() - 1 // skip quote
@@ -75,7 +75,7 @@ export function getModulePathRanges({
         ts.forEachChild(node, collect)
         return
       }
-      
+
       const arg = node.arguments[0]
       if (arg && ts.isStringLiteral(arg)) {
         const text = arg.text

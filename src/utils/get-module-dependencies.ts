@@ -20,41 +20,41 @@ export interface ModuleDependencies {
 
 /**
  * Analyzes a TypeScript/JavaScript module and its dependencies to extract all local files and external packages.
- * 
+ *
  * This function recursively walks through a module's dependency tree, starting from an entry point,
  * and collects:
  * - **Local dependencies**: Relative imports (files with content)
  * - **External dependencies**: Package names and URLs (npm packages, CDN URLs, etc.)
- * 
+ *
  * @param options - Configuration for dependency analysis
  * @param options.entry - The entry file path to start analysis from
  * @param options.readFile - Async function to read file contents by path
  * @param options.ts - TypeScript compiler API instance
  * @param options.include - Optional filters for which types of imports/exports to include
  * @param options.include.imports - Include static import statements (default: true)
- * @param options.include.exports - Include export re-export statements (default: true)  
+ * @param options.include.exports - Include export re-export statements (default: true)
  * @param options.include.dynamicImports - Include dynamic import() calls (default: true)
- * 
+ *
  * @returns Promise resolving to an object containing local files with their content and external dependency names
- * 
+ *
  * @example
  * ```typescript
  * import * as ts from 'typescript'
  * import { getModuleDependencies } from './get-module-dependencies'
- * 
+ *
  * const result = await getModuleDependencies({
  *   entry: 'src/index.ts',
  *   readFile: async (path) => await fs.readFile(path, 'utf-8'),
  *   ts
  * })
- * 
+ *
  * console.log('Local files:', Object.keys(result.local))
  * // => ['src/index.ts', 'src/utils.ts', 'src/components/Button.ts']
- * 
+ *
  * console.log('External packages:', result.external)
  * // => ['react', 'lodash', '@mui/material']
  * ```
- * 
+ *
  * @example
  * ```typescript
  * // Only analyze static imports, exclude exports and dynamic imports
@@ -62,14 +62,14 @@ export interface ModuleDependencies {
  *   entry: 'app.ts',
  *   readFile,
  *   ts,
- *   include: { 
- *     imports: true, 
- *     exports: false, 
- *     dynamicImports: false 
+ *   include: {
+ *     imports: true,
+ *     exports: false,
+ *     dynamicImports: false
  *   }
  * })
  * ```
- * 
+ *
  * @example
  * ```typescript
  * // Example input file content:
@@ -78,13 +78,13 @@ export interface ModuleDependencies {
  * //   import { helper } from './utils.ts'
  * //   const dynamic = await import('lodash')
  * //   export { Button } from '@mui/material'
- * 
+ *
  * const result = await getModuleDependencies({
  *   entry: 'src/index.ts',
  *   readFile,
  *   ts
  * })
- * 
+ *
  * // Result:
  * // {
  * //   local: {
