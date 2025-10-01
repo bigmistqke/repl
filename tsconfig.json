@@ -28,5 +28,5 @@
       "@bigmistqke/repl": ["src/index.ts"]
     }
   },
-  "include": ["src", "dev/extensions"]
+  "include": ["src", "dev/extensions", "node/demo.ts"]
 }
