@@ -1,7 +1,7 @@
 import type TS from 'typescript'
-import * as PathUtils from '../path-utils.ts'
-import { transformModulePaths } from '../transform/transform-module-paths.ts'
-import { defer } from '../utils.ts'
+import * as PathUtils from './path-utils.ts'
+import { transformModulePaths } from './transform-module-paths.ts'
+import { defer } from './utils.ts'
 
 function isRelativePath(path: string) {
   return path.startsWith('.')

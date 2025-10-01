@@ -1,4 +1,4 @@
-import { defer } from '../utils.ts'
+import { defer } from '../utils/utils.ts'
 
 /**
  * Waits for an iframe to have a `contentWindow` available and returns it.

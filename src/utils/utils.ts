@@ -10,7 +10,7 @@ import {
   onCleanup,
   untrack,
 } from 'solid-js'
-import { type AccessorMaybe } from './types.ts'
+import { type AccessorMaybe } from '../types.ts'
 
 /**********************************************************************************/
 /*                                                                                */

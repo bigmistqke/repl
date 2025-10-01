@@ -2,7 +2,7 @@ import type * as Monaco from 'monaco-editor'
 import { createEffect, createSignal } from 'solid-js'
 import { createStore } from 'solid-js/store'
 import type TS from 'typescript'
-import { downloadTypesfromPackageName } from '../types/download-types.ts'
+import { downloadTypesfromPackageName } from '../download-types.ts'
 import { mapObject } from '../utils.ts'
 
 /**

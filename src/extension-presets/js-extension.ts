@@ -1,6 +1,6 @@
 import type TS from 'typescript'
-import { defaultTransformModulePaths } from '../transform/transform-module-paths.ts'
 import type { TransformConfig } from '../types.ts'
+import { defaultTransformModulePaths } from '../utils/transform-module-paths.ts'
 
 export interface JSExtensionConfig {
   cdn?: string
