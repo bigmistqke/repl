@@ -16,6 +16,7 @@
 - [Utilities](#utilities)
   - [transformModulePaths](#transformmodulepaths)
   - [getModulePathRanges](#getmodulepathranges)
+  - [getModuleDependencies](#getmoduledependencies)
   - [transformHtml](#transformhtml)
   - [transformHtmlWorker](#transformhtmlworker)
   - [babelTransform](#babeltransform)
@@ -257,6 +258,62 @@ const ranges = getModulePathRanges({
 ```
 
 This is useful for analyzing module dependencies, building custom transformations, or creating tooling that needs to understand module structure.
+
+### getModuleDependencies
+
+Analyze a TypeScript/JavaScript module and its dependencies to extract all local files and external packages. This function recursively walks through a module's dependency tree and returns both local files (with their content) and external dependencies (package names and URLs):
+
+```tsx
+import { getModuleDependencies } from '@bigmistqke/repl'
+import * as ts from 'typescript'
+
+const result = await getModuleDependencies({
+  entry: 'src/index.ts',
+  readFile: async (path) => await fs.readFile(path, 'utf-8'),
+  ts
+})
+
+console.log('Local files:', Object.keys(result.local))
+// => ['src/index.ts', 'src/utils.ts', 'src/components/Button.ts']
+
+console.log('External packages:', result.external)
+// => ['react', 'lodash', '@mui/material']
+```
+
+**Selective analysis with include options:**
+
+```tsx
+// Only analyze static imports, exclude exports and dynamic imports
+const result = await getModuleDependencies({
+  entry: 'app.ts',
+  readFile,
+  ts,
+  include: { 
+    imports: true, 
+    exports: false, 
+    dynamicImports: false 
+  }
+})
+```
+
+**Return structure:**
+
+```tsx
+interface ModuleDependencies {
+  local: Record<string, string>  // File paths mapped to their content
+  external: string[]             // External package names and URLs
+}
+```
+
+**Use cases:**
+
+- **Bundle analyzers**: Understand what gets included in your bundle
+- **Dependency visualization**: Map out your project's dependency graph  
+- **Code splitting**: Identify which files to group together
+- **Package extraction**: Find all external dependencies for package.json generation
+- **Static analysis**: Analyze codebases without executing them
+
+This is particularly useful for building development tools, bundlers, or any system that needs to understand module relationships and dependencies.
 
 ### transformHtml
 
