@@ -18,28 +18,7 @@ export function transformModulePaths({
   source: string
   transform(path: string, isImport: boolean): string
 }) {
-  const sourceFile = ts.createSourceFile('', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
-
-  const ranges: Array<Range> = []
-
-  function collect(node: TS.Node) {
-    if (
-      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
-      node.moduleSpecifier &&
-      ts.isStringLiteral(node.moduleSpecifier)
-    ) {
-      const isImport = ts.isImportDeclaration(node)
-      const text = node.moduleSpecifier.text
-      const start = node.moduleSpecifier.getStart(sourceFile) + 1 // skip quote
-      const end = node.moduleSpecifier.getEnd() - 1 // skip quote
-
-      ranges.push({ start, end, path: text, isImport })
-    }
-
-    ts.forEachChild(node, collect)
-  }
-
-  collect(sourceFile)
+  const ranges = getModulePathRanges({ source, ts })
 
   return () => {
     let modified = false
@@ -119,4 +98,33 @@ export function defaultTransformModulePaths({
       }
     },
   })
+}
+
+export function getModulePathRanges({ ts, source }: { ts: typeof TS; source: string }) {
+  const sourceFile = ts.createSourceFile('', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
+
+  const ranges: Array<Range> = []
+
+  const stack: Array<TS.Node> = [sourceFile]
+
+  let node: TS.Node | undefined
+
+  while ((node = stack.shift())) {
+    if (
+      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+      node.moduleSpecifier &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    ) {
+      const isImport = ts.isImportDeclaration(node)
+      const text = node.moduleSpecifier.text
+      const start = node.moduleSpecifier.getStart(sourceFile) + 1 // skip quote
+      const end = node.moduleSpecifier.getEnd() - 1 // skip quote
+
+      ranges.push({ start, end, path: text, isImport })
+    }
+
+    ts.forEachChild(node, child => stack.push(child))
+  }
+
+  return ranges
 }

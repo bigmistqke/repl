@@ -1,3 +1,4 @@
+import { ModuleKind, ScriptTarget } from 'typescript'
 import { createHTMLExtension } from '../extensions/html-extension.ts'
 import { createJSExtension, type JSExtensionConfig } from '../extensions/js-extension.ts'
 import type { Extension } from '../types.ts'
@@ -12,14 +13,34 @@ export interface DefaultFileUrlSystemConfig
 export function defaultFileUrlSystem({
   extensions,
   transformJs,
-  ...config
+  compilerOptions,
+  readFile,
+  ...rest
 }: DefaultFileUrlSystemConfig) {
-  const jsExtension = createJSExtension({ ...config, transform: transformJs })
+  const jsExtension = createJSExtension({
+    ...rest,
+    compilerOptions: {
+      lib: ['ES2021'],
+      target: ScriptTarget.ES2015,
+      module: ModuleKind.ESNext,
+      esModuleInterop: true,
+      sourceMap: true,
+      composite: true,
+      declaration: true,
+      strict: true,
+      skipLibCheck: true,
+      noUnusedLocals: true,
+      noUnusedParameters: true,
+      ...compilerOptions,
+    },
+    readFile,
+    transform: transformJs,
+  })
   const tsExtension = jsExtension.extend({ transpile: true })
   const htmlExtension = createHTMLExtension({ transformModule: jsExtension.transform })
 
   return createFileUrlSystem({
-    readFile: config.readFile,
+    readFile,
     extensions: {
       css: { type: 'css' },
       js: jsExtension,

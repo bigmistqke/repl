@@ -1,6 +1,6 @@
 import { defaultFileUrlSystem } from '@bigmistqke/repl'
 import { createFileSystem } from '@bigmistqke/solid-fs-components'
-import { createEffect, createSignal } from 'solid-js'
+import { createSignal } from 'solid-js'
 import ts from 'typescript'
 import './index.css'
 
@@ -14,25 +14,14 @@ export const App = () => {
   const [selectedPath, setSelectedPath] = createSignal<string>('index.html')
 
   fs.writeFile('index.css', `body { font-size: 32pt; }`)
-  fs.writeFile('index2.html', 'hallo')
-
-  console.log(fileUrls.get('index2.html'))
-
-  setTimeout(() => {
-    fs.rm('index2.html')
-
-    createEffect(() => console.log("fileUrls.get('index2.html')", fileUrls.get('index2.html')))
-
-    setTimeout(() => {
-      console.log('write file')
-      fs.writeFile('index2.html', 'haloooo')
-    }, 1_000)
-  }, 1_000)
+  fs.writeFile('maths.ts', 'export function sum(a: number, b: number){ return a + b }')
 
   fs.writeFile(
     'main.ts',
-    `function randomValue(){
-  return 200 + Math.random() * 50
+    `import {sum} from "./maths.ts"
+    
+function randomValue(){
+  return sum(200, Math.random() * 50)
 }
     
 function randomColor(){
@@ -46,7 +35,7 @@ setInterval(randomColor, 2000)`,
   fs.writeFile(
     'index.html',
     `<head>
-  <script src="./main.ts"></script>
+  <script src="./main.ts" type="module"></script>
 <link rel="stylesheet" href="./index.css"></link>
 </head>
 <body>
@@ -64,6 +53,7 @@ hallo world 👋
         <Button path="index.html" />
         <Button path="index.css" />
         <Button path="main.ts" />
+        <Button path="maths.ts" />
       </div>
       <textarea
         oninput={e => {
