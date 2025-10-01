@@ -31,10 +31,8 @@
     }
   },
   "scripts": {
-    "demo": "vite serve demo",
     "build": "vite build .",
-    "build:demo-lib": "vite build --config vite.config.demo.ts",
-    "build:demo": "vite build demo",
+    "build:dev": "vite build dev",
     "dev": "vite serve dev",
     "format": "prettier -w \"src/**/*.{js,ts,json,css,tsx,jsx}\" \"dev/**/*.{js,ts,json,css,tsx,jsx}\" \"demo/**/*.{js,ts,json,css,tsx,jsx}\"",
     "lint": "concurrently pnpm:lint:*",
