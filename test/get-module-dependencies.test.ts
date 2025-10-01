@@ -630,4 +630,161 @@ describe('walkModulePaths', () => {
       })
     })
   })
+
+  describe('multiple entry points', () => {
+    it('should handle array of entry points', async () => {
+      const files = {
+        'main.ts': 'import { shared } from "./shared.ts"',
+        'worker.ts': 'import { shared } from "./shared.ts"; import { util } from "./util.ts"',
+        'shared.ts': 'export const shared = "shared"',
+        'util.ts': 'export const util = "util"',
+      }
+      const { readFile } = createMockFileSystem(files)
+
+      const result = await getModuleDependencies({
+        entry: ['main.ts', 'worker.ts'],
+        readFile,
+        ts,
+      })
+
+      expect(result).toEqual({
+        local: files,
+        external: [],
+      })
+    })
+
+    it('should handle duplicate entries without duplicating work', async () => {
+      let readCount = 0
+      const files: Record<string, string> = {
+        'index.ts': 'import { helper } from "./helper.ts"',
+        'helper.ts': 'export const helper = "helper"',
+      }
+      
+      const trackingReadFile = async (path: string) => {
+        readCount++
+        if (!(path in files)) {
+          throw new Error(`File not found: ${path}`)
+        }
+        return files[path]
+      }
+
+      const result = await getModuleDependencies({
+        entry: ['index.ts', 'index.ts', 'index.ts'],
+        readFile: trackingReadFile,
+        ts,
+      })
+
+      expect(result).toEqual({
+        local: files,
+        external: [],
+      })
+      // Each file should only be read once
+      expect(readCount).toBe(2)
+    })
+
+    it('should collect external dependencies from all entry points', async () => {
+      const files = {
+        'app.ts': 'import React from "react"; import { helper } from "./helper.ts"',
+        'worker.ts': 'import axios from "axios"; import lodash from "lodash"',
+        'polyfills.ts': 'import "core-js/stable"; import "regenerator-runtime/runtime"',
+        'helper.ts': 'export const helper = () => {}',
+      }
+      const { readFile } = createMockFileSystem(files)
+
+      const result = await getModuleDependencies({
+        entry: ['app.ts', 'worker.ts', 'polyfills.ts'],
+        readFile,
+        ts,
+      })
+
+      expect(result).toEqual({
+        local: {
+          'app.ts': files['app.ts'],
+          'worker.ts': files['worker.ts'],
+          'polyfills.ts': files['polyfills.ts'],
+          'helper.ts': files['helper.ts'],
+        },
+        external: ['react', 'axios', 'lodash', 'core-js/stable', 'regenerator-runtime/runtime'],
+      })
+    })
+
+    it('should handle shared dependencies between multiple entry points', async () => {
+      const files = {
+        'client.ts': `
+          import { api } from "./shared/api.ts"
+          import { Button } from "@mui/material"
+        `,
+        'server.ts': `
+          import { api } from "./shared/api.ts"
+          import express from "express"
+        `,
+        'shared/api.ts': `
+          import axios from "axios"
+          export const api = axios.create()
+        `,
+      }
+      const { readFile } = createMockFileSystem(files)
+
+      const result = await getModuleDependencies({
+        entry: ['client.ts', 'server.ts'],
+        readFile,
+        ts,
+      })
+
+      expect(result).toEqual({
+        local: files,
+        external: ['@mui/material', 'express', 'axios'],
+      })
+    })
+
+    it('should handle empty array of entries', async () => {
+      const files = {
+        'index.ts': 'console.log("test")',
+      }
+      const { readFile } = createMockFileSystem(files)
+
+      const result = await getModuleDependencies({
+        entry: [],
+        readFile,
+        ts,
+      })
+
+      expect(result).toEqual({
+        local: {},
+        external: [],
+      })
+    })
+
+    it('should work with include options and multiple entries', async () => {
+      const files = {
+        'main.ts': `
+          import { static1 } from "./static.ts"
+          const dynamic = await import("lodash")
+        `,
+        'worker.ts': `
+          export { reexport } from "./reexport.ts"
+          import axios from "axios"
+        `,
+        'static.ts': 'export const static1 = "static"',
+        'reexport.ts': 'export const reexport = "reexport"',
+      }
+      const { readFile } = createMockFileSystem(files)
+
+      const result = await getModuleDependencies({
+        entry: ['main.ts', 'worker.ts'],
+        readFile,
+        ts,
+        include: { imports: true, exports: false, dynamicImports: false },
+      })
+
+      expect(result).toEqual({
+        local: {
+          'main.ts': files['main.ts'],
+          'worker.ts': files['worker.ts'],
+          'static.ts': files['static.ts'],
+        },
+        external: ['axios'],
+      })
+    })
+  })
 })

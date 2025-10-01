@@ -261,23 +261,31 @@ This is useful for analyzing module dependencies, building custom transformation
 
 ### getModuleDependencies
 
-Analyze a TypeScript/JavaScript module and its dependencies to extract all local files and external packages. This function recursively walks through a module's dependency tree and returns both local files (with their content) and external dependencies (package names and URLs):
+Analyze TypeScript/JavaScript modules and their dependencies to extract all local files and external packages. This function recursively walks through module dependency trees and returns both local files (with their content) and external dependencies (package names and URLs):
 
 ```tsx
 import { getModuleDependencies } from '@bigmistqke/repl'
 import * as ts from 'typescript'
 
+// Single entry point
 const result = await getModuleDependencies({
   entry: 'src/index.ts',
   readFile: async (path) => await fs.readFile(path, 'utf-8'),
   ts
 })
 
+// Multiple entry points
+const result = await getModuleDependencies({
+  entry: ['src/main.ts', 'src/worker.ts', 'src/polyfills.ts'],
+  readFile: async (path) => await fs.readFile(path, 'utf-8'),
+  ts
+})
+
 console.log('Local files:', Object.keys(result.local))
-// => ['src/index.ts', 'src/utils.ts', 'src/components/Button.ts']
+// => ['src/main.ts', 'src/worker.ts', 'src/polyfills.ts', 'src/shared/utils.ts', ...]
 
 console.log('External packages:', result.external)
-// => ['react', 'lodash', '@mui/material']
+// => ['react', 'lodash', '@mui/material', 'axios']
 ```
 
 **Selective analysis with include options:**
@@ -310,8 +318,10 @@ interface ModuleDependencies {
 - **Bundle analyzers**: Understand what gets included in your bundle
 - **Dependency visualization**: Map out your project's dependency graph  
 - **Code splitting**: Identify which files to group together
+- **Multi-entry bundlers**: Analyze dependencies across multiple entry points (main app, web workers, polyfills)
 - **Package extraction**: Find all external dependencies for package.json generation
 - **Static analysis**: Analyze codebases without executing them
+- **Monorepo tooling**: Analyze shared dependencies between packages
 
 This is particularly useful for building development tools, bundlers, or any system that needs to understand module relationships and dependencies.
 

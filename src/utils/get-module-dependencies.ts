@@ -3,7 +3,7 @@ import { getModulePathRanges, type ModulePathRange } from './get-module-path-ran
 import { resolvePath } from './path-utils.ts'
 
 export interface GetModuleDependenciesOptions {
-  entry: string
+  entry: string | string[]
   readFile(path: string): Promise<string>
   ts: typeof TS
   include?: {
@@ -27,7 +27,7 @@ export interface ModuleDependencies {
  * - **External dependencies**: Package names and URLs (npm packages, CDN URLs, etc.)
  *
  * @param options - Configuration for dependency analysis
- * @param options.entry - The entry file path to start analysis from
+ * @param options.entry - The entry file path(s) to start analysis from. Can be a single path or array of paths
  * @param options.readFile - Async function to read file contents by path
  * @param options.ts - TypeScript compiler API instance
  * @param options.include - Optional filters for which types of imports/exports to include
@@ -94,6 +94,19 @@ export interface ModuleDependencies {
  * //   external: ['react', 'lodash', '@mui/material']
  * // }
  * ```
+ * 
+ * @example
+ * ```typescript
+ * // Analyze multiple entry points
+ * const result = await getModuleDependencies({
+ *   entry: ['src/main.ts', 'src/worker.ts', 'src/polyfills.ts'],
+ *   readFile,
+ *   ts
+ * })
+ *
+ * console.log('All local files from all entries:', Object.keys(result.local))
+ * console.log('All external packages:', result.external)
+ * ```
  */
 export async function getModuleDependencies({
   entry,
@@ -129,11 +142,23 @@ export async function getModuleDependencies({
     )
   }
 
-  const source = await readFile(entry)
-  const ranges = getModulePathRanges({ source, ts, include })
-  local[entry] = source
+  async function processEntry(entryPath: string) {
+    if (visitedPaths.has(entryPath)) {
+      return
+    }
+    
+    visitedPaths.add(entryPath)
+    const source = await readFile(entryPath)
+    const ranges = getModulePathRanges({ source, ts, include })
+    local[entryPath] = source
 
-  await walk({ path: entry, ranges })
+    await walk({ path: entryPath, ranges })
+  }
+
+  // Handle both single entry and array of entries
+  const entries = Array.isArray(entry) ? entry : [entry]
+  
+  await Promise.all(entries.map(processEntry))
 
   return { local, external: Array.from(packages) }
 }
