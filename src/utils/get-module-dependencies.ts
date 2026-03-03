@@ -94,7 +94,7 @@ export interface ModuleDependencies {
  * //   external: ['react', 'lodash', '@mui/material']
  * // }
  * ```
- * 
+ *
  * @example
  * ```typescript
  * // Analyze multiple entry points
@@ -146,7 +146,7 @@ export async function getModuleDependencies({
     if (visitedPaths.has(entryPath)) {
       return
     }
-    
+
     visitedPaths.add(entryPath)
     const source = await readFile(entryPath)
     const ranges = getModulePathRanges({ source, ts, include })
@@ -157,7 +157,7 @@ export async function getModuleDependencies({
 
   // Handle both single entry and array of entries
   const entries = Array.isArray(entry) ? entry : [entry]
-  
+
   await Promise.all(entries.map(processEntry))
 
   return { local, external: Array.from(packages) }
