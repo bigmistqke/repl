@@ -45,7 +45,8 @@
     "test": "concurrently pnpm:test:*",
     "test:client": "vitest --run",
     "test:ssr": "pnpm run test:client --mode ssr",
-    "update-deps": "pnpm up -Li"
+    "update-deps": "pnpm up -Li",
+    "bump": "bumpp"
   },
   "dependencies": {
     "@bigmistqke/solid-whenever": "^0.1.1",
@@ -75,6 +76,7 @@
     "@types/node": "^24.6.1",
     "@typescript-eslint/eslint-plugin": "^8.44.1",
     "@typescript-eslint/parser": "^8.44.1",
+    "bumpp": "^10.4.1",
     "concurrently": "^8.2.0",
     "domhandler": "^5.0.3",
     "dpdm": "^3.14.0",
