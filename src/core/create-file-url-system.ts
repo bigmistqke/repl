@@ -64,46 +64,43 @@ export function createFileUrlSystem({
     })
 
     return createMemo(
-      when(
-        createMemo(() => !!source()),
-        () => {
-          const [listen, invalidate] = createSignal<void>(null!, { equals: false })
+      when(source, () => {
+        const [listen, invalidate] = createSignal<void>(null!, { equals: false })
 
-          const transformer = createMemo(
-            when(source, source => {
-              if (source && extensions[extension]?.transform) {
-                return extensions[extension].transform({
-                  path,
-                  source,
-                  fileUrls: api,
-                })
-              }
-              return source
-            }),
-          )
-
-          const transformedSource = createMemo(() => accessMaybe(transformer()))
-
-          const create = when(transformedSource, transformed => {
-            return createFileUrl(transformed, extensions[extension]?.type)
-          })
-
-          const get = createMemo(() => {
-            listen()
-            const url = create()
-            if (url) {
-              onCleanup(() => URL.revokeObjectURL(url))
+        const transformer = createMemo(
+          when(source, source => {
+            if (source && extensions[extension]?.transform) {
+              return extensions[extension].transform({
+                path,
+                source,
+                fileUrls: api,
+              })
             }
-            return url
-          })
+            return source
+          }),
+        )
 
-          return {
-            get,
-            create,
-            invalidate,
+        const transformedSource = createMemo(() => accessMaybe(transformer()))
+
+        const create = when(transformedSource, transformed => {
+          return createFileUrl(transformed, extensions[extension]?.type)
+        })
+
+        const get = createMemo(() => {
+          listen()
+          const url = create()
+          if (url) {
+            onCleanup(() => URL.revokeObjectURL(url))
           }
-        },
-      ),
+          return url
+        })
+
+        return {
+          get,
+          create,
+          invalidate,
+        }
+      }),
     )
   })
 

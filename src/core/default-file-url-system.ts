@@ -1,4 +1,3 @@
-import { ModuleKind, ScriptTarget } from 'typescript'
 import { createHTMLExtension } from '../extension-presets/html-extension.ts'
 import { createJSExtension, type JSExtensionConfig } from '../extension-presets/js-extension.ts'
 import type { Extension } from '../types.ts'
@@ -21,8 +20,8 @@ export function defaultFileUrlSystem({
     ...rest,
     compilerOptions: {
       lib: ['ES2021'],
-      target: ScriptTarget.ES2015,
-      module: ModuleKind.ESNext,
+      target: 2 /* ScriptTarget.ES2015 */,
+      module: 99 /* ModuleKind.ESNext */,
       esModuleInterop: true,
       sourceMap: true,
       composite: true,

@@ -1,4 +1,4 @@
-import * as TS from 'typescript'
+import type * as TS from 'typescript'
 import { getModulePathRanges, type ModulePathRange } from './get-module-path-ranges.ts'
 import { resolvePath } from './path-utils.ts'
 
