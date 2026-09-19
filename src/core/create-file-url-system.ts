@@ -20,6 +20,12 @@ interface FileUrlApi {
  * @param readFile A function that reads file content by path, returning string, Promise<string>, or undefined.
  * @param extensions - A map of file extensions to their transformation behavior and MIME types.
  *
+ * `get`/`create` read the file source directly: if it is still pending (a
+ * `Promise`) or errored, reading it suspends/throws like any other async
+ * Solid 2 computation — call them under a `<Loading>`/`<Errored>` boundary,
+ * or wrap the call in `latest()` if you want a non-suspending `| undefined`
+ * peek instead, e.g. `latest(() => fileUrls.get(path))`.
+ *
  * @returns An API with the following methods:
  * - `get(path: string): string | undefined` — Returns the current managed object URL for the given path.
  *   The URL is automatically revoked and recreated when the file or its transformation changes.
@@ -29,7 +35,7 @@ interface FileUrlApi {
  *
  * @example
  * const fileUrls = createFileUrlSystem(files, extensions);
- * const url = fileUrls.get('/src/index.js');
+ * const url = latest(() => fileUrls.get('/src/index.js'));
  * fileUrls.invalidate('/src/index.js'); // Forces a refresh
  */
 export function createFileUrlSystem({
@@ -40,24 +46,16 @@ export function createFileUrlSystem({
   extensions: Record<string, Extension>
 }): FileUrlSystem {
   const refCount = new ReactiveRefCount((path): Accessor<FileUrlApi | undefined> => {
-    const [sourceSignal, setSourceSignal] = createSignal<string | 0 | undefined>(() => {
-      try {
-        const result = readFile(path)
-        if (result === undefined) return 0
-        if (result instanceof Promise) {
-          return result.catch((): 0 => 0)
-        }
-        return result
-      } catch {
-        return 0
-      }
-    })
-    setSourceSignal(undefined)
-    const source = () => latest(sourceSignal)
+    // Just a computation that may return a Promise or throw — Solid's async
+    // model (Loading/Errored boundaries, `latest`) handles pending/error state.
+    // We do not collapse those into a sentinel here.
+    const source = createMemo(() => readFile(path))
     const extension = PathUtils.getExtension(path)
 
     createEffect(
-      () => refCount.isNull(path) && source() === 0,
+      // `latest` is used here only to peek at bookkeeping state without
+      // suspending/throwing — it never leaks into the public get()/create() API.
+      () => refCount.isNull(path) && latest(source) === undefined,
       shouldDelete => {
         // Only remove reference if
         // - nothing is referencing path and
