@@ -135,7 +135,7 @@ export class ReactiveRefCount<T> {
           })
           return value
         }),
-      )!
+      )
     }
   }
   memo<Next extends Prev, Prev = Next>(key: string, cb: ComputeFunction<Prev, Next>) {
