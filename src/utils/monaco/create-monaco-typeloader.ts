@@ -1,6 +1,5 @@
 import type * as Monaco from 'monaco-editor'
-import { createEffect, createSignal } from 'solid-js'
-import { createStore } from 'solid-js/store'
+import { createEffect, createSignal, createStore } from 'solid-js'
 import type TS from 'typescript'
 import { downloadTypesfromPackageName } from '../download-types.ts'
 import { mapObject } from '../utils.ts'
@@ -70,24 +69,35 @@ export function createMonacoTypeDownloader({
       return types
     },
     addDeclaration(path: string, source: string, alias?: string) {
-      setTypes(path, source)
+      setTypes(draft => {
+        draft[path] = source
+      })
       if (alias) {
         addAlias(alias, path)
       }
     },
     async downloadModule(name: string) {
       if (!(name in aliases())) {
-        const { types, path } = await downloadTypesfromPackageName({ name, ts })
-        setTypes(types)
+        const { types: newTypes, path } = await downloadTypesfromPackageName({ name, ts })
+        setTypes(draft => {
+          Object.assign(draft, newTypes)
+        })
         addAlias(name, path)
       }
     },
     // Watchers
     watchTsconfig(cb: (tsconfig: Monaco.languages.typescript.CompilerOptions) => void) {
-      createEffect(() => cb(methods.tsconfig()))
+      // compute tracks and produces the value; apply (untracked) invokes the callback.
+      createEffect(
+        () => methods.tsconfig(),
+        tsconfig => cb(tsconfig),
+      )
     },
     watchTypes(cb: (types: Record<string, string>) => void) {
-      createEffect(() => cb({ ...types }))
+      createEffect(
+        () => ({ ...types }),
+        types => cb(types),
+      )
     },
   }
 

@@ -1,7 +1,6 @@
 import type * as Monaco from 'monaco-editor'
-import { createEffect, mapArray, mergeProps, onCleanup } from 'solid-js'
+import { createEffect, createSignal, latest, mapArray, merge, onCleanup } from 'solid-js'
 import * as PathUtils from '../path-utils.ts'
-import { createAsync } from '../utils.ts'
 
 export function bindMonacoToFileSystem(props: {
   editor: Monaco.editor.IStandaloneCodeEditor
@@ -14,14 +13,18 @@ export function bindMonacoToFileSystem(props: {
   tsconfig?: Monaco.languages.typescript.CompilerOptions
   types?: Record<string, string>
 }) {
-  const languages = mergeProps(
+  const languages = merge(
     {
       tsx: 'typescript',
       ts: 'typescript',
     },
     () => props.languages,
   )
-  const worker = createAsync(() => props.monaco.languages.typescript.getTypeScriptWorker())
+  const [workerSignal, setWorkerSignal] = createSignal<
+    ((...uris: Monaco.Uri[]) => Promise<Monaco.languages.typescript.TypeScriptWorker>) | undefined
+  >(() => props.monaco.languages.typescript.getTypeScriptWorker())
+  setWorkerSignal(undefined)
+  const worker = () => latest(workerSignal)
 
   function getType(path: string) {
     const extension = PathUtils.getExtension(path)
@@ -35,7 +38,7 @@ export function bindMonacoToFileSystem(props: {
     props.editor.onDidChangeModelContent(() => {
       props.writeFile(props.path, props.editor.getModel()!.getValue())
     })
-  })
+  }, () => {})
 
   createEffect(
     mapArray(props.getPaths, path => {
@@ -50,10 +53,11 @@ export function bindMonacoToFileSystem(props: {
           if (value !== model.getValue()) {
             model.setValue(props.readFile(path) || '')
           }
-        })
+        }, () => {})
         onCleanup(() => model.dispose())
-      })
+      }, () => {})
     }),
+    () => {},
   )
 
   createEffect(() => {
@@ -63,21 +67,28 @@ export function bindMonacoToFileSystem(props: {
       props.monaco.editor.getModel(uri) || props.monaco.editor.createModel('', type, uri)
     props.editor.setModel(model)
 
-    const client = createAsync(() => worker()?.(model.uri))
-    const diagnosis = createAsync(
-      () => client()?.getSemanticDiagnostics(props.readFile(props.path)),
-    )
+    const [clientSignal, setClientSignal] = createSignal<
+      Monaco.languages.typescript.TypeScriptWorker | undefined
+    >(() => worker()?.(model.uri))
+    setClientSignal(undefined)
+    const client = () => latest(clientSignal)
+
+    const [diagnosisSignal, setDiagnosisSignal] = createSignal<
+      Monaco.languages.typescript.Diagnostic[] | undefined
+    >(() => client()?.getSemanticDiagnostics(props.readFile(props.path)))
+    setDiagnosisSignal(undefined)
+    const diagnosis = () => latest(diagnosisSignal)
     createEffect(() => {
       console.info('diagnosis', diagnosis())
-    })
-  })
+    }, () => {})
+  }, () => {})
 
   createEffect(() => {
     if (props.tsconfig) {
       props.monaco.languages.typescript.typescriptDefaults.setCompilerOptions(props.tsconfig)
       props.monaco.languages.typescript.javascriptDefaults.setCompilerOptions(props.tsconfig)
     }
-  })
+  }, () => {})
 
   createEffect(
     mapArray(
@@ -89,8 +100,9 @@ export function bindMonacoToFileSystem(props: {
           const path = `file:///${name}`
           props.monaco.languages.typescript.typescriptDefaults.addExtraLib(declaration, path)
           props.monaco.languages.typescript.javascriptDefaults.addExtraLib(declaration, path)
-        })
+        }, () => {})
       },
     ),
+    () => {},
   )
 }

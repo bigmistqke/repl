@@ -1,8 +1,8 @@
 import { when } from '@bigmistqke/solid-whenever'
-import { type Accessor, createEffect, createMemo, createSignal, onCleanup } from 'solid-js'
+import { type Accessor, createEffect, createMemo, createSignal, latest, onCleanup } from 'solid-js'
 import type { Extension, FileUrlSystem } from '../types.ts'
 import * as PathUtils from '../utils/path-utils.ts'
-import { accessMaybe, createAsync, ReactiveRefCount } from '../utils/utils.ts'
+import { accessMaybe, ReactiveRefCount } from '../utils/utils.ts'
 import { createFileUrl } from './create-file-url.ts'
 
 interface FileUrlApi {
@@ -40,28 +40,33 @@ export function createFileUrlSystem({
   extensions: Record<string, Extension>
 }): FileUrlSystem {
   const refCount = new ReactiveRefCount((path): Accessor<FileUrlApi | undefined> => {
-    const source = createAsync<string | 0>(() => {
+    const [sourceSignal, setSourceSignal] = createSignal<string | 0 | undefined>(() => {
       try {
         const result = readFile(path)
         if (result === undefined) return 0
         if (result instanceof Promise) {
-          return result.catch(() => 0)
+          return result.catch((): 0 => 0)
         }
         return result
       } catch {
         return 0
       }
     })
+    setSourceSignal(undefined)
+    const source = () => latest(sourceSignal)
     const extension = PathUtils.getExtension(path)
 
-    createEffect(() => {
-      // Only remove reference if
-      // - nothing is referencing path and
-      // - source does not exist
-      if (refCount.isNull(path) && source() === 0) {
-        refCount.delete(path)
-      }
-    })
+    createEffect(
+      () => refCount.isNull(path) && source() === 0,
+      shouldDelete => {
+        // Only remove reference if
+        // - nothing is referencing path and
+        // - source does not exist
+        if (shouldDelete) {
+          refCount.delete(path)
+        }
+      },
+    )
 
     return createMemo(
       when(source, () => {

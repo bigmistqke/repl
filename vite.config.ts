@@ -1,10 +1,15 @@
 import { resolve } from 'path'
 import { defineConfig } from 'vite'
-import dts from 'vite-plugin-dts-bundle-generator'
+import dts from 'vite-plugin-dts'
 import solid from 'vite-plugin-solid'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      'solid-js/web': '@solidjs/web',
+    },
+  },
   build: {
     minify: false,
     lib: {
@@ -16,7 +21,7 @@ export default defineConfig({
     rollupOptions: {
       external: [
         'solid-js',
-        'solid-js/store',
+        '@solidjs/web',
         '@solidjs/router',
         'typescript',
         '@babel/standalone',
@@ -30,17 +35,10 @@ export default defineConfig({
   plugins: [
     tsconfigPaths(),
     solid(),
-    dts(
-      {
-        fileName: 'index.d.ts',
-        libraries: {
-          importedLibraries: ['solid-js'],
-        },
-      },
-      {
-        preferredConfigPath: './tsconfig.json',
-      },
-    ),
+    dts({
+      tsconfigPath: './tsconfig.json',
+      entryRoot: 'src',
+    }),
   ],
   server: { port: 3000 },
   css: {

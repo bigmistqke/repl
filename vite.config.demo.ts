@@ -17,7 +17,7 @@ export default defineConfig({
     rollupOptions: {
       external: [
         'solid-js',
-        'solid-js/store',
+        '@solidjs/web',
         '@solidjs/router',
         'typescript',
         '@babel/standalone',

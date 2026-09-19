@@ -1,12 +1,10 @@
 import { ReactiveMap } from '@solid-primitives/map'
 import {
   type Accessor,
+  type ComputeFunction,
   createMemo,
-  createResource,
   createRoot,
-  type EffectFunction,
-  getListener,
-  type InitializedResource,
+  getObserver,
   onCleanup,
   untrack,
 } from 'solid-js'
@@ -23,69 +21,6 @@ export function accessMaybe<T>(maybeAccessor: Accessor<T> | T): T {
     return maybeAccessor()
   }
   return maybeAccessor
-}
-
-/**********************************************************************************/
-/*                                                                                */
-/*                                   Create Async                                 */
-/*                                                                                */
-/**********************************************************************************/
-
-// interpolated from https://raw.githubusercontent.com/solidjs/solid-router/50c5d7bdef6acc5910c6eb35ba6a24b15aae3ef6/src/data/createAsync.ts
-
-/**
- * As `createAsync` and `createAsyncStore` are wrappers for `createResource`,
- * this type allows to support `latest` field for these primitives.
- * It will be removed in the future.
- */
-export type AccessorWithLatest<T> = {
-  (): T
-  latest: T
-}
-
-export function createAsync<T>(
-  fn: (prev: T) => T | Promise<T>,
-  options: {
-    name?: string
-    initialValue: T
-    deferStream?: boolean
-  },
-): AccessorWithLatest<T>
-export function createAsync<T>(
-  fn: (prev: T | undefined) => T | Promise<T>,
-  options?: {
-    name?: string
-    initialValue?: T
-    deferStream?: boolean
-  },
-): AccessorWithLatest<T | undefined>
-export function createAsync<T>(
-  fn: (prev: T | undefined) => T | Promise<T>,
-  options?: {
-    name?: string
-    initialValue?: T
-    deferStream?: boolean
-  },
-): AccessorWithLatest<T | undefined> {
-  let resource: InitializedResource<T> | null = null
-
-  const prev = () =>
-    !resource || (resource as any).state === 'unresolved' ? undefined : (resource as any).latest
-
-  resource = createResource(
-    () => fn(untrack(prev)),
-    v => v,
-    options as any,
-  )[0]
-
-  const resultAccessor: AccessorWithLatest<T> = (() => resource()) as any
-  Object.defineProperty(resultAccessor, 'latest', {
-    get() {
-      return (resource as any).latest
-    },
-  })
-
-  return resultAccessor
 }
 
 /**********************************************************************************/
@@ -162,7 +97,7 @@ export class ReactiveRefCount<T> {
     return this.map.delete(key)
   }
   track(key: string): T {
-    const hasListener = getListener()
+    const hasListener = getObserver()
 
     const ref = untrack(() => this.map.get(key))
 
@@ -194,12 +129,12 @@ export class ReactiveRefCount<T> {
       })
     }
   }
-  memo<Next extends Prev, Prev = Next>(key: string, cb: EffectFunction<Prev, Next>) {
-    return createMemo<Next, Prev>((prev): Next => {
+  memo<Next extends Prev, Prev = Next>(key: string, cb: ComputeFunction<Prev, Next>) {
+    return createMemo<Next>((prev): Next => {
       if (untrack(() => this.map.get(key)?.count) === 0 && prev) {
         return prev as Next
       }
-      return cb(prev as Prev)
+      return cb(prev as Prev) as Next
     })
   }
 }

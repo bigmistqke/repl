@@ -2,7 +2,7 @@
   "compilerOptions": {
     // General
     "jsx": "preserve",
-    "jsxImportSource": "solid-js",
+    "jsxImportSource": "@solidjs/web",
     "target": "ESNext",
 
     // Modules
