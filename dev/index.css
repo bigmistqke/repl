@@ -8,17 +8,15 @@ body {
   box-sizing: border-box;
   margin: 0;
   padding: 20px;
-  height: 100vh;
+  min-height: 100vh;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
     'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
 }
 
 #root {
-  display: grid;
-  grid-template-rows: auto 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 5px;
-  height: 100%;
-  overflow: hidden;
 }
 
 .buttons {
@@ -30,5 +28,5 @@ body {
 iframe {
   border: 1px solid black;
   width: 100%;
-  height: 100%;
+  height: 300px;
 }

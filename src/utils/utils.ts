@@ -6,6 +6,7 @@ import {
   createRoot,
   getObserver,
   onCleanup,
+  runWithOwner,
   untrack,
 } from 'solid-js'
 import { type AccessorMaybe } from '../types.ts'
@@ -118,15 +119,23 @@ export class ReactiveRefCount<T> {
       }
       return ref.value
     } else {
-      return createRoot(dispose => {
-        const value = this.cb(key)
-        this.map.set(key, {
-          count: hasListener ? 1 : 0,
-          value,
-          dispose,
-        })
-        return value
-      })
+      // Force a truly detached root: this factory can run reentrantly from
+      // inside another path's own computation (e.g. an html file's
+      // transform reading a referenced script's url), and createRoot alone
+      // does not escape that ambient owner — without this, the new root
+      // gets disposed whenever that reentrant caller's own scope next
+      // reruns, even though nothing here actually depends on it.
+      return runWithOwner(null, () =>
+        createRoot(dispose => {
+          const value = this.cb(key)
+          this.map.set(key, {
+            count: hasListener ? 1 : 0,
+            value,
+            dispose,
+          })
+          return value
+        }),
+      )!
     }
   }
   memo<Next extends Prev, Prev = Next>(key: string, cb: ComputeFunction<Prev, Next>) {

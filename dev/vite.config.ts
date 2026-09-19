@@ -1,6 +1,5 @@
 import rawDirectoryPlugin from '@bigmistqke/vite-plugin-raw-directory'
 import workerPlugin from '@bigmistqke/vite-plugin-worker-proxy'
-import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill'
 import { defineConfig } from 'vite'
 import solid from 'vite-plugin-solid'
 import wasmPlugin from 'vite-plugin-wasm'
@@ -33,21 +32,6 @@ export default defineConfig({
     workerPlugin(),
     rawDirectoryPlugin(),
   ],
-  optimizeDeps: {
-    esbuildOptions: {
-      // Node.js global to browser globalThis
-      define: {
-        global: 'globalThis',
-      },
-      // Enable esbuild polyfill plugins
-      plugins: [
-        NodeGlobalsPolyfillPlugin({
-          process: true,
-          buffer: true,
-        }),
-      ],
-    },
-  },
   server: {
     port: 3000,
   },

@@ -1,6 +1,7 @@
-import { createEffect, createMemo, createRoot, createSignal, latest } from 'solid-js'
-import { createFileUrlSystem } from '../core/create-file-url-system.ts'
+import { render } from '@solidjs/web'
+import { createSignal } from 'solid-js'
 import type { Extension } from '../types.ts'
+import { Repl, type ReplRef } from './repl.tsx'
 
 export interface ReplElementFiles {
   /** Path -> source, e.g. `{ "/index.html": "...", "/src/main.ts": "..." }`. */
@@ -19,19 +20,22 @@ export interface ReplElementFiles {
  * entirely up to the consumer — an app with no TypeScript files can leave
  * `extensions` at `{}` plus whatever it needs (e.g. `html`/`css`).
  *
- * `extensions` must be set before the element connects (it defines the
- * reactive file-url system once, on `connectedCallback`); `files` can be
- * set before or after and is fully reactive.
+ * `extensions` and `ref` must be set before the element connects (both are
+ * only read once, on `connectedCallback`); `files` can be set before or
+ * after and is fully reactive.
  *
- * This is a base primitive, not a full editor UI — it owns the iframe and
- * the compile/url pipeline only. An editor pane, if any, is the host's
- * concern; wire it up by setting `.files` again on change.
+ * This is just `<Repl/>` mounted into the custom element with `render` — the
+ * iframe/compile pipeline itself lives in `<Repl/>`, not here.
+ *
+ * This is a base primitive, not a full editor UI. An editor pane, if any, is
+ * the host's concern; wire it up by setting `.files` again on change.
  */
 export class ReplElement extends HTMLElement {
-  #disposeRoot?: () => void
+  #dispose?: () => void
   #setFiles?: (files: ReplElementFiles) => void
   #pendingFiles?: ReplElementFiles
   #extensions?: Record<string, Extension>
+  #ref?: (api: ReplRef) => void
 
   set files(value: ReplElementFiles) {
     if (this.#setFiles) {
@@ -43,10 +47,17 @@ export class ReplElement extends HTMLElement {
   }
 
   set extensions(value: Record<string, Extension>) {
-    if (this.#disposeRoot) {
+    if (this.#dispose) {
       throw new Error('ReplElement: `extensions` must be set before the element connects.')
     }
     this.#extensions = value
+  }
+
+  set ref(value: (api: ReplRef) => void) {
+    if (this.#dispose) {
+      throw new Error('ReplElement: `ref` must be set before the element connects.')
+    }
+    this.#ref = value
   }
 
   connectedCallback() {
@@ -56,36 +67,30 @@ export class ReplElement extends HTMLElement {
 
     this.style.display ||= 'block'
 
-    const iframe = document.createElement('iframe')
-    iframe.style.cssText = 'width:100%;height:100%;border:0;display:block;'
-    iframe.sandbox.add('allow-scripts', 'allow-same-origin')
-    this.appendChild(iframe)
+    const [config, setConfig] = createSignal<ReplElementFiles>(
+      this.#pendingFiles ?? { files: {}, entry: '/index.html' },
+    )
+    this.#setFiles = setConfig
+    this.#pendingFiles = undefined
 
-    this.#disposeRoot = createRoot(dispose => {
-      const [config, setConfig] = createSignal<ReplElementFiles>(
-        this.#pendingFiles ?? { files: {}, entry: '/index.html' },
-      )
-      this.#setFiles = setConfig
-      this.#pendingFiles = undefined
-
-      const fileUrls = createFileUrlSystem({
-        readFile: path => config().files[path],
-        extensions: this.#extensions!,
-      })
-
-      const entryUrl = createMemo(() => latest(() => fileUrls.get(config().entry ?? '/index.html')))
-
-      createEffect(entryUrl, url => {
-        iframe.src = url ?? 'about:blank'
-      })
-
-      return dispose
-    })
+    this.#dispose = render(
+      () => (
+        <Repl
+          extensions={this.#extensions!}
+          readFile={path => config().files[path]}
+          entry={config().entry}
+          style={{ width: '100%', height: '100%', border: '0', display: 'block' }}
+          sandbox="allow-scripts allow-same-origin"
+          ref={this.#ref}
+        />
+      ),
+      this,
+    )
   }
 
   disconnectedCallback() {
-    this.#disposeRoot?.()
-    this.#disposeRoot = undefined
+    this.#dispose?.()
+    this.#dispose = undefined
     this.#setFiles = undefined
   }
 }

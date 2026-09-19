@@ -3,19 +3,24 @@ import { createJSExtension, type JSExtensionConfig } from '../extension-presets/
 import type { Extension } from '../types.ts'
 import { createFileUrlSystem } from './create-file-url-system.ts'
 
-export interface DefaultFileUrlSystemConfig
+export interface DefaultExtensionsConfig
   extends Omit<JSExtensionConfig, 'transpile' | 'transform'> {
   extensions?: Record<string, Extension>
   transformJs?: JSExtensionConfig['transform']
 }
 
-export function defaultFileUrlSystem({
+/**
+ * Builds the `js`/`ts`/`tsx`/`html`/`css` extension map `defaultFileUrlSystem`
+ * uses, so it can be handed to `createFileUrlSystem`, `<Repl/>`, or
+ * `ReplElement` directly instead of going through `defaultFileUrlSystem`.
+ */
+export function defaultExtensions({
   extensions,
   transformJs,
   compilerOptions,
   readFile,
   ...rest
-}: DefaultFileUrlSystemConfig) {
+}: DefaultExtensionsConfig): Record<string, Extension> {
   const jsExtension = createJSExtension({
     ...rest,
     compilerOptions: {
@@ -38,16 +43,22 @@ export function defaultFileUrlSystem({
   const tsExtension = jsExtension.extend({ transpile: true })
   const htmlExtension = createHTMLExtension({ transformModule: jsExtension.transform })
 
+  return {
+    css: { type: 'css' },
+    js: jsExtension,
+    ts: tsExtension,
+    jsxExtension: tsExtension,
+    tsx: tsExtension,
+    html: htmlExtension,
+    ...extensions,
+  }
+}
+
+export interface DefaultFileUrlSystemConfig extends DefaultExtensionsConfig {}
+
+export function defaultFileUrlSystem(config: DefaultFileUrlSystemConfig) {
   return createFileUrlSystem({
-    readFile,
-    extensions: {
-      css: { type: 'css' },
-      js: jsExtension,
-      ts: tsExtension,
-      jsxExtension: tsExtension,
-      tsx: tsExtension,
-      html: htmlExtension,
-      ...extensions,
-    },
+    readFile: config.readFile,
+    extensions: defaultExtensions(config),
   })
 }
