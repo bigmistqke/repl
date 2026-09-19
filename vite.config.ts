@@ -13,9 +13,12 @@ export default defineConfig({
   build: {
     minify: false,
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
+      entry: {
+        index: resolve(__dirname, 'src/index.ts'),
+        solid: resolve(__dirname, 'src/element/repl.tsx'),
+        element: resolve(__dirname, 'src/element/repl-element.tsx'),
+      },
       name: 'repl',
-      fileName: 'index',
       formats: ['es'],
     },
     rollupOptions: {

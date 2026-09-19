@@ -28,6 +28,18 @@
         "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
       }
+    },
+    "./solid": {
+      "import": {
+        "types": "./dist/element/repl.d.ts",
+        "default": "./dist/solid.js"
+      }
+    },
+    "./element": {
+      "import": {
+        "types": "./dist/element/repl-element.d.ts",
+        "default": "./dist/element.js"
+      }
     }
   },
   "scripts": {
