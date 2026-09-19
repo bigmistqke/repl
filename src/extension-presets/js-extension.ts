@@ -6,6 +6,7 @@ export interface JSExtensionConfig {
   cdn?: string
   compilerOptions?: TS.CompilerOptions
   readFile(path: string): string | undefined
+  resolveBareSpecifier?: (specifier: string) => string
   ts: typeof TS
   transpile?: boolean
   transform?(config: TransformConfig): string

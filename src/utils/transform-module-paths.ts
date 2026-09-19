@@ -69,7 +69,12 @@ export function transformModulePaths({
  * @param options.readFile - Function to read file contents
  * @param options.source - Source code to transform
  * @param options.ts - TypeScript compiler API instance
- * @param options.cdn - CDN URL for external modules (defaults to 'https://esm.sh')
+ * @param options.cdn - CDN URL bare (non-relative) specifiers are resolved against
+ * (defaults to 'https://esm.sh'). Ignored if `resolveBareSpecifier` is given.
+ * @param options.resolveBareSpecifier - Overrides how a bare (non-relative,
+ * non-URL) module specifier is turned into a URL, e.g. to point at a local
+ * dev server's `node_modules` instead of a CDN, or to pin versions. Defaults
+ * to `specifier => \`${cdn}/${specifier}\``.
  * @returns A function that applies the transformations
  */
 export function defaultTransformModulePaths({
@@ -80,6 +85,7 @@ export function defaultTransformModulePaths({
   source,
   ts,
   cdn = 'https://esm.sh',
+  resolveBareSpecifier = specifier => `${cdn}/${specifier}`,
 }: {
   fileUrls: FileUrlSystem
   compilerOptions?: TS.CompilerOptions
@@ -88,6 +94,7 @@ export function defaultTransformModulePaths({
   source: string
   ts: typeof TS
   cdn?: string
+  resolveBareSpecifier?: (specifier: string) => string
 }) {
   return transformModulePaths({
     ts,
@@ -116,8 +123,8 @@ export function defaultTransformModulePaths({
         // Return url directly
         return modulePath
       } else {
-        // Wrap external modules with esm.sh
-        return `${cdn}/${modulePath}`
+        // Resolve bare specifiers (external modules)
+        return resolveBareSpecifier(modulePath)
       }
     },
   })
